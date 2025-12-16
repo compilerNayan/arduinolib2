@@ -1,0 +1,26 @@
+{
+  "name": "PioLibStuff2",
+  "version": "1.0.0",
+  "description": "A simple PlatformIO library that provides add and sub functions",
+  "keywords": "math, utility",
+  "authors": [
+    {
+      "name": "Nayan"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/compilerNayan/arduinolib1.git"
+  },
+  "dependencies": {
+    "PioLibStuff": "https://github.com/compilerNayan/arduinolib1.git"
+  },
+  "license": "MIT",
+  "homepage": "",
+  "frameworks": "arduino",
+  "platforms": "*",
+  "build": {
+    "extraScript": "scripts/pre_build.py"
+  }
+}
+
