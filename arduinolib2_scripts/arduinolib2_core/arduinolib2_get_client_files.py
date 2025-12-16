@@ -8,19 +8,31 @@ import os
 from pathlib import Path
 
 
-def get_client_files(project_dir):
+def get_client_files(project_dir, file_extensions=None):
     """
     Get all files in the client project, excluding library directories.
+    Optionally filter files by their extensions.
     
     Args:
         project_dir: Path to the client project root (where platformio.ini is)
+        file_extensions: Optional list of file extensions to filter by (e.g., ['.h', '.cpp'] or ['h', 'cpp']).
+                        If None or empty, returns all files. Extensions are case-insensitive.
     
     Returns:
-        List of file paths relative to project_dir
+        List of full absolute file paths
     """
-    print("Gonna print client files")
     project_path = Path(project_dir).resolve()
     client_files = []
+    
+    # Normalize file extensions: ensure they start with '.' and are lowercase
+    normalized_extensions = None
+    if file_extensions:
+        normalized_extensions = []
+        for ext in file_extensions:
+            ext_str = str(ext).lower()
+            if not ext_str.startswith('.'):
+                ext_str = '.' + ext_str
+            normalized_extensions.append(ext_str)
     
     # Directories to exclude (PlatformIO library and build directories)
     exclude_dirs = {
@@ -47,15 +59,22 @@ def get_client_files(project_dir):
             dirs[:] = [d for d in dirs if d not in exclude_dirs]
             continue
         
-        # Add all files in this directory
+        # Add files in this directory (with optional extension filtering)
         for file in files:
             file_path = root_path / file
-            # Get relative path from project root
+            
+            # Filter by extension if extensions are provided
+            if normalized_extensions:
+                file_ext = file_path.suffix.lower()
+                if file_ext not in normalized_extensions:
+                    continue
+            
+            # Get full absolute path
             try:
-                rel_path = file_path.relative_to(project_path)
-                client_files.append(str(rel_path))
-            except ValueError:
-                # Skip if path is not relative (shouldn't happen, but safety check)
+                full_path = file_path.resolve()
+                client_files.append(str(full_path))
+            except (ValueError, OSError):
+                # Skip if path cannot be resolved
                 continue
     
     return sorted(client_files)

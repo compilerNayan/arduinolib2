@@ -3,8 +3,7 @@ Script to execute client file processing.
 This script imports get_client_files and processes the client project files.
 """
 
-from arduinolib2_core.get_client_files import get_client_files
-
+from arduinolib2_core.arduinolib2_get_client_files import get_client_files
 
 def execute_scripts(project_dir):
     """
@@ -14,7 +13,7 @@ def execute_scripts(project_dir):
         project_dir: Path to the client project root (where platformio.ini is)
     """
     if project_dir:
-        client_files = get_client_files(project_dir)
+        client_files = get_client_files(project_dir, file_extensions=['.h', '.cpp'])
         print(f"\nFound {len(client_files)} files in client project:")
         print("=" * 60)
         for file in client_files:
