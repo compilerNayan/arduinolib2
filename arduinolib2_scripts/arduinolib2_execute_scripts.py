@@ -12,6 +12,10 @@ def execute_scripts(project_dir, library_dir):
     Args:
         project_dir: Path to the client project root (where platformio.ini is)
     """
+
+    print(f"\nproject_dir: {project_dir}")
+    print(f"library_dir: {library_dir}")
+
     if project_dir:
         client_files = get_client_files(project_dir, file_extensions=['.h', '.cpp'])
         print(f"\nFound {len(client_files)} files in client project:")
