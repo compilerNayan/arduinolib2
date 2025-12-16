@@ -81,7 +81,14 @@ def find_arduinolib1_scripts():
     # Add project directory if available
     project_dir = get_project_dir()
     if project_dir:
-        search_paths.append(Path(project_dir))
+        project_path = Path(project_dir)
+        search_paths.append(project_path)
+        
+        # Check build/_deps/arduinolib1-src/arduinolib1_scripts from project directory
+        build_deps = project_path / "build" / "_deps" / "arduinolib1-src" / "arduinolib1_scripts"
+        if build_deps.exists() and build_deps.is_dir():
+            print(f"✓ Found arduinolib1_scripts (CMake from project): {build_deps}")
+            return build_deps
     
     # Add library directory (parent of arduinolib2_scripts)
     library_scripts_dir = get_library_dir()
@@ -89,7 +96,7 @@ def find_arduinolib1_scripts():
     search_paths.append(library_dir)
     
     # If we're in a CMake build, check sibling directory (arduinolib1-src next to arduinolib2-src)
-    if "arduinolib2-src" in str(library_dir):
+    if "arduinolib2-src" in str(library_dir) or "_deps" in str(library_dir):
         # We're in a CMake FetchContent location, check sibling
         parent_deps = library_dir.parent
         if parent_deps.exists() and parent_deps.name == "_deps":
@@ -97,6 +104,13 @@ def find_arduinolib1_scripts():
             if lib1_src.exists() and lib1_src.is_dir():
                 print(f"✓ Found arduinolib1_scripts (CMake sibling): {lib1_src}")
                 return lib1_src
+            # Also check if arduinolib1-src exists but scripts might be in root
+            lib1_root = parent_deps / "arduinolib1-src"
+            if lib1_root.exists():
+                lib1_scripts = lib1_root / "arduinolib1_scripts"
+                if lib1_scripts.exists() and lib1_scripts.is_dir():
+                    print(f"✓ Found arduinolib1_scripts (CMake sibling root): {lib1_scripts}")
+                    return lib1_scripts
     
     # Search in each path and their parent directories
     for start_path in search_paths:

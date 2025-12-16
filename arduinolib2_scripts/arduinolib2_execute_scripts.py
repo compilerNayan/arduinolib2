@@ -3,7 +3,16 @@ Script to execute client file processing.
 This script imports get_client_files and processes the client project files.
 """
 
-from arduinolib1_core.arduinolib1_get_client_files import get_client_files
+try:
+    from arduinolib1_core.arduinolib1_get_client_files import get_client_files
+    HAS_ARDUINOLIB1 = True
+except ImportError:
+    print("Warning: Could not import arduinolib1_core.arduinolib1_get_client_files")
+    print("         Some features may be unavailable.")
+    HAS_ARDUINOLIB1 = False
+    # Create a dummy function to avoid errors
+    def get_client_files(*args, **kwargs):
+        return []
 
 def execute_scripts(project_dir, library_dir):
     """
@@ -11,7 +20,11 @@ def execute_scripts(project_dir, library_dir):
     
     Args:
         project_dir: Path to the client project root (where platformio.ini is)
+        library_dir: Path to the library directory
     """
+    if not HAS_ARDUINOLIB1:
+        print("Skipping file processing - arduinolib1_core not available")
+        return
 
     print(f"\nproject_dir: {project_dir}")
     print(f"library_dir: {library_dir}")
