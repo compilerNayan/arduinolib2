@@ -3,9 +3,9 @@ Script to execute client file processing.
 This script imports get_client_files and processes the client project files.
 """
 
-from arduinolib2_core.arduinolib2_get_client_files import get_client_files
+from arduinolib1_core.arduinolib1_get_client_files import get_client_files
 
-def execute_scripts(project_dir):
+def execute_scripts(project_dir, library_dir):
     """
     Execute the scripts to process client files.
     
@@ -20,3 +20,10 @@ def execute_scripts(project_dir):
             print(file)
         print("=" * 60)
 
+    if library_dir:
+        library_files = get_client_files(library_dir, skip_exclusions=True)
+        print(f"\nFound {len(library_files)} files in library:")
+        print("=" * 60)
+        for file in library_files:
+            print(file)
+        print("=" * 60)

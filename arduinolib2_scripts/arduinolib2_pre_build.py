@@ -57,5 +57,5 @@ project_dir = get_project_dir()
 
 # Import and execute scripts
 from arduinolib2_execute_scripts import execute_scripts
-execute_scripts(project_dir)
+execute_scripts(project_dir, library_dir)
 
