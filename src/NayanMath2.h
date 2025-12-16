@@ -1,6 +1,8 @@
 #ifndef NAYANMATH2_H
 #define NAYANMATH2_H
 
+#include <NayanMath.h>
+
 namespace NayanMath {
 
 /**
