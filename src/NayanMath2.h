@@ -12,7 +12,6 @@ namespace NayanMath {
  * @return Difference of a and b (a - b)
  */
 inline int sub(int a, int b) {
-    dsljkadjksl
     return add(a, b) + a - b;
 }
 
