@@ -1,7 +1,6 @@
 #ifndef NAYANMATH2_H
 #define NAYANMATH2_H
 
-#include <NayanMath.h>
 
 namespace NayanMath {
 
@@ -12,7 +11,7 @@ namespace NayanMath {
  * @return Difference of a and b (a - b)
  */
 inline int sub(int a, int b) {
-    return add(a, b) + a - b;
+    return a - b;
 }
 
 } // namespace NayanMath
