@@ -66,13 +66,25 @@ def get_project_dir():
     return project_dir
 
 
-def find_arduinolib1_scripts():
+def find_library_scripts(scripts_dir_name):
     """
-    Find the arduinolib1_scripts directory by searching from current directory and project directory.
+    Find a library scripts directory by searching from current directory and project directory.
+    
+    Args:
+        scripts_dir_name: Name of the scripts directory to find (e.g., "arduinolib1_scripts")
     
     Returns:
-        Path: Path to the arduinolib1_scripts directory, or None if not found
+        Path: Path to the scripts directory, or None if not found
     """
+    # Derive library source directory name from scripts directory name
+    # e.g., "arduinolib1_scripts" -> "arduinolib1-src"
+    if scripts_dir_name.endswith("_scripts"):
+        lib_name = scripts_dir_name[:-8]  # Remove "_scripts" suffix
+        lib_src_name = f"{lib_name}-src"
+    else:
+        # Fallback: assume scripts_dir_name is the library name
+        lib_src_name = f"{scripts_dir_name}-src"
+    
     search_paths = []
     
     # Add current working directory
@@ -84,10 +96,10 @@ def find_arduinolib1_scripts():
         project_path = Path(project_dir)
         search_paths.append(project_path)
         
-        # Check build/_deps/arduinolib1-src/arduinolib1_scripts from project directory
-        build_deps = project_path / "build" / "_deps" / "arduinolib1-src" / "arduinolib1_scripts"
+        # Check build/_deps/{lib_src_name}/{scripts_dir_name} from project directory
+        build_deps = project_path / "build" / "_deps" / lib_src_name / scripts_dir_name
         if build_deps.exists() and build_deps.is_dir():
-            print(f"✓ Found arduinolib1_scripts (CMake from project): {build_deps}")
+            print(f"✓ Found {scripts_dir_name} (CMake from project): {build_deps}")
             return build_deps
     
     # Add library directory (parent of arduinolib2_scripts)
@@ -95,54 +107,54 @@ def find_arduinolib1_scripts():
     library_dir = library_scripts_dir.parent
     search_paths.append(library_dir)
     
-    # If we're in a CMake build, check sibling directory (arduinolib1-src next to arduinolib2-src)
+    # If we're in a CMake build, check sibling directory ({lib_src_name} next to arduinolib2-src)
     if "arduinolib2-src" in str(library_dir) or "_deps" in str(library_dir):
         # We're in a CMake FetchContent location, check sibling
         parent_deps = library_dir.parent
         if parent_deps.exists() and parent_deps.name == "_deps":
-            lib1_src = parent_deps / "arduinolib1-src" / "arduinolib1_scripts"
-            if lib1_src.exists() and lib1_src.is_dir():
-                print(f"✓ Found arduinolib1_scripts (CMake sibling): {lib1_src}")
-                return lib1_src
-            # Also check if arduinolib1-src exists but scripts might be in root
-            lib1_root = parent_deps / "arduinolib1-src"
-            if lib1_root.exists():
-                lib1_scripts = lib1_root / "arduinolib1_scripts"
-                if lib1_scripts.exists() and lib1_scripts.is_dir():
-                    print(f"✓ Found arduinolib1_scripts (CMake sibling root): {lib1_scripts}")
-                    return lib1_scripts
+            lib_src = parent_deps / lib_src_name / scripts_dir_name
+            if lib_src.exists() and lib_src.is_dir():
+                print(f"✓ Found {scripts_dir_name} (CMake sibling): {lib_src}")
+                return lib_src
+            # Also check if {lib_src_name} exists but scripts might be in root
+            lib_root = parent_deps / lib_src_name
+            if lib_root.exists():
+                lib_scripts = lib_root / scripts_dir_name
+                if lib_scripts.exists() and lib_scripts.is_dir():
+                    print(f"✓ Found {scripts_dir_name} (CMake sibling root): {lib_scripts}")
+                    return lib_scripts
     
     # Search in each path and their parent directories
     for start_path in search_paths:
         current = start_path.resolve()
         for _ in range(10):  # Search up to 10 levels
-            # Check for arduinolib1_scripts in current directory
-            potential = current / "arduinolib1_scripts"
+            # Check for {scripts_dir_name} in current directory
+            potential = current / scripts_dir_name
             if potential.exists() and potential.is_dir():
-                print(f"✓ Found arduinolib1_scripts: {potential}")
+                print(f"✓ Found {scripts_dir_name}: {potential}")
                 return potential
             
-            # Check in build/_deps/arduinolib1-src/ (CMake FetchContent location)
-            deps_path = current / "build" / "_deps" / "arduinolib1-src" / "arduinolib1_scripts"
+            # Check in build/_deps/{lib_src_name}/ (CMake FetchContent location)
+            deps_path = current / "build" / "_deps" / lib_src_name / scripts_dir_name
             if deps_path.exists() and deps_path.is_dir():
-                print(f"✓ Found arduinolib1_scripts (CMake): {deps_path}")
+                print(f"✓ Found {scripts_dir_name} (CMake): {deps_path}")
                 return deps_path
             
             # Check in .pio/libdeps/ (PlatformIO location)
             pio_path = current / ".pio" / "libdeps"
             if pio_path.exists():
                 for lib_dir in pio_path.iterdir():
-                    lib1_path = lib_dir / "arduinolib1_scripts"
-                    if lib1_path.exists() and lib1_path.is_dir():
-                        print(f"✓ Found arduinolib1_scripts (PlatformIO): {lib1_path}")
-                        return lib1_path
+                    lib_scripts_path = lib_dir / scripts_dir_name
+                    if lib_scripts_path.exists() and lib_scripts_path.is_dir():
+                        print(f"✓ Found {scripts_dir_name} (PlatformIO): {lib_scripts_path}")
+                        return lib_scripts_path
             
             parent = current.parent
             if parent == current:  # Reached filesystem root
                 break
             current = parent
     
-    print("Warning: Could not find arduinolib1_scripts directory")
+    print(f"Warning: Could not find {scripts_dir_name} directory")
     return None
 
 
@@ -150,8 +162,13 @@ def find_arduinolib1_scripts():
 library_scripts_dir = get_library_dir()
 sys.path.insert(0, str(library_scripts_dir))
 
-# Find and add arduinolib1_scripts to Python path
-arduinolib1_scripts_dir = find_arduinolib1_scripts()
+# Find and add arduinolib0_scripts to Python path
+arduinolib0_scripts_dir = find_library_scripts("arduinolib0_scripts")
+if arduinolib0_scripts_dir:
+    sys.path.insert(0, str(arduinolib0_scripts_dir))
+
+# Find and add arduinolib0_scripts to Python path
+arduinolib1_scripts_dir = find_library_scripts("arduinolib1_scripts")
 if arduinolib1_scripts_dir:
     sys.path.insert(0, str(arduinolib1_scripts_dir))
 
