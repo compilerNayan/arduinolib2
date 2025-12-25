@@ -5,19 +5,36 @@ project(arduinolib2 VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Fetch arduinolib1 dependency FIRST, before pre-build script
-# This ensures arduinolib1 is available when the pre-build script runs
+# Fetch dependencies FIRST, before pre-build script
+# This ensures dependencies are available when the pre-build script runs
 include(FetchContent)
+
+# Fetch arduinolib1
 FetchContent_Declare(
     arduinolib1
     GIT_REPOSITORY https://github.com/compilerNayan/arduinolib1.git
     GIT_TAG        main
 )
-FetchContent_MakeAvailable(arduinolib1)
+
+# Fetch ArduionoLibServer
+FetchContent_Declare(
+    arduionolibserver
+    GIT_REPOSITORY https://github.com/compilerNayan/arduionolibserver.git
+    GIT_TAG        main
+)
+
+# Fetch ArduinoNativeServer
+FetchContent_Declare(
+    arduinonativeserver
+    GIT_REPOSITORY https://github.com/compilerNayan/arduinonativeserver.git
+    GIT_TAG        main
+)
+
+FetchContent_MakeAvailable(arduinolib1 arduionolibserver arduinonativeserver)
 
 # Run pre-build script during configuration (runs even if client creates own library)
 # This will run whenever this CMakeLists.txt is processed
-# Note: arduinolib1 is now available since FetchContent_MakeAvailable was called above
+# Note: All dependencies are now available since FetchContent_MakeAvailable was called above
 find_program(PYTHON_EXECUTABLE python3 python)
 if(PYTHON_EXECUTABLE AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/arduinolib2_scripts/arduinolib2_pre_build.py")
     # Get the client project directory (CMAKE_SOURCE_DIR is the top-level project source directory)
@@ -73,6 +90,34 @@ else()
     FetchContent_GetProperties(arduinolib1)
     if(arduinolib1_SOURCE_DIR)
         target_include_directories(arduinolib2 INTERFACE ${arduinolib1_SOURCE_DIR}/src)
+    endif()
+endif()
+
+# Link arduionolibserver (header-only library)
+# Try the namespaced target first, fallback to non-namespaced
+if(TARGET arduionolibserver::arduionolibserver)
+    target_link_libraries(arduinolib2 INTERFACE arduionolibserver::arduionolibserver)
+elseif(TARGET arduionolibserver)
+    target_link_libraries(arduinolib2 INTERFACE arduionolibserver)
+else()
+    # Fallback: manually add include directory if target doesn't exist
+    FetchContent_GetProperties(arduionolibserver)
+    if(arduionolibserver_SOURCE_DIR)
+        target_include_directories(arduinolib2 INTERFACE ${arduionolibserver_SOURCE_DIR}/src)
+    endif()
+endif()
+
+# Link arduinonativeserver (header-only library)
+# Try the namespaced target first, fallback to non-namespaced
+if(TARGET arduinonativeserver::arduinonativeserver)
+    target_link_libraries(arduinolib2 INTERFACE arduinonativeserver::arduinonativeserver)
+elseif(TARGET arduinonativeserver)
+    target_link_libraries(arduinolib2 INTERFACE arduinonativeserver)
+else()
+    # Fallback: manually add include directory if target doesn't exist
+    FetchContent_GetProperties(arduinonativeserver)
+    if(arduinonativeserver_SOURCE_DIR)
+        target_include_directories(arduinolib2 INTERFACE ${arduinonativeserver_SOURCE_DIR}/src)
     endif()
 endif()
 
