@@ -89,7 +89,10 @@ else()
     # Fallback: manually add include directory if target doesn't exist
     FetchContent_GetProperties(arduinolib1)
     if(arduinolib1_SOURCE_DIR)
-        target_include_directories(arduinolib2 INTERFACE ${arduinolib1_SOURCE_DIR}/src)
+        target_include_directories(arduinolib2 INTERFACE
+            $<BUILD_INTERFACE:${arduinolib1_SOURCE_DIR}/src>
+            $<INSTALL_INTERFACE:include>
+        )
     endif()
 endif()
 
@@ -103,7 +106,10 @@ else()
     # Fallback: manually add include directory if target doesn't exist
     FetchContent_GetProperties(arduionolibserver)
     if(arduionolibserver_SOURCE_DIR)
-        target_include_directories(arduinolib2 INTERFACE ${arduionolibserver_SOURCE_DIR}/src)
+        target_include_directories(arduinolib2 INTERFACE
+            $<BUILD_INTERFACE:${arduionolibserver_SOURCE_DIR}/src>
+            $<INSTALL_INTERFACE:include>
+        )
     endif()
 endif()
 
@@ -117,7 +123,10 @@ else()
     # Fallback: manually add include directory if target doesn't exist
     FetchContent_GetProperties(arduinonativeserver)
     if(arduinonativeserver_SOURCE_DIR)
-        target_include_directories(arduinolib2 INTERFACE ${arduinonativeserver_SOURCE_DIR}/src)
+        target_include_directories(arduinolib2 INTERFACE
+            $<BUILD_INTERFACE:${arduinonativeserver_SOURCE_DIR}/src>
+            $<INSTALL_INTERFACE:include>
+        )
     endif()
 endif()
 
