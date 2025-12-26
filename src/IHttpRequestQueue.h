@@ -1,7 +1,7 @@
 #ifndef I_HTTP_REQUEST_QUEUE_H
 #define I_HTTP_REQUEST_QUEUE_H
 
-#include <StandardDef.h>
+#include <StandardDefines.h>
 
 // Forward declarations
 DefineStandardPointers(IHttpRequestQueue)

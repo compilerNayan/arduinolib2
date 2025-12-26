@@ -1,7 +1,7 @@
 #ifndef I_HTTP_REQUEST_DISPATCHER_H
 #define I_HTTP_REQUEST_DISPATCHER_H
 
-#include <StandardDef.h>
+#include <StandardDefines.h>
 
 DefineStandardPointers(IHttpRequestProcessor)
 class IHttpRequestDispatcher {
