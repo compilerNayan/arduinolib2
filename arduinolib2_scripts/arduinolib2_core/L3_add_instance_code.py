@@ -60,10 +60,16 @@ def find_class_closing_brace(file_path: str) -> Optional[Tuple[int, str]]:
         
         # If we're inside the class, count braces
         if class_start is not None:
+            # Check if this line is the class closing brace BEFORE counting
+            # The class closes when we have a `};` and brace_count is 0 (all nested structures are closed)
+            # We need to check BEFORE processing because after processing, brace_count becomes -1
+            if stripped_line == '};' and brace_count == 0:
+                return (line_num, line)
+            
             brace_count += stripped_line.count('{')
             brace_count -= stripped_line.count('}')
             
-            # If braces are balanced and we've closed the class, this is the closing brace
+            # Also check after processing (in case the line has both opening and closing braces)
             if brace_count == 0 and stripped_line == '};':
                 return (line_num, line)
     
