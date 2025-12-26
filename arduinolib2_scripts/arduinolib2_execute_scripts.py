@@ -3,6 +3,11 @@ Script to execute client file processing.
 This script imports get_client_files and processes the client project files.
 """
 
+import os
+import sys
+import subprocess
+from pathlib import Path
+
 try:
     from arduinolib0_core.arduinolib0_get_client_files import get_client_files
     HAS_ARDUINOLIB0 = True
@@ -14,13 +19,15 @@ except ImportError:
     def get_client_files(*args, **kwargs):
         return []
 
-def execute_scripts(project_dir, library_dir):
+def execute_scripts(project_dir, library_dir, all_libs=None, library_scripts_dir=None):
     """
     Execute the scripts to process client files.
     
     Args:
         project_dir: Path to the client project root (where platformio.ini is)
         library_dir: Path to the library directory
+        all_libs: Dictionary with library directories (from get_all_library_dirs)
+        library_scripts_dir: Path to the arduinolib2_scripts directory (optional, will be derived from library_dir if not provided)
     """
     if not HAS_ARDUINOLIB0:
         print("Skipping file processing - arduinolib0_core not available")
@@ -44,3 +51,70 @@ def execute_scripts(project_dir, library_dir):
         for file in library_files:
             print(file)
         print("=" * 60)
+    
+    # Call L7_cpp_spring_boot_preprocessor.py with all library directories
+    if all_libs and all_libs.get('root_dirs'):
+        print("\n" + "=" * 80)
+        print("🚀 Running L7 CPP Spring Boot Preprocessor with all library directories...")
+        print("=" * 80)
+        
+        # Get the path to L7 script (in arduinolib2_core directory)
+        # Determine the scripts directory
+        if library_scripts_dir:
+            scripts_dir = Path(library_scripts_dir)
+        else:
+            # Fallback: construct from library_dir
+            scripts_dir = Path(library_dir) / "arduinolib2_scripts"
+        
+        l7_script_path = scripts_dir / "arduinolib2_core" / "L7_cpp_spring_boot_preprocessor.py"
+        
+        if not l7_script_path.exists():
+            print(f"⚠️  Warning: L7 script not found at {l7_script_path}")
+            return
+        
+        # Build include paths: project src directory + all library directories
+        include_paths = []
+        
+        # Add project src directory if it exists
+        if project_dir:
+            project_src = Path(project_dir) / "src"
+            if project_src.exists():
+                include_paths.append(str(project_src))
+        
+        # Add all library root directories
+        for lib_root in all_libs['root_dirs']:
+            lib_path = Path(lib_root)
+            # Add the library root and its src directory if it exists
+            include_paths.append(str(lib_path))
+            lib_src = lib_path / "src"
+            if lib_src.exists():
+                include_paths.append(str(lib_src))
+        
+        # Build the command
+        cmd = ["python", str(l7_script_path)]
+        
+        if include_paths:
+            cmd.extend(["--include"] + include_paths)
+        
+        # Add dispatcher file if project_dir is available
+        if project_dir:
+            dispatcher_file = Path(project_dir) / "src" / "01-framework" / "06-event" / "04-dispatcher" / "01-EventDispatcher.h"
+            if dispatcher_file.exists():
+                cmd.extend(["--dispatcher-file", str(dispatcher_file)])
+        
+        print(f"\nRunning: {' '.join(cmd)}")
+        print(f"Include paths: {include_paths}")
+        
+        # Run the command
+        try:
+            result = subprocess.run(cmd, cwd=project_dir if project_dir else os.getcwd(), 
+                                  capture_output=False, text=True)
+            
+            if result.returncode == 0:
+                print("\n✅ L7 CPP Spring Boot Preprocessor completed successfully")
+            else:
+                print(f"\n⚠️  L7 CPP Spring Boot Preprocessor exited with code {result.returncode}")
+        except Exception as e:
+            print(f"\n❌ Error running L7 CPP Spring Boot Preprocessor: {e}")
+    else:
+        print("\n⚠️  No library directories found, skipping L7 preprocessing")

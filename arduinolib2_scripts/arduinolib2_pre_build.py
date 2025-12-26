@@ -323,5 +323,5 @@ if all_libs['scripts_dirs']:
 
 # Import and execute scripts
 from arduinolib2_execute_scripts import execute_scripts
-execute_scripts(project_dir, library_dir)
+execute_scripts(project_dir, library_dir, all_libs, library_scripts_dir)
 
