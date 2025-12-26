@@ -82,9 +82,15 @@ def execute_scripts(project_dir, library_dir, all_libs=None, library_scripts_dir
             if project_src.exists():
                 include_paths.append(str(project_src))
         
-        # Add all library root directories
+        # Add all library root directories (filter out arduinojson-src)
         for lib_root in all_libs['root_dirs']:
             lib_path = Path(lib_root)
+            lib_name = lib_path.name.lower()
+            
+            # Filter out arduinojson-src and ArduinoJson directories
+            if "arduinojson" in lib_name or "arduinojson-src" in lib_name:
+                continue
+            
             # Add the library root and its src directory if it exists
             include_paths.append(str(lib_path))
             lib_src = lib_path / "src"
