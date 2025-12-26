@@ -104,12 +104,12 @@ def execute_scripts(project_dir, library_dir, all_libs=None, library_scripts_dir
             cmd.extend(["--include"] + include_paths)
         
         # Add dispatcher file - look in the library directory (arduinolib2) instead of client project
-        dispatcher_file = Path(library_dir) / "src" / "01-framework" / "06-event" / "04-dispatcher" / "01-EventDispatcher.h"
+        dispatcher_file = Path(library_dir) / "src" / "HttpRequestDispatcher.h"
         if dispatcher_file.exists():
             cmd.extend(["--dispatcher-file", str(dispatcher_file)])
             print(f"Using dispatcher file: {dispatcher_file}")
         else:
-            print(f"⚠️  Warning: EventDispatcher.h not found at {dispatcher_file}")
+            print(f"⚠️  Warning: HttpRequestDispatcher.h not found at {dispatcher_file}")
         
         print(f"\nRunning: {' '.join(cmd)}")
         print(f"Include paths: {include_paths}")
