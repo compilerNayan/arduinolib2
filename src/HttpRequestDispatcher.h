@@ -23,9 +23,7 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
     Public StdString DispatchRequest(IHttpRequestPtr request) override {
         CStdString url = request->GetPath();
         CStdString payload = request->GetBody();
-        std::cout<<"Request Payload: "<<payload<<std::endl;
-        std::cout<<"Request URL: "<<url<<std::endl;
-        /*switch (request->GetMethod()) {
+        switch (request->GetMethod()) {
             case HttpMethod::GET:
                 return getMappings[url](payload);
             case HttpMethod::POST:
@@ -36,7 +34,7 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
                 return patchMappings[url](payload);
             case HttpMethod::DELETE:
                 return deleteMappings[url](payload);
-        } */
+        } 
         return StdString();
     }
 
