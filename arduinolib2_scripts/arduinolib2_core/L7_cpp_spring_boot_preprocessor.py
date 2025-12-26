@@ -252,19 +252,11 @@ Examples:
     # (since DI processing might still be useful)
     
     # Step 2: Process dependency injection
-    # COMMENTED OUT FOR NOW
-    # step2_result = run_l6_di_preprocessor(
-    #     include_paths=args.include,
-    #     exclude_paths=args.exclude,
-    #     dry_run=args.dry_run
-    # )
-    
-    # Create a dummy success result for step 2
-    step2_result = {
-        'success': True,
-        'return_code': 0,
-        'errors': []
-    }
+    step2_result = run_l6_di_preprocessor(
+        include_paths=args.include,
+        exclude_paths=args.exclude,
+        dry_run=args.dry_run
+    )
     
     # Display summary
     print("\n" + "=" * 80)
