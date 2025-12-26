@@ -1,0 +1,547 @@
+#!/usr/bin/env python3
+"""
+L6 Generate Code for All Sources Script
+
+This script:
+1. Finds all C++ source files (using logic from L6_cpp_di_preprocessor.py)
+2. Generates endpoint code for each file using L5_generate_code_for_file.py
+3. Comments out REST-related macros (RestController, RequestMapping, GetMapping, PostMapping, etc.) in processed files
+4. Stores valid results in a map
+5. Adds #include statements to EventDispatcher.h
+6. Updates InitializeMappings() function with all generated code
+"""
+
+import argparse
+import sys
+import os
+import re
+from pathlib import Path
+from typing import Dict, List, Optional
+
+# Add nk directory to path for imports (current directory)
+nk_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, nk_dir)
+
+try:
+    import L5_generate_code_for_file
+    import L3_get_endpoint_details
+    import L1_find_class_header
+except ImportError as e:
+    print(f"Error: Could not import required modules: {e}")
+    print("Make sure L5_generate_code_for_file.py, L3_get_endpoint_details.py, and L1_find_class_header.py are in the nk directory.")
+    sys.exit(1)
+
+
+def find_cpp_files(include_paths: List[str], exclude_paths: List[str]) -> List[str]:
+    """
+    Find all C++ source files in the specified include/exclude paths.
+    Uses the same logic as L6_cpp_di_preprocessor.py
+    
+    Args:
+        include_paths: List of include paths to search in
+        exclude_paths: List of exclude paths to avoid
+        
+    Returns:
+        List of C++ file paths (absolute paths)
+    """
+    cpp_files = []
+    
+    # If no include paths specified, search current directory
+    if not include_paths:
+        include_paths = ["."]
+    
+    for include_path in include_paths:
+        include_path_obj = Path(include_path).resolve()
+        if not include_path_obj.exists():
+            print(f"⚠️  Warning: Include path '{include_path}' does not exist")
+            continue
+            
+        # Find all C++ source files (.h, .hpp, .cpp, .cc, .cxx)
+        for ext in ["*.h", "*.hpp", "*.cpp", "*.cc", "*.cxx"]:
+            for file_path in include_path_obj.rglob(ext):
+                file_path_str = str(file_path.resolve())
+                # Check if file should be excluded
+                should_exclude = False
+                for exclude_path in exclude_paths:
+                    exclude_path_obj = Path(exclude_path).resolve()
+                    try:
+                        if file_path.resolve().is_relative_to(exclude_path_obj):
+                            should_exclude = True
+                            break
+                    except ValueError:
+                        # Path is not relative to exclude_path, continue checking
+                        pass
+                
+                if not should_exclude:
+                    cpp_files.append(file_path_str)
+    
+    return sorted(cpp_files)
+
+
+def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
+    """
+    Comment out all REST-related macros (RestController, RequestMapping, GetMapping, PostMapping, etc.) in a C++ file.
+    
+    Args:
+        file_path: Path to the C++ file to modify
+        dry_run: If True, only show what would be changed without making changes
+        
+    Returns:
+        True if file was modified successfully or would be modified, False otherwise
+    """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            lines = file.readlines()
+        
+        # REST-related macros to comment out
+        rest_macros = [
+            'RestController',
+            'RequestMapping',
+            'GetMapping',
+            'PostMapping',
+            'PutMapping',
+            'DeleteMapping',
+            'PatchMapping'
+        ]
+        
+        modified = False
+        modified_lines = []
+        
+        for i, line in enumerate(lines):
+            original_line = line
+            stripped_line = line.strip()
+            
+            # Skip already commented lines
+            if stripped_line.startswith('//') or stripped_line.startswith('/*') or stripped_line.startswith('*'):
+                modified_lines.append(line)
+                continue
+            
+            # Check if line starts with any REST macro
+            line_modified = False
+            for macro in rest_macros:
+                # Match standalone macro (e.g., "RestController") or macro with parameters (e.g., "RequestMapping("/url")")
+                # Pattern: macro at start of line (possibly with whitespace), optionally followed by parentheses
+                pattern = r'^' + re.escape(macro) + r'(?:\s*\([^)]*\))?\s*$'
+                if re.match(pattern, stripped_line):
+                    # Add comment prefix
+                    if not dry_run:
+                        modified_lines.append('// ' + line)
+                    else:
+                        modified_lines.append(line)  # Keep original for dry run display
+                    modified = True
+                    line_modified = True
+                    if dry_run:
+                        print(f"    Would comment: {stripped_line}")
+                    break
+            
+            if not line_modified:
+                modified_lines.append(line)
+        
+        # Write back to file if modifications were made and not dry run
+        if modified and not dry_run:
+            with open(file_path, 'w', encoding='utf-8') as file:
+                file.writelines(modified_lines)
+            print(f"✓ Commented REST macros in: {file_path}")
+        elif modified and dry_run:
+            print(f"  Would comment REST macros in: {file_path}")
+        elif not modified:
+            # No macros found (this is fine, not an error)
+            pass
+        
+        return True
+        
+    except FileNotFoundError:
+        print(f"Error: File '{file_path}' not found")
+        return False
+    except Exception as e:
+        print(f"Error modifying file '{file_path}': {e}")
+        return False
+
+
+def generate_code_map(cpp_files: List[str], dry_run: bool = False) -> Dict[str, Dict[str, str]]:
+    """
+    Generate code for all source files and store valid results in a map.
+    Also comments out REST-related macros in processed files.
+    
+    Args:
+        cpp_files: List of C++ file paths to process
+        dry_run: If True, don't actually comment macros, just show what would be done
+        
+    Returns:
+        Dictionary mapping file paths (absolute) to dictionaries with 'code' and 'interface_name' keys
+    """
+    print("🔄 Generating code for files with RestController...")
+    
+    code_map = {}
+    processed_count = 0
+    skipped_count = 0
+    
+    for file_path in cpp_files:
+        # Generate code for this file
+        generated_code = L5_generate_code_for_file.generate_code_for_file(file_path)
+        
+        # Only add to map if code is valid (not empty, not None)
+        if generated_code and generated_code.strip():
+            # Get interface name from the file
+            class_info = L3_get_endpoint_details.find_class_and_interface(file_path)
+            interface_name = class_info['interface_name'] if class_info else None
+            
+            code_map[file_path] = {
+                'code': generated_code,
+                'interface_name': interface_name
+            }
+            processed_count += 1
+            
+            # Comment out REST-related macros in this file
+            if not dry_run:
+                print(f"  Commenting REST macros in: {file_path}")
+            else:
+                print(f"  Would comment REST macros in: {file_path}")
+            comment_rest_macros(file_path, dry_run=dry_run)
+        else:
+            skipped_count += 1
+    
+    print(f"✅ Processed {processed_count} file(s) with RestController")
+    print(f"⏭️  Skipped {skipped_count} file(s) without RestController")
+    
+    return code_map
+
+
+def generate_includes(code_map: Dict[str, Dict[str, str]], project_root: Optional[str] = None, include_paths: List[str] = None, exclude_paths: List[str] = None) -> List[str]:
+    """
+    Generate #include statements for interface headers of all files in the code map.
+    
+    Args:
+        code_map: Dictionary mapping file paths to dictionaries with 'code' and 'interface_name'
+        project_root: Project root directory (if None, will try to find it)
+        include_paths: List of include paths to search for interface headers
+        exclude_paths: List of exclude paths to avoid when searching
+        
+    Returns:
+        List of #include statements for interface headers
+    """
+    includes = []
+    
+    # Find project root if not provided
+    if project_root is None:
+        # Try to find project root by looking for common markers
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(script_dir)  # Go up from nk/ to project root
+    
+    project_root_path = Path(project_root).resolve()
+    
+    # Default include/exclude paths if not provided
+    if include_paths is None:
+        include_paths = ["src"]
+    if exclude_paths is None:
+        exclude_paths = []
+    
+    for file_path in sorted(code_map.keys()):
+        file_info = code_map[file_path]
+        interface_name = file_info.get('interface_name')
+        
+        if not interface_name:
+            # Fallback: use implementation header if interface name not found
+            file_path_obj = Path(file_path).resolve()
+            include_path = str(file_path_obj).replace('\\', '/')  # Use absolute path
+            includes.append(f'#include "{include_path}"')
+            continue
+        
+        # Find interface header file (suppress output by redirecting stdout temporarily)
+        import io
+        import contextlib
+        with contextlib.redirect_stdout(io.StringIO()):
+            interface_header = L1_find_class_header.find_class_header_file(
+                class_name=interface_name,
+                search_root=project_root,
+                include_folders=include_paths,
+                exclude_folders=exclude_paths
+            )
+        
+        if interface_header:
+            # Use absolute path for the include
+            interface_header_obj = Path(interface_header).resolve()
+            include_path = str(interface_header_obj).replace('\\', '/')  # Normalize path separators
+            includes.append(f'#include "{include_path}"')
+        else:
+            # Fallback: use implementation header if interface header not found
+            file_path_obj = Path(file_path).resolve()
+            include_path = str(file_path_obj).replace('\\', '/')  # Use absolute path
+            includes.append(f'#include "{include_path}"')
+            print(f"⚠️  Warning: Could not find interface header for '{interface_name}', using implementation header instead")
+    
+    return includes
+
+
+def add_includes_to_event_dispatcher(file_path: str, includes: List[str]) -> bool:
+    """
+    Add #include statements to EventDispatcher.h after line 6.
+    
+    Args:
+        file_path: Path to EventDispatcher.h
+        includes: List of #include statements to add
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        # Find line 6 (index 5) which has #include "01-IEventDispatcher.h"
+        # We want to add includes after this line
+        insert_index = 6  # After line 6 (0-indexed is line 6)
+        
+        if insert_index >= len(lines):
+            print(f"Error: Cannot find insertion point in {file_path}")
+            return False
+        
+        # Check if includes already exist
+        existing_includes = set()
+        for i, line in enumerate(lines):
+            if line.strip().startswith('#include'):
+                existing_includes.add(line.strip())
+        
+        # Filter out includes that already exist
+        new_includes = []
+        for include in includes:
+            if include not in existing_includes:
+                new_includes.append(include + '\n')
+        
+        if not new_includes:
+            print("ℹ️  All includes already exist in EventDispatcher.h")
+            return True
+        
+        # Insert new includes after line 6
+        lines[insert_index:insert_index] = new_includes + ['\n']  # Add blank line after includes
+        
+        # Write back to file
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.writelines(lines)
+        
+        print(f"✅ Added {len(new_includes)} include(s) to EventDispatcher.h")
+        return True
+        
+    except Exception as e:
+        print(f"Error updating EventDispatcher.h: {e}")
+        return False
+
+
+def update_initialize_mappings(file_path: str, code_content: str) -> bool:
+    """
+    Replace the InitializeMappings() function body with the provided code.
+    
+    Args:
+        file_path: Path to EventDispatcher.h
+        code_content: Code content to insert into InitializeMappings()
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Pattern to match InitializeMappings() function
+        # Matches: Private Void InitializeMappings() { ... }
+        pattern = r'(Private\s+Void\s+InitializeMappings\s*\(\s*\)\s*\{)([^}]*)(\})'
+        
+        def replace_function(match):
+            function_header = match.group(1)
+            function_footer = match.group(3)
+            
+            # Split code_content into lines and indent each line
+            if code_content.strip():
+                code_lines = code_content.strip().split('\n')
+                indented_lines = ['        ' + line if line.strip() else '' for line in code_lines]
+                indented_code = '\n'.join(indented_lines)
+                return f"{function_header}\n{indented_code}\n    {function_footer}"
+            else:
+                return f"{function_header}\n    {function_footer}"
+        
+        # Replace the function
+        new_content = re.sub(pattern, replace_function, content, flags=re.MULTILINE | re.DOTALL)
+        
+        if new_content == content:
+            print("⚠️  Warning: Could not find InitializeMappings() function to update")
+            return False
+        
+        # Write back to file
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(new_content)
+        
+        print("✅ Updated InitializeMappings() function in EventDispatcher.h")
+        return True
+        
+    except Exception as e:
+        print(f"Error updating InitializeMappings(): {e}")
+        return False
+
+
+def main():
+    """Main function to handle command line arguments and execute the code generation."""
+    parser = argparse.ArgumentParser(
+        description="Generate endpoint code for all source files and update EventDispatcher.h",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python nk/L6_generate_code_for_all_sources.py --include src platform                    # Process all files in src and platform
+  python nk/L6_generate_code_for_all_sources.py --include src --exclude platform/arduino  # Process with exclude
+  python nk/L6_generate_code_for_all_sources.py --include src platform --dry-run          # Dry run to see what would happen
+  python nk/L6_generate_code_for_all_sources.py --dry-run                                 # Dry run on all files in current directory
+        """
+    )
+    
+    parser.add_argument(
+        "--include",
+        nargs="+",
+        default=[],
+        help="Include paths to search in (can be multiple paths)"
+    )
+    
+    parser.add_argument(
+        "--exclude",
+        nargs="+",
+        default=[],
+        help="Exclude paths to avoid (can be multiple paths)"
+    )
+    
+    parser.add_argument(
+        "--dispatcher-file",
+        default="src/01-framework/06-event/04-dispatcher/01-EventDispatcher.h",
+        help="Path to EventDispatcher.h file (default: src/01-framework/06-event/04-dispatcher/01-EventDispatcher.h)"
+    )
+    
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be changed without making changes"
+    )
+    
+    parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Show detailed summary of results"
+    )
+    
+    args = parser.parse_args()
+    
+    # Show configuration
+    print("🔧 L6 Generate Code for All Sources Configuration")
+    print("=" * 50)
+    print(f"Include paths: {args.include if args.include else ['current directory']}")
+    print(f"Exclude paths: {args.exclude if args.exclude else ['none']}")
+    print(f"Dispatcher file: {args.dispatcher_file}")
+    print(f"Dry run: {'Yes' if args.dry_run else 'No'}")
+    print()
+    
+    # Find all C++ files
+    print("🔍 Discovering C++ source files...")
+    cpp_files = find_cpp_files(args.include, args.exclude)
+    
+    if not cpp_files:
+        print("⚠️  No C++ source files found in the specified paths")
+        sys.exit(0)
+    
+    print(f"📁 Found {len(cpp_files)} C++ source files")
+    
+    # Generate code map (this will also comment out REST macros)
+    code_map = generate_code_map(cpp_files, dry_run=args.dry_run)
+    
+    if not code_map:
+        print("⚠️  No files with RestController found. Nothing to update.")
+        sys.exit(0)
+    
+    print(f"\n📊 Generated code for {len(code_map)} file(s)")
+    
+    if args.dry_run:
+        print("\n🔍 DRY RUN MODE - No changes will be made")
+        print("\nController files found:")
+        for file_path in sorted(code_map.keys()):
+            interface_name = code_map[file_path].get('interface_name', 'Unknown')
+            print(f"  {file_path} (interface: {interface_name})")
+        # Note: REST macros that would be commented are already shown during generate_code_map
+        print("\nIncludes that would be added (interface headers):")
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(script_dir)
+        includes = generate_includes(code_map, project_root, args.include, args.exclude)
+        # Add SerializeUtility.h include for dry run display
+        serialize_utility_path = os.path.join(project_root, "src/01-framework/01-core/01-serializer/02-generic/04-SerializeUtility.h")
+        serialize_utility_path_obj = Path(serialize_utility_path).resolve()
+        if serialize_utility_path_obj.exists():
+            include_path = str(serialize_utility_path_obj).replace('\\', '/')
+            serialize_utility_include = f'#include "{include_path}"'
+            includes.insert(0, serialize_utility_include)
+        for include in includes:
+            print(f"  {include}")
+        print("\nCode that would be added to InitializeMappings():")
+        all_code = '\n\n'.join([info['code'] for info in code_map.values()])
+        print(all_code[:500] + "..." if len(all_code) > 500 else all_code)
+        return
+    
+    # Get project root (parent of script directory)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(script_dir)
+    
+    # Generate includes (for interface headers)
+    includes = generate_includes(code_map, project_root, args.include, args.exclude)
+    
+    # Add SerializeUtility.h include (required for serialize template function)
+    serialize_utility_path = os.path.join(project_root, "src/01-framework/01-core/01-serializer/02-generic/04-SerializeUtility.h")
+    serialize_utility_path_obj = Path(serialize_utility_path).resolve()
+    if serialize_utility_path_obj.exists():
+        include_path = str(serialize_utility_path_obj).replace('\\', '/')
+        serialize_utility_include = f'#include "{include_path}"'
+        # Add it at the beginning of includes list (before controller includes)
+        includes.insert(0, serialize_utility_include)
+    else:
+        print(f"⚠️  Warning: SerializeUtility.h not found at '{serialize_utility_path}', serialize() function may not be available")
+    
+    # Add includes to EventDispatcher.h
+    dispatcher_file = args.dispatcher_file
+    if not os.path.exists(dispatcher_file):
+        print(f"Error: EventDispatcher.h file not found at '{dispatcher_file}'")
+        sys.exit(1)
+    
+    if not add_includes_to_event_dispatcher(dispatcher_file, includes):
+        print("Error: Failed to add includes to EventDispatcher.h")
+        sys.exit(1)
+    
+    # Concatenate all code values
+    all_code = '\n\n'.join([info['code'] for info in code_map.values()])
+    
+    # Update InitializeMappings() function
+    if not update_initialize_mappings(dispatcher_file, all_code):
+        print("Error: Failed to update InitializeMappings() function")
+        sys.exit(1)
+    
+    print("\n✅ Successfully updated EventDispatcher.h")
+    print(f"   - Added {len(includes)} include(s)")
+    print(f"   - Updated InitializeMappings() with code from {len(code_map)} controller(s)")
+    
+    # Show detailed results if requested
+    if args.summary:
+        print(f"\n📋 DETAILED RESULTS")
+        print("=" * 50)
+        for file_path in sorted(code_map.keys()):
+            print(f"  {file_path}: ✅ Generated code")
+    
+    # Exit with appropriate code
+    sys.exit(0)
+
+
+# Export functions for other scripts to import
+__all__ = [
+    'find_cpp_files',
+    'comment_rest_macros',
+    'generate_code_map',
+    'generate_includes',
+    'add_includes_to_event_dispatcher',
+    'update_initialize_mappings',
+    'main'
+]
+
+
+if __name__ == "__main__":
+    main()
+
