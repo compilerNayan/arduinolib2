@@ -29,30 +29,31 @@ def execute_scripts(project_dir, library_dir, all_libs=None, library_scripts_dir
         all_libs: Dictionary with library directories (from get_all_library_dirs)
         library_scripts_dir: Path to the arduinolib2_scripts directory (optional, will be derived from library_dir if not provided)
     """
-    if not HAS_ARDUINOLIB0:
+    # Process client files if arduinolib0 is available
+    if HAS_ARDUINOLIB0:
+        print(f"\nproject_dir: {project_dir}")
+        print(f"library_dir: {library_dir}")
+
+        if project_dir:
+            client_files = get_client_files(project_dir, file_extensions=['.h', '.cpp'])
+            print(f"\nFound {len(client_files)} files in client project:")
+            print("=" * 60)
+            for file in client_files:
+                print(file)
+            print("=" * 60)
+
+        if library_dir:
+            library_files = get_client_files(library_dir, skip_exclusions=True)
+            print(f"\nFound {len(library_files)} files in library:")
+            print("=" * 60)
+            for file in library_files:
+                print(file)
+            print("=" * 60)
+    else:
         print("Skipping file processing - arduinolib0_core not available")
-        return
-
-    print(f"\nproject_dir: {project_dir}")
-    print(f"library_dir: {library_dir}")
-
-    if project_dir:
-        client_files = get_client_files(project_dir, file_extensions=['.h', '.cpp'])
-        print(f"\nFound {len(client_files)} files in client project:")
-        print("=" * 60)
-        for file in client_files:
-            print(file)
-        print("=" * 60)
-
-    if library_dir:
-        library_files = get_client_files(library_dir, skip_exclusions=True)
-        print(f"\nFound {len(library_files)} files in library:")
-        print("=" * 60)
-        for file in library_files:
-            print(file)
-        print("=" * 60)
     
     # Call L7_cpp_spring_boot_preprocessor.py with all library directories
+    # This should run regardless of HAS_ARDUINOLIB0
     if all_libs and all_libs.get('root_dirs'):
         print("\n" + "=" * 80)
         print("🚀 Running L7 CPP Spring Boot Preprocessor with all library directories...")
