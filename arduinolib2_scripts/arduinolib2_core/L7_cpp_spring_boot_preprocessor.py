@@ -240,20 +240,12 @@ Examples:
     print("=" * 80 + "\n")
     
     # Step 1: Generate endpoint mappings
-    # COMMENTED OUT FOR NOW
-    # step1_result = run_l6_generate_code(
-    #     include_paths=args.include,
-    #     exclude_paths=args.exclude,
-    #     dispatcher_file=args.dispatcher_file,
-    #     dry_run=args.dry_run
-    # )
-    
-    # Create a dummy success result for step 1
-    step1_result = {
-        'success': True,
-        'return_code': 0,
-        'errors': []
-    }
+    step1_result = run_l6_generate_code(
+        include_paths=args.include,
+        exclude_paths=args.exclude,
+        dispatcher_file=args.dispatcher_file,
+        dry_run=args.dry_run
+    )
     
     # If step 1 failed and not in dry-run, we might want to continue or stop
     # For now, we'll continue to step 2 even if step 1 had issues

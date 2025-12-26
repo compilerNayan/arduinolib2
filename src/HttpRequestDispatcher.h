@@ -41,23 +41,9 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
     }
 
     Private Void InitializeMappings() {
-        // GET endpoints
-            getMappings["/myUrlTee/mysomeget2ee"] = [](CStdString arg) -> StdString {
-                AUTOWIRED
-                IMyControllerPtr controller;
-                Val returnValue = controller->myFunee(TestDto::Deserialize(arg));
-                return serialize(returnValue);
-            };
 
-
-            // POST endpoints
-            postMappings["/myUrlTee/somePost2ee"] = [](CStdString arg) -> StdString {
-                AUTOWIRED
-                IMyControllerPtr controller;
-                Val returnValue = controller->MyPostFunnee(TestDto::Deserialize(arg));
-                return serialize(returnValue);
-            };
     }
+
 };
 
 #endif // HTTP_REQUEST_DISPATCHER_H
