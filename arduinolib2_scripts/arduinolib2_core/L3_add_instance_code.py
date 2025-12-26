@@ -17,10 +17,11 @@ import L1_get_validator_name
 def find_class_closing_brace(file_path: str) -> Optional[Tuple[int, str]]:
     """
     Find the line containing the class closing brace '};'.
+    Uses brace counting to find the correct closing brace even when there are nested braces.
     
     Args:
         file_path: Path to the C++ file
-        
+    
     Returns:
         Tuple of (line_number, line_content) or None if not found
     """
@@ -34,11 +35,37 @@ def find_class_closing_brace(file_path: str) -> Optional[Tuple[int, str]]:
         print(f"Error reading file '{file_path}': {e}")
         return None
     
-    # Look for the class closing brace '};'
+    # Pattern to match class declaration
+    class_pattern = r'class\s+[A-Za-z_][A-Za-z0-9_]*\s*(?:.*?[:{]|[:{])'
+    
+    class_start = None
+    brace_count = 0
+    
     for line_num, line in enumerate(lines, 1):
         stripped_line = line.strip()
-        if stripped_line == '};':
-            return (line_num, line)
+        
+        # Skip commented lines
+        if stripped_line.startswith('//') or stripped_line.startswith('/*') or stripped_line.startswith('*'):
+            continue
+        
+        # Check if this is the class declaration line
+        if class_start is None:
+            if re.search(class_pattern, stripped_line):
+                class_start = line_num
+                # Count opening brace on the same line
+                brace_count += stripped_line.count('{')
+                brace_count -= stripped_line.count('}')
+                if brace_count > 0:
+                    continue
+        
+        # If we're inside the class, count braces
+        if class_start is not None:
+            brace_count += stripped_line.count('{')
+            brace_count -= stripped_line.count('}')
+            
+            # If braces are balanced and we've closed the class, this is the closing brace
+            if brace_count == 0 and stripped_line == '};':
+                return (line_num, line)
     
     return None
 

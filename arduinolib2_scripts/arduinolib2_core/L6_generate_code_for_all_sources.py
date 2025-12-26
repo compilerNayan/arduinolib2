@@ -344,23 +344,45 @@ def update_initialize_mappings(file_path: str, code_content: str) -> bool:
         
         # Pattern to match InitializeMappings() function
         # Matches: Private Void InitializeMappings() { ... }
-        pattern = r'(Private\s+Void\s+InitializeMappings\s*\(\s*\)\s*\{)([^}]*)(\})'
+        # We need to find the matching closing brace by counting braces, not just the first }
+        pattern = r'(Private\s+Void\s+InitializeMappings\s*\(\s*\)\s*\{)'
         
-        def replace_function(match):
-            function_header = match.group(1)
-            function_footer = match.group(3)
-            
-            # Split code_content into lines and indent each line
-            if code_content.strip():
-                code_lines = code_content.strip().split('\n')
-                indented_lines = ['        ' + line if line.strip() else '' for line in code_lines]
-                indented_code = '\n'.join(indented_lines)
-                return f"{function_header}\n{indented_code}\n    {function_footer}"
-            else:
-                return f"{function_header}\n    {function_footer}"
+        match = re.search(pattern, content, flags=re.MULTILINE)
+        if not match:
+            print("⚠️  Warning: Could not find InitializeMappings() function to update")
+            return False
+        
+        # Find the matching closing brace by counting braces
+        start_pos = match.end()
+        brace_count = 1  # We're already inside the opening brace
+        pos = start_pos
+        
+        while pos < len(content) and brace_count > 0:
+            if content[pos] == '{':
+                brace_count += 1
+            elif content[pos] == '}':
+                brace_count -= 1
+            pos += 1
+        
+        if brace_count != 0:
+            print("⚠️  Warning: Could not find matching closing brace for InitializeMappings()")
+            return False
+        
+        # Extract the function header and footer
+        function_header = match.group(0)
+        function_footer = '}'
+        
+        # Split code_content into lines and indent each line
+        if code_content.strip():
+            code_lines = code_content.strip().split('\n')
+            indented_lines = ['        ' + line if line.strip() else '' for line in code_lines]
+            indented_code = '\n'.join(indented_lines)
+            replacement = f"{function_header}\n{indented_code}\n    {function_footer}"
+        else:
+            replacement = f"{function_header}\n    {function_footer}"
         
         # Replace the function
-        new_content = re.sub(pattern, replace_function, content, flags=re.MULTILINE | re.DOTALL)
+        new_content = content[:match.start()] + replacement + content[pos:]
         
         if new_content == content:
             print("⚠️  Warning: Could not find InitializeMappings() function to update")
