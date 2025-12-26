@@ -33,7 +33,7 @@ class HttpRequestManager final : public IHttpRequestManager {
             return false;
         }
         
-        IHttpRequestPtr request = server->GetRequest();
+        IHttpRequestPtr request = server->ReceiveMessage();
         if (request == nullptr) {
             return false;
         }
