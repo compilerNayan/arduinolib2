@@ -2,6 +2,7 @@
 #define HTTP_REQUEST_DISPATCHER_H
 
 #include <unordered_map>
+#include <NayanSerializer.h>
 
 #include "IHttpRequestDispatcher.h"
 
