@@ -19,6 +19,7 @@ class HttpRequestManager final : public IHttpRequestManager {
 
     Public HttpRequestManager() 
         : server(ServerFactory::GetDefaultServer()) {
+            server->Start(8080);
     }
     
     Public ~HttpRequestManager() override = default;
