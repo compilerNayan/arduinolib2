@@ -55,11 +55,11 @@ def generate_function_pointer(
     
     # Handle case where there's no argument (first_arg_type is empty or "none")
     if first_arg_type and first_arg_type.lower() not in ["", "none", "(none)"]:
-        code += f"    Val returnValue = controller->{function_name}(nayan::serializer::Deserialize(arg));\n"
+        code += f"    Val returnValue = controller->{function_name}(nayan::serializer::SerializationUtility::Deserialize(arg));\n"
     else:
         code += f"    Val returnValue = controller->{function_name}();\n"
     
-    code += "    return nayan::serializer::Serialize(returnValue);\n"
+    code += "    return nayan::serializer::SerializationUtility::Serialize(returnValue);\n"
     code += "};"
     
     return code
