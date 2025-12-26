@@ -12,7 +12,11 @@ Both scripts are called with the same include and exclude parameters.
 import argparse
 import subprocess
 import sys
+import os
 from pathlib import Path
+
+# Get the directory where this script is located
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 
@@ -42,7 +46,8 @@ def run_script(script_name, files, include_paths, exclude_paths, dry_run=False):
         # Build the command based on script requirements
         if script_name == "L4_process_component.py":
             # L4_process_component.py expects: files [--include paths] [--exclude paths] [--dry-run]
-            cmd = ["python", f"nk/{script_name}"]
+            script_path = os.path.join(SCRIPT_DIR, script_name)
+            cmd = ["python", script_path]
             
             # Add the specific files to process FIRST (positional arguments)
             cmd.extend(files)
@@ -61,7 +66,8 @@ def run_script(script_name, files, include_paths, exclude_paths, dry_run=False):
             
         elif script_name == "L4_process_autowired.py":
             # L4_process_autowired.py expects: files [--dry-run]
-            cmd = ["python", f"nk/{script_name}"]
+            script_path = os.path.join(SCRIPT_DIR, script_name)
+            cmd = ["python", script_path]
             
             # Add the specific files to process FIRST (positional arguments)
             cmd.extend(files)
@@ -171,12 +177,12 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python nk/L5_process_di.py file.h                                    # Process single file
-  python nk/L5_process_di.py file1.h file2.h                           # Process multiple files
-  python nk/L5_process_di.py file.h --include src platform              # Process with include paths
-  python nk/L5_process_di.py file.h --include src --exclude platform/arduino  # Process with include/exclude
-  python nk/L5_process_di.py file.h --include src platform --dry-run    # Dry run to see what would happen
-  python nk/L5_process_di.py file.h --dry-run                          # Dry run on specific file
+  python arduinolib2_core/L5_process_di.py file.h                                    # Process single file
+  python arduinolib2_core/L5_process_di.py file1.h file2.h                           # Process multiple files
+  python arduinolib2_core/L5_process_di.py file.h --include src platform              # Process with include paths
+  python arduinolib2_core/L5_process_di.py file.h --include src --exclude platform/arduino  # Process with include/exclude
+  python arduinolib2_core/L5_process_di.py file.h --include src platform --dry-run    # Dry run to see what would happen
+  python arduinolib2_core/L5_process_di.py file.h --dry-run                          # Dry run on specific file
         """
     )
     

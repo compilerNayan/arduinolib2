@@ -14,6 +14,9 @@ import find_interface_names
 import L1_find_class_header
 import get_current_file_path
 
+# Get the directory where this script is located
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 def get_interface_name_from_file(file_path: str) -> Optional[str]:
     """
@@ -49,7 +52,8 @@ def find_interface_header_path(interface_name: str, include_paths: List[str], ex
     """
     try:
         # Build the command for L1_find_class_header
-        cmd = ['python', 'nk/L1_find_class_header.py', interface_name]
+        script_path = os.path.join(SCRIPT_DIR, 'L1_find_class_header.py')
+        cmd = ['python', script_path, interface_name]
         
         # Add include paths (all in one --include argument)
         if include_paths:
@@ -131,7 +135,8 @@ def add_header_include(target_file: str, header_to_include: str, dry_run: bool =
     """
     try:
         # Build the command for add_header_include
-        cmd = ['python', 'nk/add_header_include.py', target_file, '--header', header_to_include]
+        script_path = os.path.join(SCRIPT_DIR, 'add_header_include.py')
+        cmd = ['python', script_path, target_file, '--header', header_to_include]
         
         if dry_run:
             cmd.append('--dry-run')

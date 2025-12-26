@@ -15,9 +15,9 @@ import os
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-# Add nk directory to path for imports (current directory)
-nk_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, nk_dir)
+# Add arduinolib2_core directory to path for imports (current directory)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, script_dir)
 
 try:
     import L1_check_rest_controller
@@ -26,7 +26,7 @@ try:
     import L4_generate_function_pointer
 except ImportError as e:
     print(f"Error: Could not import required modules: {e}")
-    print("Make sure L1_check_rest_controller.py, L2_get_base_url.py, L3_get_endpoint_details.py, and L4_generate_function_pointer.py are in the nk directory.")
+    print("Make sure L1_check_rest_controller.py, L2_get_base_url.py, L3_get_endpoint_details.py, and L4_generate_function_pointer.py are in the arduinolib2_core directory.")
     sys.exit(1)
 
 
@@ -145,6 +145,66 @@ def generate_code_for_endpoint(endpoint: Dict[str, Any]) -> str:
     )
 
 
+def generate_code_for_file(file_path: str) -> Optional[str]:
+    """
+    Generate endpoint mapping code for a single file.
+    This is a convenience function that processes a single file and returns the generated code.
+    
+    Args:
+        file_path: Path to the C++ file to process
+        
+    Returns:
+        Generated code string for the file's endpoints, or None/empty string if no endpoints found
+    """
+    # Process the file to get endpoints
+    endpoints = process_file(file_path)
+    
+    if endpoints is None or not endpoints:
+        return None
+    
+    # Organize endpoints by HTTP method
+    endpoint_maps = {
+        'GET': [],
+        'POST': [],
+        'PUT': [],
+        'DELETE': [],
+        'PATCH': []
+    }
+    
+    for endpoint in endpoints:
+        http_method = endpoint['http_method']
+        if http_method in endpoint_maps:
+            endpoint_maps[http_method].append(endpoint)
+    
+    # Generate code for all endpoints
+    code_lines = []
+    
+    # Generate code for each HTTP method
+    for http_method in ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']:
+        method_endpoints = endpoint_maps.get(http_method, [])
+        
+        if not method_endpoints:
+            continue
+        
+        # Add comment for this HTTP method
+        code_lines.append(f"    // {http_method} endpoints")
+        
+        # Generate code for each endpoint
+        for endpoint in method_endpoints:
+            endpoint_code = generate_code_for_endpoint(endpoint)
+            # Indent each line of the endpoint code
+            indented_lines = ['    ' + line for line in endpoint_code.split('\n')]
+            code_lines.extend(indented_lines)
+            code_lines.append("")  # Add blank line between endpoints
+        
+        code_lines.append("")  # Add blank line between HTTP method sections
+    
+    if not code_lines:
+        return None
+    
+    return '\n'.join(code_lines)
+
+
 def generate_all_mappings_code(endpoint_maps: Dict[str, List[Dict[str, Any]]]) -> str:
     """
     Generate the complete GenerateMappings() function with all endpoint code.
@@ -261,6 +321,7 @@ __all__ = [
     'process_file',
     'process_all_files',
     'generate_code_for_endpoint',
+    'generate_code_for_file',
     'generate_all_mappings_code',
     'main'
 ]

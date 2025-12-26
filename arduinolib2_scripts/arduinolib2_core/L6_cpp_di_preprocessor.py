@@ -12,8 +12,12 @@ This is the highest-level script that automates the entire DI preprocessing pipe
 import argparse
 import subprocess
 import sys
+import os
 from pathlib import Path
 from typing import List, Dict, Optional
+
+# Get the directory where this script is located
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def find_cpp_files(include_paths: List[str], exclude_paths: List[str]) -> List[str]:
@@ -76,8 +80,9 @@ def run_l5_process_di(file_path: str, include_paths: List[str], exclude_paths: L
         Dictionary with results
     """
     try:
-        # Build the command
-        cmd = ["python", "nk/L5_process_di.py", file_path]
+        # Build the command - use script in same directory
+        script_path = os.path.join(SCRIPT_DIR, "L5_process_di.py")
+        cmd = ["python", script_path, file_path]
         
         # Add include paths if provided
         if include_paths:
@@ -227,10 +232,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python nk/L6_cpp_di_preprocessor.py --include src platform                    # Process all files in src and platform
-  python nk/L6_cpp_di_preprocessor.py --include src --exclude platform/arduino  # Process with exclude
-  python nk/L6_cpp_di_preprocessor.py --include src platform --dry-run          # Dry run to see what would happen
-  python nk/L6_cpp_di_preprocessor.py --dry-run                                 # Dry run on all files in current directory
+  python arduinolib2_core/L6_cpp_di_preprocessor.py --include src platform                    # Process all files in src and platform
+  python arduinolib2_core/L6_cpp_di_preprocessor.py --include src --exclude platform/arduino  # Process with exclude
+  python arduinolib2_core/L6_cpp_di_preprocessor.py --include src platform --dry-run          # Dry run to see what would happen
+  python arduinolib2_core/L6_cpp_di_preprocessor.py --dry-run                                 # Dry run on all files in current directory
         """
     )
     

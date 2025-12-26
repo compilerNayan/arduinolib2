@@ -12,7 +12,12 @@ This is the highest-level script that automates the entire preprocessing pipelin
 import argparse
 import subprocess
 import sys
+import os
+from pathlib import Path
 from typing import Dict, Any
+
+# Get the directory where this script is located
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def run_l6_generate_code(include_paths: list, exclude_paths: list, dispatcher_file: str, dry_run: bool = False) -> Dict[str, Any]:
@@ -29,8 +34,9 @@ def run_l6_generate_code(include_paths: list, exclude_paths: list, dispatcher_fi
         Dictionary with results
     """
     try:
-        # Build the command
-        cmd = ["python", "nk/L6_generate_code_for_all_sources.py"]
+        # Build the command - use script in same directory
+        script_path = os.path.join(SCRIPT_DIR, "L6_generate_code_for_all_sources.py")
+        cmd = ["python", script_path]
         
         # Add include paths if provided
         if include_paths:
@@ -90,8 +96,9 @@ def run_l6_di_preprocessor(include_paths: list, exclude_paths: list, dry_run: bo
         Dictionary with results
     """
     try:
-        # Build the command
-        cmd = ["python", "nk/L6_cpp_di_preprocessor.py"]
+        # Build the command - use script in same directory
+        script_path = os.path.join(SCRIPT_DIR, "L6_cpp_di_preprocessor.py")
+        cmd = ["python", script_path]
         
         # Add include paths if provided
         if include_paths:
@@ -180,10 +187,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python nk/L7_cpp_spring_boot_preprocessor.py --include src platform                    # Process all files in src and platform
-  python nk/L7_cpp_spring_boot_preprocessor.py --include src --exclude platform/arduino  # Process with exclude
-  python nk/L7_cpp_spring_boot_preprocessor.py --include src platform --dry-run          # Dry run to see what would happen
-  python nk/L7_cpp_spring_boot_preprocessor.py --dry-run                                 # Dry run on all files in current directory
+  python arduinolib2_core/L7_cpp_spring_boot_preprocessor.py --include src platform                    # Process all files in src and platform
+  python arduinolib2_core/L7_cpp_spring_boot_preprocessor.py --include src --exclude platform/arduino  # Process with exclude
+  python arduinolib2_core/L7_cpp_spring_boot_preprocessor.py --include src platform --dry-run          # Dry run to see what would happen
+  python arduinolib2_core/L7_cpp_spring_boot_preprocessor.py --dry-run                                 # Dry run on all files in current directory
         """
     )
     
