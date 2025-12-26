@@ -3,10 +3,10 @@
 
 #include <StandardDefines.h>
 
-DefineStandardPointers(IHttpRequestProcessor)
+DefineStandardPointers(IHttpRequestDispatcher)
 class IHttpRequestDispatcher {
 
-    Public Virtual ~IHttpRequestProcessor() = default;
+    Public Virtual ~IHttpRequestDispatcher() = default;
 
     Public Virtual StdString DispatchRequest(IHttpRequestPtr request) = 0;
 

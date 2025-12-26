@@ -22,7 +22,7 @@ class HttpRequestProcessor final : public IHttpRequestProcessor {
     // HTTP Request Processing Operations
     // ============================================================================
     
-    Public NoDiscard Bool ProcessRequest() override {
+    Public Bool ProcessRequest() override {
         if (requestQueue->IsEmpty()) {
             return false;
         }

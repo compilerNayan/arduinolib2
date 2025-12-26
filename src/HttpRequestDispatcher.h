@@ -21,18 +21,18 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
     Public ~HttpRequestDispatcher() = default;
 
     Public StdString DispatchRequest(IHttpRequestPtr request) override {
-        CStdString url = request->GetHttpUrl();
-        CStdString payload = request->GetHttpPayload();
-        switch (request->GetHttpMethod()) {
-            case HttpMethod::Get:
+        CStdString url = request->GetPath();
+        CStdString payload = request->GetBody();
+        switch (request->GetMethod()) {
+            case HttpMethod::GET:
                 return getMappings[url](payload);
-            case HttpMethod::Post:
+            case HttpMethod::POST:
                 return postMappings[url](payload);
-            case HttpMethod::Put:
+            case HttpMethod::PUT:
                 return putMappings[url](payload);
-            case HttpMethod::Patch:
+            case HttpMethod::PATCH:
                 return patchMappings[url](payload);
-            case HttpMethod::Delete:
+            case HttpMethod::DELETE:
                 return deleteMappings[url](payload);
         }
         return StdString();

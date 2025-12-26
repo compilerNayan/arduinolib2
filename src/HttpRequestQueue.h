@@ -24,7 +24,7 @@ class HttpRequestQueue final : public IHttpRequestQueue {
         requestQueue.push(request);
     }
     
-    Public NoDiscard IHttpRequestPtr DequeueRequest() override {
+    Public IHttpRequestPtr DequeueRequest() override {
         if (requestQueue.empty()) {
             return nullptr;
         }
@@ -34,11 +34,11 @@ class HttpRequestQueue final : public IHttpRequestQueue {
         return request;
     }
     
-    Public NoDiscard Bool IsEmpty() const override {
+    Public Bool IsEmpty() const override {
         return requestQueue.empty();
     }
     
-    Public NoDiscard Bool HasRequests() const override {
+    Public Bool HasRequests() const override {
         return !requestQueue.empty();
     }
 };
