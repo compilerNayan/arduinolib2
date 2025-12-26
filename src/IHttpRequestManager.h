@@ -2,6 +2,7 @@
 #define I_HTTP_REQUEST_MANAGER_H
 
 #include <StandardDefines.h>
+#include <IHttpRequest.h>
 
 // Forward declarations
 DefineStandardPointers(IHttpRequestManager)
