@@ -150,31 +150,37 @@ def get_all_library_dirs(project_dir=None):
         current = start_path.resolve()
         for _ in range(10):  # Search up to 10 levels
             # Check in .pio/libdeps/ (PlatformIO location)
+            # Structure: .pio/libdeps/<env>/<library_name>/
             pio_path = current / ".pio" / "libdeps"
             if pio_path.exists() and pio_path.is_dir():
-                for lib_dir in pio_path.iterdir():
-                    if lib_dir.is_dir():
-                        lib_root = lib_dir.resolve()
-                        if lib_root not in root_dirs:
-                            root_dirs.append(lib_root)
-                            
-                            # Try to extract library name from directory name
-                            lib_name = lib_dir.name
-                            if lib_name not in by_name:
-                                by_name[lib_name] = lib_root
-                            
-                            # Check for scripts directory (various naming patterns)
-                            possible_scripts_names = [
-                                f"{lib_name}_scripts",
-                                f"{lib_name.replace('-', '')}_scripts",
-                                "scripts"
-                            ]
-                            for scripts_name in possible_scripts_names:
-                                scripts_dir = lib_root / scripts_name
-                                if scripts_dir.exists() and scripts_dir.is_dir():
-                                    if scripts_dir.resolve() not in scripts_dirs:
-                                        scripts_dirs.append(scripts_dir.resolve())
-                                    break
+                # Iterate through environment directories (e.g., esp32dev, native, etc.)
+                for env_dir in pio_path.iterdir():
+                    if env_dir.is_dir():
+                        # Now iterate through libraries in this environment
+                        for lib_dir in env_dir.iterdir():
+                            if lib_dir.is_dir():
+                                lib_root = lib_dir.resolve()
+                                if lib_root not in root_dirs:
+                                    root_dirs.append(lib_root)
+                                    
+                                    # Try to extract library name from directory name
+                                    lib_name = lib_dir.name
+                                    # Use library name as key (may have duplicates across envs, but that's okay)
+                                    if lib_name not in by_name:
+                                        by_name[lib_name] = lib_root
+                                    
+                                    # Check for scripts directory (various naming patterns)
+                                    possible_scripts_names = [
+                                        f"{lib_name}_scripts",
+                                        f"{lib_name.replace('-', '')}_scripts",
+                                        "scripts"
+                                    ]
+                                    for scripts_name in possible_scripts_names:
+                                        scripts_dir = lib_root / scripts_name
+                                        if scripts_dir.exists() and scripts_dir.is_dir():
+                                            if scripts_dir.resolve() not in scripts_dirs:
+                                                scripts_dirs.append(scripts_dir.resolve())
+                                            break
             
             parent = current.parent
             if parent == current:  # Reached filesystem root
@@ -263,13 +269,19 @@ def find_library_scripts(scripts_dir_name):
                 return deps_path
             
             # Check in .pio/libdeps/ (PlatformIO location)
+            # Structure: .pio/libdeps/<env>/<library_name>/
             pio_path = current / ".pio" / "libdeps"
             if pio_path.exists():
-                for lib_dir in pio_path.iterdir():
-                    lib_scripts_path = lib_dir / scripts_dir_name
-                    if lib_scripts_path.exists() and lib_scripts_path.is_dir():
-                        print(f"✓ Found {scripts_dir_name} (PlatformIO): {lib_scripts_path}")
-                        return lib_scripts_path
+                # Iterate through environment directories (e.g., esp32dev, native, etc.)
+                for env_dir in pio_path.iterdir():
+                    if env_dir.is_dir():
+                        # Now iterate through libraries in this environment
+                        for lib_dir in env_dir.iterdir():
+                            if lib_dir.is_dir():
+                                lib_scripts_path = lib_dir / scripts_dir_name
+                                if lib_scripts_path.exists() and lib_scripts_path.is_dir():
+                                    print(f"✓ Found {scripts_dir_name} (PlatformIO): {lib_scripts_path}")
+                                    return lib_scripts_path
             
             parent = current.parent
             if parent == current:  # Reached filesystem root
