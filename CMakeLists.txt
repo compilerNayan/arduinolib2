@@ -23,14 +23,14 @@ FetchContent_Declare(
     GIT_TAG        main
 )
 
-# Fetch ArduinoNativeServer
+# Fetch ArduinoDesktopServer
 FetchContent_Declare(
-    arduinonativeserver
-    GIT_REPOSITORY https://github.com/compilerNayan/arduinonativeserver.git
+    arduinodesktopserver
+    GIT_REPOSITORY https://github.com/compilerNayan/arduinodesktopserver.git
     GIT_TAG        main
 )
 
-FetchContent_MakeAvailable(arduinolib1 arduionolibserver arduinonativeserver)
+FetchContent_MakeAvailable(arduinolib1 arduionolibserver arduinodesktopserver)
 
 # Run pre-build script during configuration (runs even if client creates own library)
 # This will run whenever this CMakeLists.txt is processed
@@ -113,18 +113,18 @@ else()
     endif()
 endif()
 
-# Link arduinonativeserver (header-only library)
+# Link arduinodesktopserver (header-only library)
 # Try the namespaced target first, fallback to non-namespaced
-if(TARGET arduinonativeserver::arduinonativeserver)
-    target_link_libraries(arduinolib2 INTERFACE arduinonativeserver::arduinonativeserver)
-elseif(TARGET arduinonativeserver)
-    target_link_libraries(arduinolib2 INTERFACE arduinonativeserver)
+if(TARGET arduinodesktopserver::arduinodesktopserver)
+    target_link_libraries(arduinolib2 INTERFACE arduinodesktopserver::arduinodesktopserver)
+elseif(TARGET arduinodesktopserver)
+    target_link_libraries(arduinolib2 INTERFACE arduinodesktopserver)
 else()
     # Fallback: manually add include directory if target doesn't exist
-    FetchContent_GetProperties(arduinonativeserver)
-    if(arduinonativeserver_SOURCE_DIR)
+    FetchContent_GetProperties(arduinodesktopserver)
+    if(arduinodesktopserver_SOURCE_DIR)
         target_include_directories(arduinolib2 INTERFACE
-            $<BUILD_INTERFACE:${arduinonativeserver_SOURCE_DIR}/src>
+            $<BUILD_INTERFACE:${arduinodesktopserver_SOURCE_DIR}/src>
             $<INSTALL_INTERFACE:include>
         )
     endif()
