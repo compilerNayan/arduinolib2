@@ -19,7 +19,6 @@ class HttpRequestManager final : public IHttpRequestManager {
 
     Public HttpRequestManager() 
         : server(ServerFactory::GetDefaultServer()) {
-            server->Start(8080);
     }
     
     Public ~HttpRequestManager() override = default;
@@ -29,6 +28,10 @@ class HttpRequestManager final : public IHttpRequestManager {
     // ============================================================================
     
     Public Bool RetrieveRequest() override {
+        if(server == nullptr) {
+            server->Start(8080);
+        }
+
         if (server == nullptr) {
             return false;
         }
