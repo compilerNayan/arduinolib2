@@ -13,21 +13,21 @@ include(FetchContent)
 FetchContent_Declare(
     arduinolib1
     GIT_REPOSITORY https://github.com/compilerNayan/arduinolib1.git
-    GIT_TAG        main
+    GIT_TAG        dev
 )
 
 # Fetch ArduionoLibServer
 FetchContent_Declare(
     arduionolibserver
     GIT_REPOSITORY https://github.com/compilerNayan/arduionolibserver.git
-    GIT_TAG        main
+    GIT_TAG        dev
 )
 
 # Fetch ArduinoDesktopServer
 FetchContent_Declare(
     arduinodesktopserver
     GIT_REPOSITORY https://github.com/compilerNayan/arduinodesktopserver.git
-    GIT_TAG        main
+    GIT_TAG        dev
 )
 
 FetchContent_MakeAvailable(arduinolib1 arduionolibserver arduinodesktopserver)
