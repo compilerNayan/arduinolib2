@@ -6,7 +6,7 @@
 
 #include "IHttpRequestDispatcher.h"
 
-COMPONENT
+//@Component
 class HttpRequestDispatcher : public IHttpRequestDispatcher {
 
     Private std::unordered_map<StdString, std::function<StdString(CStdString)>> getMappings;
