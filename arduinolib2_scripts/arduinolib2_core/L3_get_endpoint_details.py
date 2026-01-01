@@ -193,19 +193,24 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
     while i < class_end:
         line = lines[i - 1].strip()  # Convert to 0-indexed
         
-        # Skip commented lines
-        if line.startswith('//') or line.startswith('/*') or line.startswith('*'):
+        # Skip already processed annotations (/*@GetMapping(...)*/, etc.)
+        if re.search(r'/\*@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)', line):
             i += 1
             continue
         
-        # Check for any HTTP mapping macro
-        mapping_match = re.search(mapping_pattern, line)
+        # Skip other comment types (but not //@ annotations)
+        if line.startswith('/*') and not line.startswith('//@'):
+            i += 1
+            continue
+        
+        # Check for any HTTP mapping annotation //@GetMapping(...), etc. (case-sensitive)
+        mapping_match = re.search(r'//@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\s*\(\s*["\']([^"\']+)["\']', line)
         if mapping_match:
-            http_method_macro = mapping_match.group(1)  # e.g., "GetMapping", "PostMapping", etc.
+            http_method_annotation = mapping_match.group(1)  # e.g., "GetMapping", "PostMapping", etc.
             mapping_path = mapping_match.group(2)
             
-            # Extract HTTP method from macro name (GetMapping -> GET, PostMapping -> POST, etc.)
-            http_method = http_method_macro.replace('Mapping', '').upper()
+            # Extract HTTP method from annotation name (GetMapping -> GET, PostMapping -> POST, etc.)
+            http_method = http_method_annotation.replace('Mapping', '').upper()
             
             # Construct full endpoint URL
             # Ensure proper URL concatenation: base_url + mapping_path
@@ -244,7 +249,7 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
                 endpoint_info = {
                     'endpoint_url': endpoint_url,
                     'http_method': http_method,
-                    'mapping_macro': http_method_macro,
+                    'mapping_annotation': http_method_annotation,
                     'mapping_path': mapping_path,
                     'function_name': function_details['function_name'],
                     'return_type': function_details['return_type'],
@@ -337,7 +342,7 @@ def display_endpoint_details(result: Dict[str, Any]) -> None:
         print(f"Endpoint {idx}:")
         print(f"  HTTP Method: {endpoint['http_method']}")
         print(f"  URL: {endpoint['endpoint_url']}")
-        print(f"  Mapping Macro: {endpoint['mapping_macro']}")
+        print(f"  Mapping Annotation: //@{endpoint['mapping_annotation']}")
         print(f"  Mapping Path: {endpoint['mapping_path']}")
         print(f"  Function Name: {endpoint['function_name']}")
         print(f"  Return Type: {endpoint['return_type']}")
@@ -354,7 +359,7 @@ def display_endpoint_details(result: Dict[str, Any]) -> None:
 def main():
     """Main function to handle command line arguments and execute the endpoint extraction."""
     parser = argparse.ArgumentParser(
-        description="Extract endpoint details from HTTP mapping macros (GetMapping, PostMapping, PutMapping, DeleteMapping, PatchMapping) inside C++ controller classes"
+        description="Extract endpoint details from HTTP mapping annotations (//@GetMapping, //@PostMapping, //@PutMapping, //@DeleteMapping, //@PatchMapping) inside C++ controller classes"
     )
     parser.add_argument(
         "file",

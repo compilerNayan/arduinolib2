@@ -40,27 +40,32 @@ def find_component_macros(file_path: str) -> List[Dict[str, str]]:
         print(f"Error reading file '{file_path}': {e}")
         return []
     
-    # Pattern to match COMPONENT macro (case sensitive)
-    # Matches: COMPONENT (standalone)
-    component_pattern = r'^COMPONENT\s*$'
+    # Pattern to match //@Component annotation (case-sensitive)
+    # Also check for /*@Component*/ (already processed, should be ignored)
+    component_annotation_pattern = r'^//@Component\s*$'
+    component_processed_pattern = r'^/\*@Component\*/\s*$'
     
     # Pattern to match class declarations
     class_pattern = r'class\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:[:{])'
     
     for line_num, line in enumerate(lines, 1):
-        # Check for COMPONENT macro - must be standalone line (not commented, not part of other text)
+        # Check for //@Component annotation
         stripped_line = line.strip()
         
-        # Skip commented lines
-        if stripped_line.startswith('//') or stripped_line.startswith('/*') or stripped_line.startswith('*'):
+        # Skip already processed annotations (/*@Component*/)
+        if re.search(component_processed_pattern, stripped_line):
+            continue
+        
+        # Skip other comment types (but not //@ annotations)
+        if stripped_line.startswith('/*') and not stripped_line.startswith('//@'):
+            continue
+        
+        # Skip lines that don't start with //@Component
+        if stripped_line and not stripped_line.startswith('//@Component'):
             continue
             
-        # Skip lines that are part of other text (not standalone COMPONENT)
-        if stripped_line and not stripped_line.startswith('COMPONENT'):
-            continue
-            
-        # Check if line contains valid COMPONENT macro
-        component_match = re.search(component_pattern, stripped_line)
+        # Check if line contains valid //@Component annotation
+        component_match = re.search(component_annotation_pattern, stripped_line)
         if component_match:
             macro_text = component_match.group(0)
             
@@ -82,8 +87,8 @@ def find_component_macros(file_path: str) -> List[Dict[str, str]]:
                         class_name = class_match.group(1)
                         break
                     
-                    # Stop if we hit a blank line or different macro (not SCOPE, COMPONENT, or VALIDATE)
-                    if not next_line or (next_line and not next_line.startswith(('COMPONENT', 'SCOPE', 'VALIDATE'))):
+                    # Stop if we hit a blank line or different annotation
+                    if not next_line or (next_line and not (re.match(r'^//@', next_line) or re.match(r'^/\*@', next_line))):
                         break
             
             component_macros.append({
@@ -111,16 +116,20 @@ def check_component_macro_exists(file_path: str) -> bool:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
         
-        # Check each line for standalone COMPONENT macro (not commented)
+        # Check each line for //@Component annotation (not already processed)
         for line in lines:
             stripped_line = line.strip()
             
-            # Skip commented lines
-            if stripped_line.startswith('//') or stripped_line.startswith('/*') or stripped_line.startswith('*'):
+            # Skip already processed annotations (/*@Component*/)
+            if re.match(r'^/\*@Component\*/\s*$', stripped_line):
+                continue
+            
+            # Skip other comment types (but not //@ annotations)
+            if stripped_line.startswith('/*') and not stripped_line.startswith('//@'):
                 continue
                 
-            # Check if line contains standalone COMPONENT macro
-            if stripped_line == 'COMPONENT':
+            # Check if line contains //@Component annotation
+            if re.match(r'^//@Component\s*$', stripped_line):
                 return True
         
         return False
@@ -213,9 +222,10 @@ def validate_cpp_file(file_path: str) -> bool:
     return Path(file_path).suffix.lower() in cpp_extensions
 
 
-def comment_component_macro(file_path: str) -> bool:
+def convert_component_annotation_to_processed(file_path: str) -> bool:
     """
-    Comment out all COMPONENT macros in a C++ file by adding '// ' before them.
+    Convert //@Component to /*@Component*/ in a C++ file.
+    This marks the annotation as processed so it won't be processed again.
     
     Args:
         file_path: Path to the C++ file to modify
@@ -228,26 +238,30 @@ def comment_component_macro(file_path: str) -> bool:
             lines = file.readlines()
         
         modified = False
+        annotation_pattern = r'^(\s*)//@Component\s*$'
+        
         for i, line in enumerate(lines):
             stripped_line = line.strip()
             
-            # Skip commented lines
-            if stripped_line.startswith('//') or stripped_line.startswith('/*') or stripped_line.startswith('*'):
+            # Skip already processed annotations (/*@Component*/)
+            if re.match(r'^/\*@Component\*/\s*$', stripped_line):
                 continue
-                
-            # Check if line contains standalone COMPONENT macro
-            if stripped_line == 'COMPONENT':
-                # Add comment prefix
-                lines[i] = '// ' + line
+            
+            # Check if line contains //@Component annotation
+            match = re.match(annotation_pattern, line)
+            if match:
+                indent = match.group(1)
+                # Convert to /*@Component*/
+                lines[i] = f'{indent}/*@Component*/\n'
                 modified = True
         
         # Write back to file if modifications were made
         if modified:
             with open(file_path, 'w', encoding='utf-8') as file:
                 file.writelines(lines)
-            print(f"✓ Commented COMPONENT macros in: {file_path}")
+            print(f"✓ Converted //@Component to /*@Component*/ in: {file_path}")
         else:
-            print(f"ℹ No COMPONENT macros found to comment in: {file_path}")
+            print(f"ℹ No //@Component annotations found to convert in: {file_path}")
         
         return True
         
@@ -259,9 +273,9 @@ def comment_component_macro(file_path: str) -> bool:
         return False
 
 
-def comment_component_macros_in_multiple_files(file_paths: List[str]) -> Dict[str, bool]:
+def convert_component_annotations_in_multiple_files(file_paths: List[str]) -> Dict[str, bool]:
     """
-    Comment out COMPONENT macros in multiple files.
+    Convert //@Component to /*@Component*/ in multiple files.
     
     Args:
         file_paths: List of file paths to modify
@@ -272,7 +286,7 @@ def comment_component_macros_in_multiple_files(file_paths: List[str]) -> Dict[st
     results = {}
     
     for file_path in file_paths:
-        results[file_path] = comment_component_macro(file_path)
+        results[file_path] = convert_component_annotation_to_processed(file_path)
     
     return results
 
@@ -280,7 +294,7 @@ def comment_component_macros_in_multiple_files(file_paths: List[str]) -> Dict[st
 def main():
     """Main function to handle command line arguments and execute the validation."""
     parser = argparse.ArgumentParser(
-        description="Check if C++ files contain COMPONENT macro above class declarations that inherit from interfaces"
+        description="Check if C++ files contain //@Component annotation above class declarations that inherit from interfaces"
     )
     parser.add_argument(
         "files", 
@@ -328,7 +342,7 @@ def main():
             has_component = check_component_macro_exists(file_path)
             results[file_path] = {'has_component': has_component}
             
-            status = "✓ COMPONENT found" if has_component else "✗ No COMPONENT"
+            status = "✓ //@Component found" if has_component else "✗ No //@Component"
             print(f"{file_path}: {status}")
     else:
         # Detailed validation mode
@@ -341,15 +355,15 @@ def main():
             print(f"{'='*60}")
             
             if result['has_component_macro']:
-                print(f"✓ COMPONENT macro found ({len(result['component_macros'])} occurrences)")
+                print(f"✓ //@Component annotation found ({len(result['component_macros'])} occurrences)")
                 print(f"  Classes found: {', '.join(result['class_names']) if result['class_names'] else 'None'}")
                 print(f"  Interfaces found: {', '.join(result['interface_names']) if result['interface_names'] else 'None'}")
                 print(f"  Classes with inheritance: {', '.join(result['classes_with_inheritance']) if result['classes_with_inheritance'] else 'None'}")
                 
                 if result['all_requirements_met']:
-                    print(f"  Status: ✓ All requirements met - COMPONENT macro is valid")
+                    print(f"  Status: ✓ All requirements met - //@Component annotation is valid")
                 else:
-                    print(f"  Status: ✗ Requirements not met - COMPONENT macro has no significance")
+                    print(f"  Status: ✗ Requirements not met - //@Component annotation has no significance")
                 
                 if args.detailed and result['component_macros']:
                     print(f"\n  Detailed macro information:")
@@ -360,7 +374,7 @@ def main():
                         else:
                             print(f"      → No class found")
             else:
-                print("✗ No COMPONENT macro found")
+                print("✗ No //@Component annotation found")
     
     # Show summary if requested
     if args.summary and not args.simple:
@@ -372,27 +386,27 @@ def main():
         files_with_valid_component = len([r for r in results.values() if r.get('all_requirements_met', False)])
         
         print(f"Files analyzed: {total_files}")
-        print(f"Files with COMPONENT macro: {files_with_component}")
-        print(f"Files with valid COMPONENT macro: {files_with_valid_component}")
-        print(f"Files with invalid COMPONENT macro: {files_with_component - files_with_valid_component}")
+        print(f"Files with //@Component annotation: {files_with_component}")
+        print(f"Files with valid //@Component annotation: {files_with_valid_component}")
+        print(f"Files with invalid //@Component annotation: {files_with_component - files_with_valid_component}")
     
     # Save to file if requested
     if args.output:
         with open(args.output, 'w') as f:
             if args.simple:
                 for file_path, result in results.items():
-                    status = "COMPONENT found" if result['has_component'] else "No COMPONENT"
+                    status = "//@Component found" if result['has_component'] else "No //@Component"
                     f.write(f"{file_path}: {status}\n")
             else:
                 for file_path, result in results.items():
                     f.write(f"{file_path}:\n")
                     if result['has_component_macro']:
-                        f.write(f"  COMPONENT macros: {len(result['component_macros'])}\n")
+                        f.write(f"  //@Component annotations: {len(result['component_macros'])}\n")
                         f.write(f"  Classes: {', '.join(result['class_names']) if result['class_names'] else 'None'}\n")
                         f.write(f"  Interfaces: {', '.join(result['interface_names']) if result['interface_names'] else 'None'}\n")
                         f.write(f"  Valid: {result['all_requirements_met']}\n")
                     else:
-                        f.write(f"  No COMPONENT macro found\n")
+                        f.write(f"  No //@Component annotation found\n")
                     f.write("\n")
         print(f"\nResults saved to: {args.output}")
     
@@ -405,8 +419,8 @@ __all__ = [
     'check_component_macro_exists',
     'validate_component_macro_requirements',
     'check_multiple_files',
-    'comment_component_macro',
-    'comment_component_macros_in_multiple_files',
+    'convert_component_annotation_to_processed',
+    'convert_component_annotations_in_multiple_files',
     'main'
 ]
 

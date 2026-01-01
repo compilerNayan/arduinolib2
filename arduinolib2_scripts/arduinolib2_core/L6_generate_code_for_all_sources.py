@@ -78,9 +78,11 @@ def find_cpp_files(include_paths: List[str], exclude_paths: List[str]) -> List[s
     return sorted(cpp_files)
 
 
-def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
+def convert_rest_annotations_to_processed(file_path: str, dry_run: bool = False) -> bool:
     """
-    Comment out all REST-related macros (RestController, RequestMapping, GetMapping, PostMapping, etc.) in a C++ file.
+    Convert REST-related annotations (//@RestController, //@RequestMapping, //@GetMapping, etc.) 
+    to /*@AnnotationName(...)*/ in a C++ file.
+    This marks the annotations as processed so they won't be processed again.
     
     Args:
         file_path: Path to the C++ file to modify
@@ -93,8 +95,8 @@ def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
         
-        # REST-related macros to comment out
-        rest_macros = [
+        # REST-related annotations to convert
+        rest_annotations = [
             'RestController',
             'RequestMapping',
             'GetMapping',
@@ -111,28 +113,39 @@ def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
             original_line = line
             stripped_line = line.strip()
             
-            # Skip already commented lines
-            if stripped_line.startswith('//') or stripped_line.startswith('/*') or stripped_line.startswith('*'):
+            # Skip already processed annotations (/*@AnnotationName(...)*/)
+            if re.match(r'^\s*/\*@(RestController|RequestMapping|GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)', stripped_line):
                 modified_lines.append(line)
                 continue
             
-            # Check if line starts with any REST macro
+            # Skip other comment types (but not //@ annotations)
+            if stripped_line.startswith('/*') and not stripped_line.startswith('//@'):
+                modified_lines.append(line)
+                continue
+            
+            # Check if line starts with any REST annotation //@AnnotationName
             line_modified = False
-            for macro in rest_macros:
-                # Match standalone macro (e.g., "RestController") or macro with parameters (e.g., "RequestMapping("/url")")
-                # Pattern: macro at start of line (possibly with whitespace), optionally followed by parentheses
-                pattern = r'^' + re.escape(macro) + r'(?:\s*\([^)]*\))?\s*$'
-                if re.match(pattern, stripped_line):
-                    # Add comment prefix
-                    if not dry_run:
-                        modified_lines.append('// ' + line)
-                    else:
-                        modified_lines.append(line)  # Keep original for dry run display
-                    modified = True
-                    line_modified = True
-                    if dry_run:
-                        print(f"    Would comment: {stripped_line}")
-                    break
+            for annotation in rest_annotations:
+                # Match //@AnnotationName or //@AnnotationName("...")
+                # Pattern: //@AnnotationName optionally followed by parentheses with parameters
+                pattern = r'^(\s*)//@' + re.escape(annotation) + r'(?:\s*\([^)]*\))?\s*$'
+                match = re.match(pattern, stripped_line)
+                if match:
+                    indent = match.group(1)
+                    # Extract the full annotation with parameters if present
+                    annotation_match = re.search(r'//@' + re.escape(annotation) + r'(\s*\([^)]*\))?', stripped_line)
+                    if annotation_match:
+                        params = annotation_match.group(1) or ""
+                        # Convert to /*@AnnotationName(...)*/
+                        if not dry_run:
+                            modified_lines.append(f'{indent}/*@{annotation}{params}*/\n')
+                        else:
+                            modified_lines.append(line)  # Keep original for dry run display
+                        modified = True
+                        line_modified = True
+                        if dry_run:
+                            print(f"    Would convert: {stripped_line} -> /*@{annotation}{params}*/")
+                        break
             
             if not line_modified:
                 modified_lines.append(line)
@@ -141,11 +154,11 @@ def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
         if modified and not dry_run:
             with open(file_path, 'w', encoding='utf-8') as file:
                 file.writelines(modified_lines)
-            print(f"✓ Commented REST macros in: {file_path}")
+            print(f"✓ Converted REST annotations to processed format in: {file_path}")
         elif modified and dry_run:
-            print(f"  Would comment REST macros in: {file_path}")
+            print(f"  Would convert REST annotations to processed format in: {file_path}")
         elif not modified:
-            # No macros found (this is fine, not an error)
+            # No annotations found (this is fine, not an error)
             pass
         
         return True
@@ -161,11 +174,11 @@ def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
 def generate_code_map(cpp_files: List[str], dry_run: bool = False) -> Dict[str, Dict[str, str]]:
     """
     Generate code for all source files and store valid results in a map.
-    Also comments out REST-related macros in processed files.
+    Also converts REST-related annotations to processed format in processed files.
     
     Args:
         cpp_files: List of C++ file paths to process
-        dry_run: If True, don't actually comment macros, just show what would be done
+        dry_run: If True, don't actually convert annotations, just show what would be done
         
     Returns:
         Dictionary mapping file paths (absolute) to dictionaries with 'code' and 'interface_name' keys
@@ -192,12 +205,12 @@ def generate_code_map(cpp_files: List[str], dry_run: bool = False) -> Dict[str, 
             }
             processed_count += 1
             
-            # Comment out REST-related macros in this file
+            # Convert REST-related annotations to processed format in this file
             if not dry_run:
-                print(f"  Commenting REST macros in: {file_path}")
+                print(f"  Converting REST annotations to processed format in: {file_path}")
             else:
-                print(f"  Would comment REST macros in: {file_path}")
-            comment_rest_macros(file_path, dry_run=dry_run)
+                print(f"  Would convert REST annotations to processed format in: {file_path}")
+            convert_rest_annotations_to_processed(file_path, dry_run=dry_run)
         else:
             skipped_count += 1
     
@@ -555,7 +568,7 @@ Examples:
 # Export functions for other scripts to import
 __all__ = [
     'find_cpp_files',
-    'comment_rest_macros',
+    'convert_rest_annotations_to_processed',
     'generate_code_map',
     'generate_includes',
     'add_includes_to_event_dispatcher',

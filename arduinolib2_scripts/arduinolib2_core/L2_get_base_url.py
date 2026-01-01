@@ -31,9 +31,11 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
         print(f"Error reading file '{file_path}': {e}")
         return None
     
-    # Pattern to match RequestMapping macro with value
-    # Matches: RequestMapping("/xyz"), RequestMapping('/xyz'), RequestMapping("/xyz", ...)
-    request_mapping_pattern = r'RequestMapping\s*\(\s*["\']([^"\']+)["\']'
+    # Pattern to match //@RequestMapping annotation with value (case-sensitive)
+    # Matches: //@RequestMapping("/xyz"), //@RequestMapping('/xyz')
+    # Also check for /*@RequestMapping(...)*/ (already processed, should be ignored)
+    request_mapping_annotation_pattern = r'//@RequestMapping\s*\(\s*["\']([^"\']+)["\']'
+    request_mapping_processed_pattern = r'/\*@RequestMapping\s*\(\s*["\']([^"\']+)["\']'
     
     # Pattern to match class declarations
     class_pattern = r'class\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:.*?[:{]|[:{])'
@@ -43,8 +45,12 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
     for line_num, line in enumerate(lines, 1):
         stripped_line = line.strip()
         
-        # Skip commented lines
-        if stripped_line.startswith('//') or stripped_line.startswith('/*') or stripped_line.startswith('*'):
+        # Skip already processed annotations (/*@RequestMapping(...)*/)
+        if re.search(request_mapping_processed_pattern, stripped_line):
+            continue
+        
+        # Skip other comment types (but not //@ annotations)
+        if stripped_line.startswith('/*') and not stripped_line.startswith('//@'):
             continue
         
         # Check for class declaration
@@ -70,16 +76,20 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
                 break
             line = lines[i].strip()
             
-            # Skip commented lines
-            if line.startswith('//') or line.startswith('/*') or line.startswith('*'):
+            # Skip already processed annotations
+            if re.search(request_mapping_processed_pattern, line):
+                continue
+            
+            # Skip other comment types (but not //@ annotations)
+            if line.startswith('/*') and not line.startswith('//@'):
                 continue
             
             # Skip empty lines
             if not line:
                 continue
             
-            # Check if this line contains RequestMapping macro
-            request_mapping_match = re.search(request_mapping_pattern, line)
+            # Check if this line contains //@RequestMapping annotation
+            request_mapping_match = re.search(request_mapping_annotation_pattern, line)
             if request_mapping_match:
                 url_value = request_mapping_match.group(1)
                 return {
@@ -88,13 +98,10 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
                     'class_name': class_info['class_name']
                 }
             
-            # Stop looking if we hit something that's not a macro (like a class declaration)
-            # Allow common macros to continue searching backwards
-            if not (line.startswith(('RestController', 'RequestMapping', 'GetMapping', 
-                                    'PostMapping', 'PutMapping', 'DeleteMapping', 'PatchMapping',
-                                    'COMPONENT', 'SCOPE', 'VALIDATE')) or 
-                   re.match(r'^[A-Z][A-Za-z0-9_]*\s*(?:\(|$)', line)):
-                # Not a macro, stop looking backwards
+            # Stop looking if we hit something that's not an annotation (like a class declaration)
+            # Allow common annotations to continue searching backwards
+            if not (re.match(r'^//@', line) or re.match(r'^/\*@', line)):
+                # Not an annotation, stop looking backwards
                 break
     
     return None
@@ -183,7 +190,7 @@ def validate_cpp_file(file_path: str) -> bool:
 def main():
     """Main function to handle command line arguments and execute the base URL extraction."""
     parser = argparse.ArgumentParser(
-        description="Extract base URL from RequestMapping macro above class declarations"
+        description="Extract base URL from //@RequestMapping annotation above class declarations"
     )
     parser.add_argument(
         "files", 
@@ -257,7 +264,7 @@ def main():
                     print(f"Base URL: {info['base_url']}")
                     print(f"Found at line {info['line_number']} above class {info['class_name']}")
                 else:
-                    print(f"Base URL: {info['base_url']} (default - RequestMapping not found)")
+                    print(f"Base URL: {info['base_url']} (default - //@RequestMapping not found)")
     
     # Show summary if requested
     if args.summary and len(valid_files) > 1:
@@ -269,8 +276,8 @@ def main():
         files_without_mapping = len([r for r in results.values() if not r['found']])
         
         print(f"Files analyzed: {len(valid_files)}")
-        print(f"Files with RequestMapping: {files_with_mapping}")
-        print(f"Files without RequestMapping: {files_without_mapping}")
+        print(f"Files with //@RequestMapping: {files_with_mapping}")
+        print(f"Files without //@RequestMapping: {files_without_mapping}")
         
         if args.detailed:
             print(f"\nDetailed results:")
@@ -291,7 +298,7 @@ def main():
                     f.write(f"  Line number: {info['line_number']}\n")
                     f.write(f"  Class name: {info['class_name']}\n")
                 else:
-                    f.write(f"  Found: No (using default '/')\n")
+                    f.write(f"  Found: No (using default '/', //@RequestMapping not found)\n")
                 f.write("\n")
         print(f"\nResults saved to: {args.output}")
     
