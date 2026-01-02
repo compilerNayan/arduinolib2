@@ -14,20 +14,16 @@ import subprocess
 import sys
 import os
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict
 
 # Import debug utility
-# Add parent directory to path for debug_utils
-script_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(script_dir)
-sys.path.insert(0, parent_dir)
-
 try:
     from debug_utils import debug_print
 except ImportError:
     # Fallback if debug_utils not found - create a no-op function
     def debug_print(*args, **kwargs):
         pass
+, Any
 
 # Get the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
