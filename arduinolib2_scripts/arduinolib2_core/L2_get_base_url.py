@@ -31,13 +31,9 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
         print(f"Error reading file '{file_path}': {e}")
         return None
     
-    # Pattern to match @RequestMapping annotation with value
-    # Pattern: /// @RequestMapping("/xyz") or ///@RequestMapping('/xyz')
-    request_mapping_annotation_pattern = re.compile(r'///\s*@RequestMapping\s*\(\s*["\']([^"\']+)["\']')
-    request_mapping_processed_pattern = re.compile(r'/\*\s*@RequestMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/')
-    
-    # Pattern to match legacy RequestMapping macro (for backward compatibility)
-    request_mapping_macro_pattern = re.compile(r'RequestMapping\s*\(\s*["\']([^"\']+)["\']')
+    # Pattern to match RequestMapping macro with value
+    # Matches: RequestMapping("/xyz"), RequestMapping('/xyz'), RequestMapping("/xyz", ...)
+    request_mapping_pattern = r'RequestMapping\s*\(\s*["\']([^"\']+)["\']'
     
     # Pattern to match class declarations
     class_pattern = r'class\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:.*?[:{]|[:{])'
@@ -47,11 +43,8 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
     for line_num, line in enumerate(lines, 1):
         stripped_line = line.strip()
         
-        # Skip comments (but not annotations)
-        if stripped_line.startswith('/*'):
-            continue
-        # Skip other single-line comments that aren't annotations
-        if stripped_line.startswith('//') and not re.search(r'///\s*@(RestController|RequestMapping)\b', stripped_line):
+        # Skip commented lines
+        if stripped_line.startswith('//') or stripped_line.startswith('/*') or stripped_line.startswith('*'):
             continue
         
         # Check for class declaration
@@ -63,7 +56,7 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
                 'line': stripped_line
             })
     
-    # For each class, look backwards for @RequestMapping annotation
+    # For each class, look backwards for RequestMapping macro
     for class_info in class_lines:
         class_line_num = class_info['line_number']
         
@@ -77,19 +70,16 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
                 break
             line = lines[i].strip()
             
-            # Skip comments (but not annotations)
-            if line.startswith('/*'):
-                continue
-            # Skip other single-line comments that aren't annotations
-            if line.startswith('//') and not re.search(r'///\s*@(RestController|RequestMapping)\b', line):
+            # Skip commented lines
+            if line.startswith('//') or line.startswith('/*') or line.startswith('*'):
                 continue
             
             # Skip empty lines
             if not line:
                 continue
             
-            # Check if this line contains @RequestMapping annotation
-            request_mapping_match = request_mapping_annotation_pattern.search(line)
+            # Check if this line contains RequestMapping macro
+            request_mapping_match = re.search(request_mapping_pattern, line)
             if request_mapping_match:
                 url_value = request_mapping_match.group(1)
                 return {
@@ -98,27 +88,13 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
                     'class_name': class_info['class_name']
                 }
             
-            # Check for legacy RequestMapping macro (for backward compatibility)
-            request_mapping_macro_match = request_mapping_macro_pattern.search(line)
-            if request_mapping_macro_match:
-                url_value = request_mapping_macro_match.group(1)
-                return {
-                    'url': url_value,
-                    'line_number': i + 1,  # Convert to 1-indexed
-                    'class_name': class_info['class_name']
-                }
-            
-            # Stop looking if we hit something that's not an annotation/macro (like a class declaration)
-            # Allow REST annotations and common macros to continue searching backwards
-            is_annotation_or_macro = (
-                re.search(r'///\s*@(RestController|RequestMapping|GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\b', line) or
-                line.startswith(('RestController', 'RequestMapping', 'GetMapping', 
-                                'PostMapping', 'PutMapping', 'DeleteMapping', 'PatchMapping',
-                                'COMPONENT', 'SCOPE', 'VALIDATE')) or
-                re.match(r'^[A-Z][A-Za-z0-9_]*\s*(?:\(|$)', line)
-            )
-            if not is_annotation_or_macro:
-                # Not an annotation/macro, stop looking backwards
+            # Stop looking if we hit something that's not a macro (like a class declaration)
+            # Allow common macros to continue searching backwards
+            if not (line.startswith(('RestController', 'RequestMapping', 'GetMapping', 
+                                    'PostMapping', 'PutMapping', 'DeleteMapping', 'PatchMapping',
+                                    'COMPONENT', 'SCOPE', 'VALIDATE')) or 
+                   re.match(r'^[A-Z][A-Za-z0-9_]*\s*(?:\(|$)', line)):
+                # Not a macro, stop looking backwards
                 break
     
     return None
