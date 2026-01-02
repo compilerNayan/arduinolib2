@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script to generate all endpoint mappings by processing multiple controller files.
-For each file with @RestController annotation:
+For each file with RestController macro:
 1. Gets base URL
 2. Gets endpoint details
 3. Organizes endpoints by HTTP method
@@ -52,9 +52,9 @@ def process_file(file_path: str) -> Optional[List[Dict[str, Any]]]:
         file_path: Path to the C++ file
         
     Returns:
-        List of endpoint dictionaries if @RestController annotation found, None otherwise
+        List of endpoint dictionaries if RestController found, None otherwise
     """
-    # Step 1: Check if @RestController annotation is present
+    # Step 1: Check if RestController macro is present
     if not L1_check_rest_controller.check_rest_controller_macro_exists(file_path):
         return None
     
@@ -119,8 +119,8 @@ def process_all_files(file_paths: List[str]) -> Dict[str, List[Dict[str, Any]]]:
             else:
                 print(f"Warning: Unknown HTTP method '{http_method}' for endpoint in {file_path}")
     
-    print(f"\nProcessed {processed_files} file(s) with @RestController annotation")
-    print(f"Skipped {skipped_files} file(s) without @RestController annotation")
+    print(f"\nProcessed {processed_files} file(s) with RestController")
+    print(f"Skipped {skipped_files} file(s) without RestController")
     
     return endpoint_maps
 
