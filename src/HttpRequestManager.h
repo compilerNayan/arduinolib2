@@ -6,13 +6,13 @@
 #include "IHttpRequestProcessor.h"
 #include <ServerFactory.h>
 
-COMPONENT
+/// @Component
 class HttpRequestManager final : public IHttpRequestManager {
 
-    AUTOWIRED
+    /// @Autowired
     Private IHttpRequestQueuePtr requestQueue;
 
-    AUTOWIRED
+    /// @Autowired
     Private IHttpRequestProcessorPtr requestProcessor;
 
     Private IServerPtr server;

@@ -5,13 +5,13 @@
 #include "IHttpRequestQueue.h"
 #include "IHttpRequestDispatcher.h"
 
-COMPONENT
+/// @Component
 class HttpRequestProcessor final : public IHttpRequestProcessor {
 
-    AUTOWIRED
+    /// @Autowired
     Private IHttpRequestQueuePtr requestQueue;
 
-    AUTOWIRED
+    /// @Autowired
     Private IHttpRequestDispatcherPtr dispatcher;
 
     Public HttpRequestProcessor() = default;
