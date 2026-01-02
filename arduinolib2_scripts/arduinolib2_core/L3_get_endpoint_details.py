@@ -254,25 +254,29 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
             if mapping_processed_pattern.search(next_line):
                 continue
             
+            # Skip already processed annotations
+            if mapping_processed_pattern.search(next_line):
+                continue
+            
             # Skip comments (but not annotations)
             if next_line.startswith('/*'):
                 continue
             # Skip other single-line comments that aren't annotations
             if next_line.startswith('//') and not mapping_annotation_pattern.search(next_line):
                 continue
-                
-                # Skip empty lines
-                if not next_line:
-                    continue
-                
-                # Check if this is a function signature
-                func_details = parse_function_signature(next_line)
-                if func_details:
-                    function_found = True
-                    function_details = func_details
-                    break
             
-            if function_found and function_details:
+            # Skip empty lines
+            if not next_line:
+                continue
+            
+            # Check if this is a function signature
+            func_details = parse_function_signature(next_line)
+            if func_details:
+                function_found = True
+                function_details = func_details
+                break
+        
+        if function_found and function_details:
                 endpoint_info = {
                     'endpoint_url': endpoint_url,
                     'http_method': http_method,
@@ -369,7 +373,7 @@ def display_endpoint_details(result: Dict[str, Any]) -> None:
         print(f"Endpoint {idx}:")
         print(f"  HTTP Method: {endpoint['http_method']}")
         print(f"  URL: {endpoint['endpoint_url']}")
-        print(f"  Mapping Macro: {endpoint['mapping_macro']}")
+        print(f"  Mapping Annotation: {endpoint.get('mapping_annotation', endpoint.get('mapping_macro', 'N/A'))}")
         print(f"  Mapping Path: {endpoint['mapping_path']}")
         print(f"  Function Name: {endpoint['function_name']}")
         print(f"  Return Type: {endpoint['return_type']}")

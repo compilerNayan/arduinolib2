@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Script to check if C++ files contain the RestController macro above class declarations.
-Validates that RestController macro appears before a class definition (not commented).
+Script to check if C++ files contain the @RestController annotation above class declarations.
+Validates that @RestController annotation appears before a class definition (not commented).
+Also supports legacy RestController macro for backward compatibility.
 """
 
 import re
@@ -12,7 +13,8 @@ from typing import List, Dict, Optional, Tuple, Set
 
 def find_rest_controller_macros(file_path: str) -> List[Dict[str, str]]:
     """
-    Find all RestController macros in a C++ file and their context.
+    Find all @RestController annotations in a C++ file and their context.
+    Also supports legacy RestController macro for backward compatibility.
     
     Args:
         file_path: Path to the C++ file (.cpp, .h, or .hpp)
@@ -32,90 +34,116 @@ def find_rest_controller_macros(file_path: str) -> List[Dict[str, str]]:
         print(f"Error reading file '{file_path}': {e}")
         return []
     
-    # Pattern to match RestController macro (case sensitive)
+    # Pattern to match @RestController annotation
+    # Matches: /// @RestController
+    rest_controller_annotation_pattern = re.compile(r'///\s*@RestController\b')
+    rest_controller_processed_pattern = re.compile(r'/\*\s*@RestController\s*\*/')
+    
+    # Pattern to match legacy RestController macro (case sensitive)
     # Matches: RestController (standalone)
-    rest_controller_pattern = r'^RestController\s*$'
+    rest_controller_macro_pattern = re.compile(r'^RestController\s*$')
     
     # Pattern to match class declarations
     # Allow for keywords like 'final', inheritance, etc. between class name and colon/brace
     class_pattern = r'class\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:.*?[:{]|[:{])'
     
     for line_num, line in enumerate(lines, 1):
-        # Check for RestController macro - must be standalone line (not commented, not part of other text)
         stripped_line = line.strip()
         
-        # Skip commented lines
-        if stripped_line.startswith('//') or stripped_line.startswith('/*') or stripped_line.startswith('*'):
+        # Skip already processed annotations
+        if rest_controller_processed_pattern.search(stripped_line):
             continue
-            
-        # Skip lines that are part of other text (not standalone RestController)
-        if stripped_line and not stripped_line.startswith('RestController'):
-            continue
-            
-        # Check if line contains valid RestController macro
-        rest_controller_match = re.search(rest_controller_pattern, stripped_line)
-        if rest_controller_match:
-            macro_text = rest_controller_match.group(0)
-            
-            # Look ahead for class declaration (within next few lines)
-            # Allow other macros to appear between RestController and class
-            class_found = False
-            class_name = ""
-            context_lines = []
-            
-            # Check next 10 lines for class declaration (allowing for multiple macros)
-            # Start from the line after RestController (line_num + 1)
-            for i in range(line_num + 1, min(line_num + 11, len(lines) + 1)):
-                if i <= len(lines):
-                    next_line = lines[i - 1].strip()
-                    context_lines.append(next_line)
-                    
-                    # Skip commented lines in lookahead
-                    if next_line.startswith('//') or next_line.startswith('/*') or next_line.startswith('*'):
-                        continue
-                    
-                    # Check for class declaration first
-                    class_match = re.search(class_pattern, next_line)
-                    if class_match:
-                        class_found = True
-                        class_name = class_match.group(1)
-                        break
-                    
-                    # If empty line, continue looking
-                    if not next_line:
-                        continue
-                    
-                    # Check if it's a macro - allow any uppercase identifier that might be a macro
-                    # Pattern: starts with uppercase letter(s), optionally followed by parentheses
-                    is_macro = next_line.startswith(('RestController', 'RequestMapping', 'GetMapping', 
-                                                    'PostMapping', 'PutMapping', 'DeleteMapping', 'PatchMapping',
-                                                    'COMPONENT', 'SCOPE', 'VALIDATE')) or \
-                              re.match(r'^[A-Z][A-Za-z0-9_]*\s*(?:\(|$)', next_line)
-                    
-                    # If it's not a macro and not a class, stop looking
-                    if not is_macro:
-                        break
-            
-            rest_controller_macros.append({
-                'macro': macro_text,
-                'line_number': line_num,
-                'context': context_lines,
-                'class_name': class_name,
-                'has_class': class_found
-            })
+        
+        # Check for @RestController annotation first
+        rest_controller_match = rest_controller_annotation_pattern.search(stripped_line)
+        is_annotation = rest_controller_match is not None
+        
+        # If not annotation, check for legacy RestController macro
+        if not is_annotation:
+            # Skip commented lines (but not annotations)
+            if stripped_line.startswith('//') or stripped_line.startswith('/*') or stripped_line.startswith('*'):
+                continue
+                
+            # Skip lines that are part of other text (not standalone RestController)
+            if stripped_line and not stripped_line.startswith('RestController'):
+                continue
+                
+            # Check if line contains valid RestController macro
+            rest_controller_match = rest_controller_macro_pattern.search(stripped_line)
+            if not rest_controller_match:
+                continue
+        
+        # Found either annotation or macro
+        macro_text = "/// @RestController" if is_annotation else "RestController"
+        
+        # Look ahead for class declaration (within next few lines)
+        # Allow other annotations/macros to appear between RestController and class
+        class_found = False
+        class_name = ""
+        context_lines = []
+        
+        # Check next 10 lines for class declaration (allowing for multiple annotations/macros)
+        # Start from the line after RestController (line_num + 1)
+        for i in range(line_num + 1, min(line_num + 11, len(lines) + 1)):
+            if i <= len(lines):
+                next_line = lines[i - 1].strip()
+                context_lines.append(next_line)
+                
+                # Skip already processed annotations
+                if rest_controller_processed_pattern.search(next_line):
+                    continue
+                
+                # Skip commented lines in lookahead (but not annotations)
+                if next_line.startswith('/*'):
+                    continue
+                if next_line.startswith('//') and not re.search(r'///\s*@\w+\b', next_line):
+                    continue
+                
+                # Check for class declaration first
+                class_match = re.search(class_pattern, next_line)
+                if class_match:
+                    class_found = True
+                    class_name = class_match.group(1)
+                    break
+                
+                # If empty line, continue looking
+                if not next_line:
+                    continue
+                
+                # Check if it's an annotation or macro - allow REST-related annotations/macros
+                is_annotation_or_macro = (
+                    re.search(r'///\s*@(RestController|RequestMapping|GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping|Component|Autowired|Scope)\b', next_line) or
+                    next_line.startswith(('RestController', 'RequestMapping', 'GetMapping', 
+                                        'PostMapping', 'PutMapping', 'DeleteMapping', 'PatchMapping',
+                                        'COMPONENT', 'SCOPE', 'VALIDATE')) or 
+                    re.match(r'^[A-Z][A-Za-z0-9_]*\s*(?:\(|$)', next_line)
+                )
+                
+                # If it's not an annotation/macro and not a class, stop looking
+                if not is_annotation_or_macro:
+                    break
+        
+        rest_controller_macros.append({
+            'macro': macro_text,
+            'line_number': line_num,
+            'context': context_lines,
+            'class_name': class_name,
+            'has_class': class_found
+        })
     
     return rest_controller_macros
 
 
 def check_rest_controller_macro_exists(file_path: str) -> bool:
     """
-    Simple check if RestController macro exists in the file (ignoring commented ones).
+    Simple check if @RestController annotation exists in the file (ignoring commented ones).
+    Also supports legacy RestController macro for backward compatibility.
     
     Args:
         file_path: Path to the C++ file
         
     Returns:
-        True if active RestController macro is found above a class, False otherwise
+        True if active @RestController annotation is found above a class, False otherwise
     """
     rest_controller_macros = find_rest_controller_macros(file_path)
     
@@ -206,7 +234,7 @@ def validate_cpp_file(file_path: str) -> bool:
 def main():
     """Main function to handle command line arguments and execute the validation."""
     parser = argparse.ArgumentParser(
-        description="Check if C++ files contain RestController macro above class declarations"
+        description="Check if C++ files contain @RestController annotation above class declarations"
     )
     parser.add_argument(
         "files", 
