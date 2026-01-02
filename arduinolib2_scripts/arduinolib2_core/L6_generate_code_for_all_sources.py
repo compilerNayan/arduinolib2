@@ -247,31 +247,35 @@ def generate_includes(code_map: Dict[str, Dict[str, str]], project_root: Optiona
         file_info = code_map[file_path]
         interface_name = file_info.get('interface_name')
         
-        # Always include the implementation header file (where GetInstance() is defined)
-        file_path_obj = Path(file_path).resolve()
-        implementation_include_path = str(file_path_obj).replace('\\', '/')  # Use absolute path
-        includes.append(f'#include "{implementation_include_path}"')
+        if not interface_name:
+            # Fallback: use implementation header if interface name not found
+            file_path_obj = Path(file_path).resolve()
+            include_path = str(file_path_obj).replace('\\', '/')  # Use absolute path
+            includes.append(f'#include "{include_path}"')
+            continue
         
-        # Also include the interface header if available (for forward declarations, etc.)
-        if interface_name:
-            # Find interface header file (suppress output by redirecting stdout temporarily)
-            import io
-            import contextlib
-            with contextlib.redirect_stdout(io.StringIO()):
-                interface_header = L1_find_class_header.find_class_header_file(
-                    class_name=interface_name,
-                    search_root=project_root,
-                    include_folders=include_paths,
-                    exclude_folders=exclude_paths
-                )
-            
-            if interface_header:
-                # Use absolute path for the include
-                interface_header_obj = Path(interface_header).resolve()
-                interface_include_path = str(interface_header_obj).replace('\\', '/')  # Normalize path separators
-                # Only add if it's different from the implementation header
-                if interface_include_path != implementation_include_path:
-                    includes.append(f'#include "{interface_include_path}"')
+        # Find interface header file (suppress output by redirecting stdout temporarily)
+        import io
+        import contextlib
+        with contextlib.redirect_stdout(io.StringIO()):
+            interface_header = L1_find_class_header.find_class_header_file(
+                class_name=interface_name,
+                search_root=project_root,
+                include_folders=include_paths,
+                exclude_folders=exclude_paths
+            )
+        
+        if interface_header:
+            # Use absolute path for the include
+            interface_header_obj = Path(interface_header).resolve()
+            include_path = str(interface_header_obj).replace('\\', '/')  # Normalize path separators
+            includes.append(f'#include "{include_path}"')
+        else:
+            # Fallback: use implementation header if interface header not found
+            file_path_obj = Path(file_path).resolve()
+            include_path = str(file_path_obj).replace('\\', '/')  # Use absolute path
+            includes.append(f'#include "{include_path}"')
+            print(f"⚠️  Warning: Could not find interface header for '{interface_name}', using implementation header instead")
     
     return includes
 
