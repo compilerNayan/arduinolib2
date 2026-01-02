@@ -222,7 +222,9 @@ except ImportError:
     # Fallback if debug_utils not found - create a no-op function
     def debug_print(*args, **kwargs):
         pass
- = [
+
+# Export functions for other scripts to import
+__all__ = [
     'find_interface_header_include',
     'comment_interface_header_includes',
     'comment_interface_headers_in_files',

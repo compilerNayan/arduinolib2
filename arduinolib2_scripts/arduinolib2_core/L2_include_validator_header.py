@@ -390,7 +390,9 @@ except ImportError:
     # Fallback if debug_utils not found - create a no-op function
     def debug_print(*args, **kwargs):
         pass
- = [
+
+# Export functions for other scripts to import
+__all__ = [
     'find_validator_header_path',
     'process_file_with_validator_include',
     'process_multiple_files',

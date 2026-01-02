@@ -290,7 +290,9 @@ except ImportError:
     # Fallback if debug_utils not found - create a no-op function
     def debug_print(*args, **kwargs):
         pass
- = [
+
+# Export functions for other scripts to import
+__all__ = [
     'find_class_header_file',
     'find_class_headers_for_names', 
     'get_class_header_for_name',
