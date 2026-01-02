@@ -247,8 +247,12 @@ def generate_includes(code_map: Dict[str, Dict[str, str]], project_root: Optiona
         file_info = code_map[file_path]
         interface_name = file_info.get('interface_name')
         
-        # First include the interface header if available (needed for template specializations)
-        interface_include_path = None
+        # Always include the implementation header file (where GetInstance() is defined)
+        file_path_obj = Path(file_path).resolve()
+        implementation_include_path = str(file_path_obj).replace('\\', '/')  # Use absolute path
+        includes.append(f'#include "{implementation_include_path}"')
+        
+        # Also include the interface header if available (for forward declarations, etc.)
         if interface_name:
             # Find interface header file (suppress output by redirecting stdout temporarily)
             import io
@@ -265,15 +269,9 @@ def generate_includes(code_map: Dict[str, Dict[str, str]], project_root: Optiona
                 # Use absolute path for the include
                 interface_header_obj = Path(interface_header).resolve()
                 interface_include_path = str(interface_header_obj).replace('\\', '/')  # Normalize path separators
-        
-        # Always include the implementation header file (where GetInstance() and template specializations are defined)
-        file_path_obj = Path(file_path).resolve()
-        implementation_include_path = str(file_path_obj).replace('\\', '/')  # Use absolute path
-        
-        # Include interface first (if different from implementation), then implementation
-        if interface_include_path and interface_include_path != implementation_include_path:
-            includes.append(f'#include "{interface_include_path}"')
-        includes.append(f'#include "{implementation_include_path}"')
+                # Only add if it's different from the implementation header
+                if interface_include_path != implementation_include_path:
+                    includes.append(f'#include "{interface_include_path}"')
     
     return includes
 
