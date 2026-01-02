@@ -36,17 +36,11 @@ def find_class_and_interface(file_path: str) -> Optional[Dict[str, str]]:
     # Matches: class Xyz : public Interface or class Xyz final : public Interface
     class_pattern = r'class\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:final\s*)?:\s*public\s+([A-Za-z_][A-Za-z0-9_]*)'
     
-    # Pattern to detect annotations (so we don't skip them)
-    annotation_pattern = r'///\s*@'
-    
     for line_num, line in enumerate(lines, 1):
         stripped_line = line.strip()
         
-        # Skip commented lines (but not annotations)
-        if stripped_line.startswith('/*') or stripped_line.startswith('*'):
-            continue
-        # Skip regular comments but not annotations
-        if stripped_line.startswith('//') and not re.search(annotation_pattern, stripped_line):
+        # Skip commented lines
+        if stripped_line.startswith('//') or stripped_line.startswith('/*') or stripped_line.startswith('*'):
             continue
         
         # Check for class declaration with inheritance
@@ -86,17 +80,11 @@ def find_class_boundaries(file_path: str) -> Optional[Tuple[int, int]]:
     # Pattern to match class declaration
     class_pattern = r'class\s+[A-Za-z_][A-Za-z0-9_]*\s*(?:.*?[:{]|[:{])'
     
-    # Pattern to detect annotations (so we don't skip them when counting braces)
-    annotation_pattern = r'///\s*@'
-    
     for line_num, line in enumerate(lines, 1):
         stripped_line = line.strip()
         
-        # Skip commented lines (but not annotations)
-        if stripped_line.startswith('/*') or stripped_line.startswith('*'):
-            continue
-        # Skip regular comments but not annotations
-        if stripped_line.startswith('//') and not re.search(annotation_pattern, stripped_line):
+        # Skip commented lines
+        if stripped_line.startswith('//') or stripped_line.startswith('/*') or stripped_line.startswith('*'):
             continue
         
         # Check if this is the class declaration line

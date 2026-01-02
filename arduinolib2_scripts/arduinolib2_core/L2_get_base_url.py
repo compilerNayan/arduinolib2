@@ -34,25 +34,19 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
     # Pattern to match @RequestMapping annotation with value
     # Matches: /// @RequestMapping("/xyz"), ///@RequestMapping("/xyz"), etc.
     # Also check for already processed /* @RequestMapping("path") */ pattern
-    request_mapping_annotation_pattern = re.compile(r'///\s*@RequestMapping\s*\(\s*["\']([^"\']+)["\']')
-    request_mapping_processed_pattern = re.compile(r'/\*\s*@RequestMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/')
+    request_mapping_annotation_pattern = r'///\s*@RequestMapping\s*\(\s*["\']([^"\']+)["\']'
+    request_mapping_processed_pattern = r'/\*\s*@RequestMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/'
     
     # Pattern to match class declarations
     class_pattern = r'class\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:.*?[:{]|[:{])'
-    
-    # Pattern to detect annotations (so we don't skip them)
-    annotation_pattern = re.compile(r'///\s*@')
     
     # First, find all class declarations and their line numbers
     class_lines = []
     for line_num, line in enumerate(lines, 1):
         stripped_line = line.strip()
         
-        # Skip commented lines (but not annotations)
-        if stripped_line.startswith('/*') or stripped_line.startswith('*'):
-            continue
-        # Skip regular comments but not annotations
-        if stripped_line.startswith('//') and not annotation_pattern.search(stripped_line):
+        # Skip commented lines
+        if stripped_line.startswith('//') or stripped_line.startswith('/*') or stripped_line.startswith('*'):
             continue
         
         # Check for class declaration
@@ -94,7 +88,7 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
                 continue
             
             # Check if this line contains @RequestMapping annotation
-            request_mapping_match = request_mapping_annotation_pattern.search(line)
+            request_mapping_match = re.search(request_mapping_annotation_pattern, line)
             if request_mapping_match:
                 url_value = request_mapping_match.group(1)
                 return {
