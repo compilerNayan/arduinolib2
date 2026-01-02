@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Script to extract the base URL from @RequestMapping annotation above class declarations.
-Finds @RequestMapping annotation above a class and extracts the value from /// @RequestMapping("/xyz").
+Script to extract the base URL from RequestMapping macro above class declarations.
+Finds RequestMapping macro above a class and extracts the value from RequestMapping("/xyz").
 Returns "/xyz" as the base URL string, or "/" if not present.
 """
 
@@ -13,7 +13,7 @@ from typing import Optional, Dict, Any
 
 def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
     """
-    Find @RequestMapping annotation above class declarations in a C++ file.
+    Find RequestMapping macro above class declarations in a C++ file.
     
     Args:
         file_path: Path to the C++ file (.cpp, .h, or .hpp)
@@ -31,11 +31,9 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
         print(f"Error reading file '{file_path}': {e}")
         return None
     
-    # Pattern to match @RequestMapping annotation with value
-    # Matches: /// @RequestMapping("/xyz"), ///@RequestMapping("/xyz"), etc.
-    # Also check for already processed /* @RequestMapping("path") */ pattern
-    request_mapping_annotation_pattern = r'///\s*@RequestMapping\s*\(\s*["\']([^"\']+)["\']'
-    request_mapping_processed_pattern = r'/\*\s*@RequestMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/'
+    # Pattern to match RequestMapping macro with value
+    # Matches: RequestMapping("/xyz"), RequestMapping('/xyz'), RequestMapping("/xyz", ...)
+    request_mapping_pattern = r'RequestMapping\s*\(\s*["\']([^"\']+)["\']'
     
     # Pattern to match class declarations
     class_pattern = r'class\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:.*?[:{]|[:{])'
@@ -72,23 +70,16 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
                 break
             line = lines[i].strip()
             
-            # Skip already processed annotations
-            if request_mapping_processed_pattern.search(line):
-                continue
-            
-            # Skip comments (but not annotations)
-            if line.startswith('/*'):
-                continue
-            # Skip other single-line comments that aren't annotations
-            if line.startswith('//') and not re.search(r'///\s*@(RestController|RequestMapping|GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\b', line):
+            # Skip commented lines
+            if line.startswith('//') or line.startswith('/*') or line.startswith('*'):
                 continue
             
             # Skip empty lines
             if not line:
                 continue
             
-            # Check if this line contains @RequestMapping annotation
-            request_mapping_match = re.search(request_mapping_annotation_pattern, line)
+            # Check if this line contains RequestMapping macro
+            request_mapping_match = re.search(request_mapping_pattern, line)
             if request_mapping_match:
                 url_value = request_mapping_match.group(1)
                 return {
@@ -97,17 +88,13 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
                     'class_name': class_info['class_name']
                 }
             
-            # Stop looking if we hit something that's not an annotation or macro (like a class declaration)
-            # Allow common annotations and macros to continue searching backwards
-            is_annotation_or_macro = (
-                re.search(r'///\s*@(RestController|RequestMapping|GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\b', line) or
-                line.startswith(('RestController', 'RequestMapping', 'GetMapping', 
-                                'PostMapping', 'PutMapping', 'DeleteMapping', 'PatchMapping',
-                                'COMPONENT', 'SCOPE', 'VALIDATE')) or 
-                re.match(r'^[A-Z][A-Za-z0-9_]*\s*(?:\(|$)', line)
-            )
-            if not is_annotation_or_macro:
-                # Not an annotation or macro, stop looking backwards
+            # Stop looking if we hit something that's not a macro (like a class declaration)
+            # Allow common macros to continue searching backwards
+            if not (line.startswith(('RestController', 'RequestMapping', 'GetMapping', 
+                                    'PostMapping', 'PutMapping', 'DeleteMapping', 'PatchMapping',
+                                    'COMPONENT', 'SCOPE', 'VALIDATE')) or 
+                   re.match(r'^[A-Z][A-Za-z0-9_]*\s*(?:\(|$)', line)):
+                # Not a macro, stop looking backwards
                 break
     
     return None
@@ -115,7 +102,7 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
 
 def get_base_url(file_path: str) -> str:
     """
-    Get the base URL from @RequestMapping annotation above class declarations.
+    Get the base URL from RequestMapping macro above class declarations.
     
     Args:
         file_path: Path to the C++ file
