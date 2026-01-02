@@ -25,8 +25,8 @@ try:
     import L3_get_endpoint_details
     import L4_generate_function_pointer
 except ImportError as e:
-    print(f"Error: Could not import required modules: {e}")
-    print("Make sure L1_check_rest_controller.py, L2_get_base_url.py, L3_get_endpoint_details.py, and L4_generate_function_pointer.py are in the arduinolib2_core directory.")
+    debug_print(f"Error: Could not import required modules: {e}")
+    debug_print("Make sure L1_check_rest_controller.py, L2_get_base_url.py, L3_get_endpoint_details.py, and L4_generate_function_pointer.py are in the arduinolib2_core directory.")
     sys.exit(1)
 
 
@@ -117,10 +117,10 @@ def process_all_files(file_paths: List[str]) -> Dict[str, List[Dict[str, Any]]]:
             if http_method in endpoint_maps:
                 endpoint_maps[http_method].append(endpoint)
             else:
-                print(f"Warning: Unknown HTTP method '{http_method}' for endpoint in {file_path}")
+                debug_print(f"Warning: Unknown HTTP method '{http_method}' for endpoint in {file_path}")
     
-    print(f"\nProcessed {processed_files} file(s) with RestController")
-    print(f"Skipped {skipped_files} file(s) without RestController")
+    debug_print(f"\nProcessed {processed_files} file(s) with RestController")
+    debug_print(f"Skipped {skipped_files} file(s) without RestController")
     
     return endpoint_maps
 
@@ -266,13 +266,13 @@ def main():
     invalid_files = [f for f in args.files if not validate_cpp_file(f)]
     
     if invalid_files:
-        print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
+        debug_print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
     
     if not valid_files:
-        print("No valid C++ files provided")
+        debug_print("No valid C++ files provided")
         return None
     
-    print(f"Processing {len(valid_files)} file(s)...")
+    debug_print(f"Processing {len(valid_files)} file(s)...")
     
     # Process all files and organize endpoints by HTTP method
     endpoint_maps = process_all_files(valid_files)
@@ -281,17 +281,17 @@ def main():
     total_endpoints = sum(len(endpoints) for endpoints in endpoint_maps.values())
     
     if total_endpoints == 0:
-        print("\nNo endpoints found in any files.")
+        debug_print("\nNo endpoints found in any files.")
         return None
     
-    print(f"\nFound {total_endpoints} endpoint(s) total:")
+    debug_print(f"\nFound {total_endpoints} endpoint(s) total:")
     for http_method in ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']:
         count = len(endpoint_maps.get(http_method, []))
         if count > 0:
-            print(f"  {http_method}: {count}")
+            debug_print(f"  {http_method}: {count}")
     
     # Generate the complete GenerateMappings() function
-    print("\nGenerating code...")
+    debug_print("\nGenerating code...")
     generated_code = generate_all_mappings_code(endpoint_maps)
     
     # Output the generated code
@@ -300,23 +300,32 @@ def main():
             with open(args.output, 'w', encoding='utf-8') as f:
                 f.write(generated_code)
                 f.write('\n')
-            print(f"\nGenerated code saved to: {args.output}")
+            debug_print(f"\nGenerated code saved to: {args.output}")
         except Exception as e:
-            print(f"Error writing to file '{args.output}': {e}")
-            print("\nGenerated code:")
-            print("=" * 70)
-            print(generated_code)
+            debug_print(f"Error writing to file '{args.output}': {e}")
+            debug_print("\nGenerated code:")
+            debug_print("=" * 70)
+            debug_print(generated_code)
     else:
-        print("\n" + "=" * 70)
-        print("Generated GenerateMappings() function:")
-        print("=" * 70)
-        print(generated_code)
+        debug_print("\n" + "=" * 70)
+        debug_print("Generated GenerateMappings() function:")
+        debug_print("=" * 70)
+        debug_print(generated_code)
     
     return generated_code
 
 
 # Export functions for other scripts to import
-__all__ = [
+__all__
+
+# Import debug utility
+try:
+    from debug_utils import debug_print
+except ImportError:
+    # Fallback if debug_utils not found - create a no-op function
+    def debug_print(*args, **kwargs):
+        pass
+ = [
     'validate_cpp_file',
     'process_file',
     'process_all_files',

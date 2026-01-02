@@ -14,7 +14,16 @@ import subprocess
 import sys
 import os
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List
+
+# Import debug utility
+try:
+    from debug_utils import debug_print
+except ImportError:
+    # Fallback if debug_utils not found - create a no-op function
+    def debug_print(*args, **kwargs):
+        pass
+, Dict, Optional
 
 # Get the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -39,7 +48,7 @@ def find_cpp_files(include_paths: List[str], exclude_paths: List[str]) -> List[s
     
     for include_path in include_paths:
         if not Path(include_path).exists():
-            print(f"⚠️  Warning: Include path '{include_path}' does not exist")
+            debug_print(f"⚠️  Warning: Include path '{include_path}' does not exist")
             continue
             
         # Find all C++ source files (.h, .hpp, .cpp, .cc, .cxx)
@@ -121,12 +130,12 @@ def run_l5_process_di(file_path: str, include_paths: List[str], exclude_paths: L
         
         # Display results in one line - just show the emoji
         if results['success']:
-            print("✅")
+            debug_print("✅")
         else:
-            print("❌")
+            debug_print("❌")
             if results['errors']:
                 for error in results['errors']:
-                    print(f"      Error: {error}")
+                    debug_print(f"      Error: {error}")
         
         return results
         
@@ -138,7 +147,7 @@ def run_l5_process_di(file_path: str, include_paths: List[str], exclude_paths: L
             'stderr': str(e),
             'errors': [f"Exception: {e}"]
         }
-        print(f"   ❌ Exception: {e}")
+        debug_print(f"   ❌ Exception: {e}")
         return error_result
 
 
@@ -155,8 +164,8 @@ def process_all_files(cpp_files: List[str], include_paths: List[str], exclude_pa
     Returns:
         Dictionary with overall results
     """
-    print(f"\n🚀 Starting DI preprocessing for {len(cpp_files)} C++ files")
-    print("=" * 80)
+    debug_print(f"\n🚀 Starting DI preprocessing for {len(cpp_files)} C++ files")
+    debug_print("=" * 80)
     
     results = {
         'total_files': len(cpp_files),
@@ -168,7 +177,7 @@ def process_all_files(cpp_files: List[str], include_paths: List[str], exclude_pa
     
     for i, file_path in enumerate(cpp_files, 1):
         # Show file info and start processing in one line
-        print(f"📁 [{i:2d}/{len(cpp_files):2d}] 🔄 Processing... {file_path}", end=" ")
+        debug_print(f"📁 [{i:2d}/{len(cpp_files):2d}] 🔄 Processing... {file_path}", end=" ")
         
         # Process the file
         file_result = run_l5_process_di(file_path, include_paths, exclude_paths, dry_run)
@@ -193,37 +202,37 @@ def display_summary(results: Dict[str, any], dry_run: bool = False):
         results: Results dictionary from process_all_files
         dry_run: Whether this was a dry run
     """
-    print("\n" + "=" * 80)
-    print("📊 PROCESSING SUMMARY")
-    print("=" * 80)
+    debug_print("\n" + "=" * 80)
+    debug_print("📊 PROCESSING SUMMARY")
+    debug_print("=" * 80)
     
-    print(f"Total files processed: {results['total_files']}")
-    print(f"Successful: {results['successful_files']} ✅")
+    debug_print(f"Total files processed: {results['total_files']}")
+    debug_print(f"Successful: {results['successful_files']} ✅")
     
     # Show failed count with appropriate emoji
     if results['failed_files'] == 0:
-        print(f"Failed: {results['failed_files']} ✅")
+        debug_print(f"Failed: {results['failed_files']} ✅")
     else:
-        print(f"Failed: {results['failed_files']} ❌")
+        debug_print(f"Failed: {results['failed_files']} ❌")
     
     success_rate = (results['successful_files'] / results['total_files'] * 100) if results['total_files'] > 0 else 0
-    print(f"Success rate: {success_rate:.1f}%")
+    debug_print(f"Success rate: {success_rate:.1f}%")
     
     if results['errors']:
-        print(f"\n⚠️  Errors encountered:")
+        debug_print(f"\n⚠️  Errors encountered:")
         for error in results['errors'][:10]:  # Show first 10 errors
-            print(f"  - {error}")
+            debug_print(f"  - {error}")
         if len(results['errors']) > 10:
-            print(f"  ... and {len(results['errors']) - 10} more errors")
+            debug_print(f"  ... and {len(results['errors']) - 10} more errors")
     
     if dry_run:
-        print(f"\n🔍 This was a dry run - no changes were made")
+        debug_print(f"\n🔍 This was a dry run - no changes were made")
     else:
-        print(f"\n✅ All changes have been applied")
+        debug_print(f"\n✅ All changes have been applied")
     
     # Overall result
     overall_success = results['failed_files'] == 0
-    print(f"\n🎯 Overall Result: {'✅ SUCCESS' if overall_success else '❌ FAILED'}")
+    debug_print(f"\n🎯 Overall Result: {'✅ SUCCESS' if overall_success else '❌ FAILED'}")
 
 
 def main():
@@ -268,22 +277,22 @@ Examples:
     args = parser.parse_args()
     
     # Show configuration
-    print("🔧 L6 CPP DI Preprocessor Configuration")
-    print("=" * 50)
-    print(f"Include paths: {args.include if args.include else ['current directory']}")
-    print(f"Exclude paths: {args.exclude if args.exclude else ['none']}")
-    print(f"Dry run: {'Yes' if args.dry_run else 'No'}")
-    print()
+    debug_print("🔧 L6 CPP DI Preprocessor Configuration")
+    debug_print("=" * 50)
+    debug_print(f"Include paths: {args.include if args.include else ['current directory']}")
+    debug_print(f"Exclude paths: {args.exclude if args.exclude else ['none']}")
+    debug_print(f"Dry run: {'Yes' if args.dry_run else 'No'}")
+    debug_print()
     
     # Find all C++ files
-    print("🔍 Discovering C++ source files...")
+    debug_print("🔍 Discovering C++ source files...")
     cpp_files = find_cpp_files(args.include, args.exclude)
     
     if not cpp_files:
-        print("⚠️  No C++ source files found in the specified paths")
+        debug_print("⚠️  No C++ source files found in the specified paths")
         sys.exit(0)
     
-    print(f"📁 Found {len(cpp_files)} C++ source files")
+    debug_print(f"📁 Found {len(cpp_files)} C++ source files")
     
     # Process all files
     results = process_all_files(cpp_files, args.include, args.exclude, args.dry_run)
@@ -293,11 +302,11 @@ Examples:
     
     # Show detailed results if requested
     if args.summary:
-        print(f"\n📋 DETAILED RESULTS")
-        print("=" * 50)
+        debug_print(f"\n📋 DETAILED RESULTS")
+        debug_print("=" * 50)
         for file_path, file_result in results['file_results'].items():
             status = "✅ Success" if file_result['success'] else "❌ Failed"
-            print(f"{file_path}: {status}")
+            debug_print(f"{file_path}: {status}")
     
     # Exit with appropriate code
     if results['failed_files'] > 0:

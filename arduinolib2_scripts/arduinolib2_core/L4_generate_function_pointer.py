@@ -124,19 +124,28 @@ def main():
             with open(args.output, 'w', encoding='utf-8') as f:
                 f.write(generated_code)
                 f.write('\n')
-            print(f"Generated code saved to: {args.output}")
+            debug_print(f"Generated code saved to: {args.output}")
         except Exception as e:
-            print(f"Error writing to file '{args.output}': {e}")
-            print("\nGenerated code:")
-            print(generated_code)
+            debug_print(f"Error writing to file '{args.output}': {e}")
+            debug_print("\nGenerated code:")
+            debug_print(generated_code)
     else:
-        print(generated_code)
+        debug_print(generated_code)
     
     return generated_code
 
 
 # Export functions for other scripts to import
-__all__ = [
+__all__
+
+# Import debug utility
+try:
+    from debug_utils import debug_print
+except ImportError:
+    # Fallback if debug_utils not found - create a no-op function
+    def debug_print(*args, **kwargs):
+        pass
+ = [
     'get_mapping_variable_name',
     'generate_function_pointer',
     'main'

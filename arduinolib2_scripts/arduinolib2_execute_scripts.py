@@ -8,12 +8,20 @@ import sys
 import subprocess
 from pathlib import Path
 
+# Import debug utility
+try:
+    from debug_utils import debug_print
+except ImportError:
+    # Fallback if debug_utils not found - create a no-op function
+    def debug_print(*args, **kwargs):
+        pass
+
 try:
     from arduinolib0_core.arduinolib0_get_client_files import get_client_files
     HAS_ARDUINOLIB0 = True
 except ImportError:
-    print("Warning: Could not import arduinolib0_core.arduinolib0_get_client_files")
-    print("         Some features may be unavailable.")
+    debug_print("Warning: Could not import arduinolib0_core.arduinolib0_get_client_files")
+    debug_print("         Some features may be unavailable.")
     HAS_ARDUINOLIB0 = False
     # Create a dummy function to avoid errors
     def get_client_files(*args, **kwargs):
@@ -31,33 +39,33 @@ def execute_scripts(project_dir, library_dir, all_libs=None, library_scripts_dir
     """
     # Process client files if arduinolib0 is available
     if HAS_ARDUINOLIB0:
-        print(f"\nproject_dir: {project_dir}")
-        print(f"library_dir: {library_dir}")
+        debug_print(f"\nproject_dir: {project_dir}")
+        debug_print(f"library_dir: {library_dir}")
 
         if project_dir:
             client_files = get_client_files(project_dir, file_extensions=['.h', '.cpp'])
-            print(f"\nFound {len(client_files)} files in client project:")
-            print("=" * 60)
+            debug_print(f"\nFound {len(client_files)} files in client project:")
+            debug_print("=" * 60)
             for file in client_files:
-                print(file)
-            print("=" * 60)
+                debug_print(file)
+            debug_print("=" * 60)
 
         if library_dir:
             library_files = get_client_files(library_dir, skip_exclusions=True)
-            print(f"\nFound {len(library_files)} files in library:")
-            print("=" * 60)
+            debug_print(f"\nFound {len(library_files)} files in library:")
+            debug_print("=" * 60)
             for file in library_files:
-                print(file)
-            print("=" * 60)
+                debug_print(file)
+            debug_print("=" * 60)
     else:
-        print("Skipping file processing - arduinolib0_core not available")
+        debug_print("Skipping file processing - arduinolib0_core not available")
     
     # Call L7_cpp_spring_boot_preprocessor.py with all library directories
     # This should run regardless of HAS_ARDUINOLIB0
     if all_libs and all_libs.get('root_dirs'):
-        print("\n" + "=" * 80)
-        print("🚀 Running L7 CPP Spring Boot Preprocessor with all library directories...")
-        print("=" * 80)
+        debug_print("\n" + "=" * 80)
+        debug_print("🚀 Running L7 CPP Spring Boot Preprocessor with all library directories...")
+        debug_print("=" * 80)
         
         # Get the path to L7 script (in arduinolib2_core directory)
         # Determine the scripts directory
@@ -70,7 +78,7 @@ def execute_scripts(project_dir, library_dir, all_libs=None, library_scripts_dir
         l7_script_path = scripts_dir / "arduinolib2_core" / "L7_cpp_spring_boot_preprocessor.py"
         
         if not l7_script_path.exists():
-            print(f"⚠️  Warning: L7 script not found at {l7_script_path}")
+            debug_print(f"⚠️  Warning: L7 script not found at {l7_script_path}")
             return
         
         # Build include paths: project src directory + all library directories
@@ -107,12 +115,12 @@ def execute_scripts(project_dir, library_dir, all_libs=None, library_scripts_dir
         dispatcher_file = Path(library_dir) / "src" / "HttpRequestDispatcher.h"
         if dispatcher_file.exists():
             cmd.extend(["--dispatcher-file", str(dispatcher_file)])
-            print(f"Using dispatcher file: {dispatcher_file}")
+            debug_print(f"Using dispatcher file: {dispatcher_file}")
         else:
-            print(f"⚠️  Warning: HttpRequestDispatcher.h not found at {dispatcher_file}")
+            debug_print(f"⚠️  Warning: HttpRequestDispatcher.h not found at {dispatcher_file}")
         
-        print(f"\nRunning: {' '.join(cmd)}")
-        print(f"Include paths: {include_paths}")
+        debug_print(f"\nRunning: {' '.join(cmd)}")
+        debug_print(f"Include paths: {include_paths}")
         
         # Run the command
         try:
@@ -120,10 +128,10 @@ def execute_scripts(project_dir, library_dir, all_libs=None, library_scripts_dir
                                   capture_output=False, text=True)
             
             if result.returncode == 0:
-                print("\n✅ L7 CPP Spring Boot Preprocessor completed successfully")
+                debug_print("\n✅ L7 CPP Spring Boot Preprocessor completed successfully")
             else:
-                print(f"\n⚠️  L7 CPP Spring Boot Preprocessor exited with code {result.returncode}")
+                debug_print(f"\n⚠️  L7 CPP Spring Boot Preprocessor exited with code {result.returncode}")
         except Exception as e:
-            print(f"\n❌ Error running L7 CPP Spring Boot Preprocessor: {e}")
+            debug_print(f"\n❌ Error running L7 CPP Spring Boot Preprocessor: {e}")
     else:
-        print("\n⚠️  No library directories found, skipping L7 preprocessing")
+        debug_print("\n⚠️  No library directories found, skipping L7 preprocessing")

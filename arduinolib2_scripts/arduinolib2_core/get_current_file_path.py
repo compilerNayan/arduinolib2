@@ -117,16 +117,16 @@ def main():
     file_paths = []
     
     for file_path in args.files:
-        print(f"\nFile: {file_path}")
-        print(f"  Absolute path: {get_file_path(file_path)}")
-        print(f"  Directory: {get_directory_path(file_path)}")
+        debug_print(f"\nFile: {file_path}")
+        debug_print(f"  Absolute path: {get_file_path(file_path)}")
+        debug_print(f"  Directory: {get_directory_path(file_path)}")
         
         # Show relative path from specified root
         try:
             relative_path = get_relative_path_from_root(file_path, args.root)
-            print(f"  Relative path from {args.root}: {relative_path}")
+            debug_print(f"  Relative path from {args.root}: {relative_path}")
         except Exception as e:
-            print(f"  Could not calculate relative path: {e}")
+            debug_print(f"  Could not calculate relative path: {e}")
         
         file_paths.append(get_file_path(file_path))
     
@@ -138,7 +138,16 @@ def main():
 
 
 # Export functions for other scripts to import
-__all__ = [
+__all__
+
+# Import debug utility
+try:
+    from debug_utils import debug_print
+except ImportError:
+    # Fallback if debug_utils not found - create a no-op function
+    def debug_print(*args, **kwargs):
+        pass
+ = [
     'get_file_path',
     'get_directory_path',
     'get_relative_path_from_root',

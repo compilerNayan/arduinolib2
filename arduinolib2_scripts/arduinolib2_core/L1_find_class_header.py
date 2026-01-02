@@ -14,7 +14,7 @@ from typing import List, Optional, Tuple
 try:
     from find_cpp_files import find_cpp_files
 except ImportError:
-    print("Error: Could not import required modules. Make sure find_cpp_files.py is in the same directory.")
+    debug_print("Error: Could not import required modules. Make sure find_cpp_files.py is in the same directory.")
     sys.exit(1)
 
 
@@ -31,7 +31,7 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
     Returns:
         Path to the class header file, or None if not found
     """
-    print(f"Searching for class: {class_name}")
+    debug_print(f"Searching for class: {class_name}")
     
     # Step 1: Get all C++ source files in the search directory with include/exclude options
     all_files = find_cpp_files(
@@ -51,12 +51,12 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
             potential_headers.append(file_path)
     
     if not potential_headers:
-        print(f"Error: No header files found ending with {class_name}.h or {class_name}.hpp")
+        debug_print(f"Error: No header files found ending with {class_name}.h or {class_name}.hpp")
         return None
     
-    print(f"Found {len(potential_headers)} potential header files:")
+    debug_print(f"Found {len(potential_headers)} potential header files:")
     for header in potential_headers:
-        print(f"  {header}")
+        debug_print(f"  {header}")
     
     # Step 3: Check class names in each potential header
     matching_headers = []
@@ -81,34 +81,34 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
             
             if matches:
                 found_class_name = matches[0]  # Take the first class found
-                print(f"  {header_file}: contains class '{found_class_name}'")
+                debug_print(f"  {header_file}: contains class '{found_class_name}'")
                 
                 # Check if class name matches target class name (case insensitive)
                 if found_class_name.lower() == class_name_lower:
                     matching_headers.append(header_file)
-                    print(f"    ✓ Class name matches target class name!")
+                    debug_print(f"    ✓ Class name matches target class name!")
                 else:
-                    print(f"    ✗ Class name '{found_class_name}' doesn't match target '{class_name}'")
+                    debug_print(f"    ✗ Class name '{found_class_name}' doesn't match target '{class_name}'")
             else:
-                print(f"  {header_file}: no class found")
+                debug_print(f"  {header_file}: no class found")
                 
         except Exception as e:
-            print(f"  Error reading {header_file}: {e}")
+            debug_print(f"  Error reading {header_file}: {e}")
     
     # Step 4: Validate results
     if len(matching_headers) == 0:
-        print(f"Error: No header files found with class name matching '{class_name}'")
+        debug_print(f"Error: No header files found with class name matching '{class_name}'")
         return None
     elif len(matching_headers) > 1:
-        print(f"Error: Multiple header files found with matching class name '{class_name}':")
+        debug_print(f"Error: Multiple header files found with matching class name '{class_name}':")
         for header in matching_headers:
-            print(f"  {header}")
-        print("Expected exactly one matching header file.")
+            debug_print(f"  {header}")
+        debug_print("Expected exactly one matching header file.")
         return None
     else:
         # Exactly one matching header found
         class_header = matching_headers[0]
-        print(f"\n✓ Found class header: {class_header}")
+        debug_print(f"\n✓ Found class header: {class_header}")
         return class_header
 
 
@@ -128,9 +128,9 @@ def find_class_headers_for_names(class_names: List[str], search_root: str = ".",
     results = {}
     
     for class_name in class_names:
-        print(f"\n{'='*60}")
-        print(f"Processing: {class_name}")
-        print(f"{'='*60}")
+        debug_print(f"\n{'='*60}")
+        debug_print(f"Processing: {class_name}")
+        debug_print(f"{'='*60}")
         
         class_header = find_class_header_file(class_name, search_root, include_folders, exclude_folders)
         if class_header:
@@ -196,7 +196,7 @@ def main():
     class_names = args.class_names
     
     if not class_names:
-        print("No class names provided")
+        debug_print("No class names provided")
         return {}
     
     # Find class headers for all class names
@@ -204,19 +204,19 @@ def main():
     
     # Show summary if requested
     if args.summary:
-        print(f"\n{'='*60}")
-        print("SUMMARY")
-        print(f"{'='*60}")
-        print(f"Classes searched: {len(class_names)}")
-        print(f"Class headers found: {len([r for r in results.values() if r is not None])}")
-        print(f"Classes without headers: {len([r for r in results.values() if r is None])}")
+        debug_print(f"\n{'='*60}")
+        debug_print("SUMMARY")
+        debug_print(f"{'='*60}")
+        debug_print(f"Classes searched: {len(class_names)}")
+        debug_print(f"Class headers found: {len([r for r in results.values() if r is not None])}")
+        debug_print(f"Classes without headers: {len([r for r in results.values() if r is None])}")
         
-        print(f"\nResults:")
+        debug_print(f"\nResults:")
         for class_name, class_header in results.items():
             if class_header:
-                print(f"  ✓ {class_name} -> {class_header}")
+                debug_print(f"  ✓ {class_name} -> {class_header}")
             else:
-                print(f"  ✗ {class_name} -> No class header found")
+                debug_print(f"  ✗ {class_name} -> No class header found")
     
     # Save to file if requested
     if args.output:
@@ -226,7 +226,7 @@ def main():
                     f.write(f"{class_name} -> {class_header}\n")
                 else:
                     f.write(f"{class_name} -> No class header found\n")
-        print(f"\nResults saved to: {args.output}")
+        debug_print(f"\nResults saved to: {args.output}")
     
     return results
 
@@ -277,11 +277,20 @@ def find_interface_header_file(source_file: str, search_root: str = ".", include
         if class_names:
             return find_class_header_file(class_names[0], search_root, include_folders, exclude_folders)
     except ImportError:
-        print("Warning: find_class_names.py not available for backward compatibility")
+        debug_print("Warning: find_class_names.py not available for backward compatibility")
     return None
 
 # Export functions for other scripts to import
-__all__ = [
+__all__
+
+# Import debug utility
+try:
+    from debug_utils import debug_print
+except ImportError:
+    # Fallback if debug_utils not found - create a no-op function
+    def debug_print(*args, **kwargs):
+        pass
+ = [
     'find_class_header_file',
     'find_class_headers_for_names', 
     'get_class_header_for_name',

@@ -14,7 +14,16 @@ import subprocess
 import sys
 import os
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict
+
+# Import debug utility
+try:
+    from debug_utils import debug_print
+except ImportError:
+    # Fallback if debug_utils not found - create a no-op function
+    def debug_print(*args, **kwargs):
+        pass
+, Any
 
 # Get the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -55,9 +64,9 @@ def run_l6_generate_code(include_paths: list, exclude_paths: list, dispatcher_fi
             cmd.append("--dry-run")
         
         # Run the command
-        print("\n" + "=" * 80)
-        print("🚀 Step 1: Generating endpoint mappings...")
-        print("=" * 80)
+        debug_print("\n" + "=" * 80)
+        debug_print("🚀 Step 1: Generating endpoint mappings...")
+        debug_print("=" * 80)
         result = subprocess.run(cmd, capture_output=False, text=True, cwd=".")
         
         # Parse results
@@ -79,7 +88,7 @@ def run_l6_generate_code(include_paths: list, exclude_paths: list, dispatcher_fi
             'return_code': -1,
             'errors': [f"Exception: {e}"]
         }
-        print(f"❌ Exception running L6_generate_code_for_all_sources.py: {e}")
+        debug_print(f"❌ Exception running L6_generate_code_for_all_sources.py: {e}")
         return error_result
 
 
@@ -113,9 +122,9 @@ def run_l6_di_preprocessor(include_paths: list, exclude_paths: list, dry_run: bo
             cmd.append("--dry-run")
         
         # Run the command
-        print("\n" + "=" * 80)
-        print("🚀 Step 2: Processing dependency injection...")
-        print("=" * 80)
+        debug_print("\n" + "=" * 80)
+        debug_print("🚀 Step 2: Processing dependency injection...")
+        debug_print("=" * 80)
         result = subprocess.run(cmd, capture_output=False, text=True, cwd=".")
         
         # Parse results
@@ -137,7 +146,7 @@ def run_l6_di_preprocessor(include_paths: list, exclude_paths: list, dry_run: bo
             'return_code': -1,
             'errors': [f"Exception: {e}"]
         }
-        print(f"❌ Exception running L6_cpp_di_preprocessor.py: {e}")
+        debug_print(f"❌ Exception running L6_cpp_di_preprocessor.py: {e}")
         return error_result
 
 
@@ -150,35 +159,35 @@ def display_summary(step1_result: Dict[str, Any], step2_result: Dict[str, Any], 
         step2_result: Results from L6_cpp_di_preprocessor.py
         dry_run: Whether this was a dry run
     """
-    print("📊 L7 PREPROCESSING SUMMARY")
-    print("=" * 80)
+    debug_print("📊 L7 PREPROCESSING SUMMARY")
+    debug_print("=" * 80)
     
     # Step 1 results
     step1_status = "✅ SUCCESS" if step1_result['success'] else "❌ FAILED"
-    print(f"\nStep 1 - Endpoint Mapping Generation: {step1_status}")
+    debug_print(f"\nStep 1 - Endpoint Mapping Generation: {step1_status}")
     if step1_result['errors']:
         for error in step1_result['errors']:
-            print(f"  ⚠️  {error}")
+            debug_print(f"  ⚠️  {error}")
     
     # Step 2 results
     step2_status = "✅ SUCCESS" if step2_result['success'] else "❌ FAILED"
-    print(f"\nStep 2 - Dependency Injection Processing: {step2_status}")
+    debug_print(f"\nStep 2 - Dependency Injection Processing: {step2_status}")
     if step2_result['errors']:
         for error in step2_result['errors']:
-            print(f"  ⚠️  {error}")
+            debug_print(f"  ⚠️  {error}")
     
     if dry_run:
-        print(f"\n🔍 This was a dry run - no changes were made")
+        debug_print(f"\n🔍 This was a dry run - no changes were made")
     else:
         overall_success = step1_result['success'] and step2_result['success']
         if overall_success:
-            print(f"\n✅ All preprocessing steps completed successfully")
+            debug_print(f"\n✅ All preprocessing steps completed successfully")
         else:
-            print(f"\n⚠️  Some preprocessing steps failed")
+            debug_print(f"\n⚠️  Some preprocessing steps failed")
     
     # Overall result
     overall_success = step1_result['success'] and step2_result['success']
-    print(f"\n🎯 Overall Result: {'✅ SUCCESS' if overall_success else '❌ FAILED'}")
+    debug_print(f"\n🎯 Overall Result: {'✅ SUCCESS' if overall_success else '❌ FAILED'}")
 
 
 def main():
@@ -229,15 +238,15 @@ Examples:
     args = parser.parse_args()
     
     # Show configuration
-    print("🔧 L7 CPP Spring Boot Preprocessor Configuration")
-    print("=" * 50)
-    print(f"Include paths: {args.include if args.include else ['current directory']}")
-    print(f"Exclude paths: {args.exclude if args.exclude else ['none']}")
-    print(f"Dispatcher file: {args.dispatcher_file}")
-    print(f"Dry run: {'Yes' if args.dry_run else 'No'}")
-    print("\n" + "=" * 80)
-    print("🚀 Starting complete preprocessing workflow...")
-    print("=" * 80 + "\n")
+    debug_print("🔧 L7 CPP Spring Boot Preprocessor Configuration")
+    debug_print("=" * 50)
+    debug_print(f"Include paths: {args.include if args.include else ['current directory']}")
+    debug_print(f"Exclude paths: {args.exclude if args.exclude else ['none']}")
+    debug_print(f"Dispatcher file: {args.dispatcher_file}")
+    debug_print(f"Dry run: {'Yes' if args.dry_run else 'No'}")
+    debug_print("\n" + "=" * 80)
+    debug_print("🚀 Starting complete preprocessing workflow...")
+    debug_print("=" * 80 + "\n")
     
     # Step 1: Generate endpoint mappings
     step1_result = run_l6_generate_code(
@@ -259,7 +268,7 @@ Examples:
     )
     
     # Display summary
-    print("\n" + "=" * 80)
+    debug_print("\n" + "=" * 80)
     display_summary(step1_result, step2_result, args.dry_run)
     
     # Exit with appropriate code

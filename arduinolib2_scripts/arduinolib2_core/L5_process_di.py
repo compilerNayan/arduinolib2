@@ -15,6 +15,15 @@ import sys
 import os
 from pathlib import Path
 
+# Import debug utility
+try:
+    from debug_utils import debug_print
+except ImportError:
+    # Fallback if debug_utils not found - create a no-op function
+    def debug_print(*args, **kwargs):
+        pass
+
+
 # Get the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -38,10 +47,10 @@ def run_script(script_name, files, include_paths, exclude_paths, dry_run=False):
     """
     try:
         if not files:
-            print(f"⚠️  No files specified for {script_name}")
+            debug_print(f"⚠️  No files specified for {script_name}")
             return False
         
-        print(f"📁 Processing {len(files)} file(s) with {script_name}")
+        debug_print(f"📁 Processing {len(files)} file(s) with {script_name}")
         
         # Build the command based on script requirements
         if script_name == "L4_process_component.py":
@@ -77,29 +86,29 @@ def run_script(script_name, files, include_paths, exclude_paths, dry_run=False):
                 cmd.append("--dry-run")
             
         else:
-            print(f"❌ Unknown script: {script_name}")
+            debug_print(f"❌ Unknown script: {script_name}")
             return False
         
-        print(f"Running: {' '.join(cmd)}")
+        debug_print(f"Running: {' '.join(cmd)}")
         
         # Run the script
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=".")
         
         # Print output
         if result.stdout:
-            print(result.stdout)
+            debug_print(result.stdout)
         if result.stderr:
-            print(f"Errors from {script_name}:", result.stderr, file=sys.stderr)
+            debug_print(f"Errors from {script_name}:", result.stderr, file=sys.stderr)
         
         if result.returncode == 0:
-            print(f"✅ {script_name} completed successfully")
+            debug_print(f"✅ {script_name} completed successfully")
             return True
         else:
-            print(f"❌ {script_name} failed with return code {result.returncode}")
+            debug_print(f"❌ {script_name} failed with return code {result.returncode}")
             return False
             
     except Exception as e:
-        print(f"❌ Error running {script_name}: {e}")
+        debug_print(f"❌ Error running {script_name}: {e}")
         return False
 
 
@@ -116,10 +125,10 @@ def process_di(files, include_paths, exclude_paths, dry_run=False):
     Returns:
         dict: Results summary
     """
-    print("🚀 Starting Dependency Injection Processing")
-    print("=" * 60)
-    print(f"📁 Target files: {', '.join(files)}")
-    print()
+    debug_print("🚀 Starting Dependency Injection Processing")
+    debug_print("=" * 60)
+    debug_print(f"📁 Target files: {', '.join(files)}")
+    debug_print()
     
     results = {
         'component_success': False,
@@ -128,8 +137,8 @@ def process_di(files, include_paths, exclude_paths, dry_run=False):
     }
     
     # Step 1: Process COMPONENT macros
-    print("\n📋 Step 1: Processing COMPONENT macros with L4_process_component.py")
-    print("-" * 60)
+    debug_print("\n📋 Step 1: Processing COMPONENT macros with L4_process_component.py")
+    debug_print("-" * 60)
     
     component_success = run_script("L4_process_component.py", files, include_paths, exclude_paths, dry_run)
     results['component_success'] = component_success
@@ -138,8 +147,8 @@ def process_di(files, include_paths, exclude_paths, dry_run=False):
         results['errors'].append("L4_process_component.py failed")
     
     # Step 2: Process AUTOWIRED macros
-    print("\n🔧 Step 2: Processing AUTOWIRED macros with L4_process_autowired.py")
-    print("-" * 60)
+    debug_print("\n🔧 Step 2: Processing AUTOWIRED macros with L4_process_autowired.py")
+    debug_print("-" * 60)
     
     autowired_success = run_script("L4_process_autowired.py", files, include_paths, exclude_paths, dry_run)
     results['autowired_success'] = autowired_success
@@ -148,25 +157,25 @@ def process_di(files, include_paths, exclude_paths, dry_run=False):
         results['errors'].append("L4_process_autowired.py failed")
     
     # Summary
-    print("\n" + "=" * 60)
-    print("📊 PROCESSING SUMMARY")
-    print("=" * 60)
+    debug_print("\n" + "=" * 60)
+    debug_print("📊 PROCESSING SUMMARY")
+    debug_print("=" * 60)
     
-    print(f"COMPONENT Processing: {'✅ Success' if component_success else '❌ Failed'}")
-    print(f"AUTOWIRED Processing: {'✅ Success' if autowired_success else '❌ Failed'}")
+    debug_print(f"COMPONENT Processing: {'✅ Success' if component_success else '❌ Failed'}")
+    debug_print(f"AUTOWIRED Processing: {'✅ Success' if autowired_success else '❌ Failed'}")
     
     if results['errors']:
-        print(f"\n⚠️  Errors encountered:")
+        debug_print(f"\n⚠️  Errors encountered:")
         for error in results['errors']:
-            print(f"  - {error}")
+            debug_print(f"  - {error}")
     
     overall_success = component_success and autowired_success
-    print(f"\n🎯 Overall Result: {'✅ SUCCESS' if overall_success else '❌ FAILED'}")
+    debug_print(f"\n🎯 Overall Result: {'✅ SUCCESS' if overall_success else '❌ FAILED'}")
     
     if dry_run:
-        print("\n🔍 This was a dry run - no changes were made")
+        debug_print("\n🔍 This was a dry run - no changes were made")
     else:
-        print("\n✅ All changes have been applied")
+        debug_print("\n✅ All changes have been applied")
     
     return results
 
@@ -215,13 +224,13 @@ Examples:
     args = parser.parse_args()
     
     # Show configuration
-    print("🔧 L5 Process DI Configuration")
-    print("=" * 40)
-    print(f"Target files: {', '.join(args.files)}")
-    print(f"Include paths: {args.include if args.include else ['none']}")
-    print(f"Exclude paths: {args.exclude if args.exclude else ['none']}")
-    print(f"Dry run: {'Yes' if args.dry_run else 'No'}")
-    print()
+    debug_print("🔧 L5 Process DI Configuration")
+    debug_print("=" * 40)
+    debug_print(f"Target files: {', '.join(args.files)}")
+    debug_print(f"Include paths: {args.include if args.include else ['none']}")
+    debug_print(f"Exclude paths: {args.exclude if args.exclude else ['none']}")
+    debug_print(f"Dry run: {'Yes' if args.dry_run else 'No'}")
+    debug_print()
     
     # Process dependency injection
     results = process_di(args.files, args.include, args.exclude, args.dry_run)

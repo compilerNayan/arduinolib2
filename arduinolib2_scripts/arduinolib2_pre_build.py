@@ -1,5 +1,21 @@
-# Print message immediately when script is loaded
-print("Hello from library number 2")
+# Import debug utility first
+import sys
+import os
+from pathlib import Path
+
+# Add current directory to path to import debug_utils
+script_dir = Path(__file__).parent if '__file__' in globals() else Path(os.getcwd())
+sys.path.insert(0, str(script_dir))
+
+try:
+    from debug_utils import debug_print
+except ImportError:
+    # Fallback if debug_utils not found - create a no-op function
+    def debug_print(*args, **kwargs):
+        pass
+
+# Print message immediately when script is loaded (debug only)
+debug_print("Hello from library number 2")
 
 # Import PlatformIO environment first (if available)
 env = None
@@ -7,16 +23,12 @@ try:
     Import("env")
 except NameError:
     # Not running in PlatformIO environment (e.g., running from CMake)
-    print("Note: Not running in PlatformIO environment - some features may be limited")
+    debug_print("Note: Not running in PlatformIO environment - some features may be limited")
     # Create a mock env object for CMake builds
     class MockEnv:
         def get(self, key, default=None):
             return default
     env = MockEnv()
-
-import sys
-import os
-from pathlib import Path
 
 
 def get_library_dir():
@@ -34,7 +46,7 @@ def get_library_dir():
     for _ in range(10):  # Search up to 10 levels
         potential = current / "arduinolib2_scripts"
         if potential.exists() and potential.is_dir():
-            print(f"✓ Found library path by searching up directory tree: {potential}")
+            debug_print(f"✓ Found library path by searching up directory tree: {potential}")
             return potential
         parent = current.parent
         if parent == current:  # Reached filesystem root
@@ -60,9 +72,9 @@ def get_project_dir():
         project_dir = os.environ.get("CMAKE_PROJECT_DIR", None)
     
     if project_dir:
-        print(f"\nClient project directory: {project_dir}")
+        debug_print(f"\nClient project directory: {project_dir}")
     else:
-        print("Warning: Could not determine PROJECT_DIR from environment")
+        debug_print("Warning: Could not determine PROJECT_DIR from environment")
     return project_dir
 
 
@@ -227,7 +239,7 @@ def find_library_scripts(scripts_dir_name):
         # Check build/_deps/{lib_src_name}/{scripts_dir_name} from project directory
         build_deps = project_path / "build" / "_deps" / lib_src_name / scripts_dir_name
         if build_deps.exists() and build_deps.is_dir():
-            print(f"✓ Found {scripts_dir_name} (CMake from project): {build_deps}")
+            debug_print(f"✓ Found {scripts_dir_name} (CMake from project): {build_deps}")
             return build_deps
     
     # Add library directory (parent of arduinolib2_scripts)
@@ -242,14 +254,14 @@ def find_library_scripts(scripts_dir_name):
         if parent_deps.exists() and parent_deps.name == "_deps":
             lib_src = parent_deps / lib_src_name / scripts_dir_name
             if lib_src.exists() and lib_src.is_dir():
-                print(f"✓ Found {scripts_dir_name} (CMake sibling): {lib_src}")
+                debug_print(f"✓ Found {scripts_dir_name} (CMake sibling): {lib_src}")
                 return lib_src
             # Also check if {lib_src_name} exists but scripts might be in root
             lib_root = parent_deps / lib_src_name
             if lib_root.exists():
                 lib_scripts = lib_root / scripts_dir_name
                 if lib_scripts.exists() and lib_scripts.is_dir():
-                    print(f"✓ Found {scripts_dir_name} (CMake sibling root): {lib_scripts}")
+                    debug_print(f"✓ Found {scripts_dir_name} (CMake sibling root): {lib_scripts}")
                     return lib_scripts
     
     # Search in each path and their parent directories
@@ -259,13 +271,13 @@ def find_library_scripts(scripts_dir_name):
             # Check for {scripts_dir_name} in current directory
             potential = current / scripts_dir_name
             if potential.exists() and potential.is_dir():
-                print(f"✓ Found {scripts_dir_name}: {potential}")
+                debug_print(f"✓ Found {scripts_dir_name}: {potential}")
                 return potential
             
             # Check in build/_deps/{lib_src_name}/ (CMake FetchContent location)
             deps_path = current / "build" / "_deps" / lib_src_name / scripts_dir_name
             if deps_path.exists() and deps_path.is_dir():
-                print(f"✓ Found {scripts_dir_name} (CMake): {deps_path}")
+                debug_print(f"✓ Found {scripts_dir_name} (CMake): {deps_path}")
                 return deps_path
             
             # Check in .pio/libdeps/ (PlatformIO location)
@@ -280,7 +292,7 @@ def find_library_scripts(scripts_dir_name):
                             if lib_dir.is_dir():
                                 lib_scripts_path = lib_dir / scripts_dir_name
                                 if lib_scripts_path.exists() and lib_scripts_path.is_dir():
-                                    print(f"✓ Found {scripts_dir_name} (PlatformIO): {lib_scripts_path}")
+                                    debug_print(f"✓ Found {scripts_dir_name} (PlatformIO): {lib_scripts_path}")
                                     return lib_scripts_path
             
             parent = current.parent
@@ -288,7 +300,7 @@ def find_library_scripts(scripts_dir_name):
                 break
             current = parent
     
-    print(f"Warning: Could not find {scripts_dir_name} directory")
+    debug_print(f"Warning: Could not find {scripts_dir_name} directory")
     return None
 
 
@@ -315,11 +327,11 @@ project_dir = get_project_dir()
 # Get all library directories (available for use in scripts)
 all_libs = get_all_library_dirs(project_dir)
 if all_libs['root_dirs']:
-    print(f"\n📚 DDEE Found {len(all_libs['root_dirs'])} library directory(ies):")
+    debug_print(f"\n📚 DDEE Found {len(all_libs['root_dirs'])} library directory(ies):")
     for lib_name, lib_dir in sorted(all_libs['by_name'].items()):
-        print(f"   - {lib_name}: {lib_dir}")
+        debug_print(f"   - {lib_name}: {lib_dir}")
 if all_libs['scripts_dirs']:
-    print(f"\n📜 DDMM Found {len(all_libs['scripts_dirs'])} library scripts directory(ies)")
+    debug_print(f"\n📜 DDMM Found {len(all_libs['scripts_dirs'])} library scripts directory(ies)")
 
 # Import and execute scripts
 from arduinolib2_execute_scripts import execute_scripts
