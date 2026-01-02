@@ -406,9 +406,7 @@ except ImportError:
     # Fallback if debug_utils not found - create a no-op function
     def debug_print(*args, **kwargs):
         pass
-
-# Export functions for other scripts to import
-__all__ = [
+ = [
     'check_component_macro',
     'run_script_sequence',
     'process_file',

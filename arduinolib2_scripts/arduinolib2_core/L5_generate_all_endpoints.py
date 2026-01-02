@@ -325,9 +325,7 @@ except ImportError:
     # Fallback if debug_utils not found - create a no-op function
     def debug_print(*args, **kwargs):
         pass
-
-# Export functions for other scripts to import
-__all__ = [
+ = [
     'validate_cpp_file',
     'process_file',
     'process_all_files',

@@ -145,9 +145,7 @@ except ImportError:
     # Fallback if debug_utils not found - create a no-op function
     def debug_print(*args, **kwargs):
         pass
-
-# Export functions for other scripts to import
-__all__ = [
+ = [
     'get_mapping_variable_name',
     'generate_function_pointer',
     'main'

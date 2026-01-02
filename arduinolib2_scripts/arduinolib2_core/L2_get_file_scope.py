@@ -277,9 +277,7 @@ except ImportError:
     # Fallback if debug_utils not found - create a no-op function
     def debug_print(*args, **kwargs):
         pass
-
-# Export functions for other scripts to import
-__all__ = [
+ = [
     'get_file_scope',
     'get_file_scope_info',
     'process_multiple_files',

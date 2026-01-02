@@ -345,9 +345,7 @@ except ImportError:
     # Fallback if debug_utils not found - create a no-op function
     def debug_print(*args, **kwargs):
         pass
-
-# Export functions for other scripts to import
-__all__ = [
+ = [
     'find_class_closing_brace',
     'generate_instance_code',
     'inject_instance_code',

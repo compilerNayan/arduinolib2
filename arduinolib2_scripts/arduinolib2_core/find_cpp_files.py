@@ -158,9 +158,7 @@ except ImportError:
     # Fallback if debug_utils not found - create a no-op function
     def debug_print(*args, **kwargs):
         pass
-
-# Export functions for other scripts to import
-__all__ = ['find_cpp_files', 'main', 'get_cpp_files_command']
+ = ['find_cpp_files', 'main', 'get_cpp_files_command']
 
 def get_cpp_files_command():
     """Command-line interface function that returns the list of C++ files."""

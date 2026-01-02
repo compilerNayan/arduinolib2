@@ -350,9 +350,7 @@ except ImportError:
     # Fallback if debug_utils not found - create a no-op function
     def debug_print(*args, **kwargs):
         pass
-
-# Export functions for other scripts to import
-__all__ = [
+ = [
     'get_interface_name_from_file',
     'find_interface_header_path',
     'get_current_file_info',
