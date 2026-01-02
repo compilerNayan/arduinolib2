@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Script to process AUTOWIRED macros in C++ files.
+Script to process @Autowired annotations in C++ files.
 
 This script:
 1. Gets the class name from the file
-2. Finds AUTOWIRED macros (not commented)
-3. Parses AUTOWIRED statements to extract variable type, object name, and base type
+2. Finds @Autowired annotations (not processed)
+3. Parses @Autowired statements to extract variable type, object name, and base type
 4. Replaces the variable declaration with GetInstance() call
-5. Comments out the AUTOWIRED macro
+5. Marks the @Autowired annotation as processed
 """
 
 import re
@@ -25,7 +25,7 @@ except ImportError:
 
 def find_autowired_macros(file_path):
     """
-    Find all AUTOWIRED macros in the file that are not commented out.
+    Find all @Autowired annotations in the file that are not processed.
     
     Returns:
         list: List of tuples (line_number, line_content, match_info)
@@ -35,6 +35,10 @@ def find_autowired_macros(file_path):
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
+        
+        # Pattern for @Autowired annotation
+        autowired_annotation_pattern = re.compile(r'///\s*@Autowired\b')
+        autowired_processed_pattern = re.compile(r'/\*\s*@Autowired\s*\*/')
             
         for line_num, line in enumerate(lines, 1):
             stripped_line = line.strip()
@@ -42,18 +46,42 @@ def find_autowired_macros(file_path):
             # Skip empty lines
             if not stripped_line:
                 continue
-                
-            # Skip commented lines (including //AUTOWIRED)
-            if stripped_line.startswith('//'):
+            
+            # Skip already processed annotations
+            if autowired_processed_pattern.search(stripped_line):
                 continue
                 
-            # Find AUTOWIRED macro at the beginning of the line or with whitespace
-            autowired_match = re.match(r'^\s*AUTOWIRED\s*$', stripped_line)
+            # Skip comments (but not annotations)
+            if stripped_line.startswith('/*'):
+                continue
+            # Skip other single-line comments that aren't annotations
+            if stripped_line.startswith('//') and not autowired_annotation_pattern.search(stripped_line):
+                continue
+                
+            # Find @Autowired annotation
+            autowired_match = autowired_annotation_pattern.search(stripped_line)
             if autowired_match:
                 # Look at the next line for the variable declaration
                 if line_num < len(lines):
                     next_line = lines[line_num].strip()
                     # Parse the next line for variable declaration
+                    var_match = parse_variable_declaration(next_line)
+                    if var_match:
+                        autowired_macros.append({
+                            'type': 'variable',
+                            'line_number': line_num,
+                            'line_content': line.rstrip(),
+                            'next_line_number': line_num + 1,
+                            'next_line_content': lines[line_num].rstrip(),
+                            'variable_type': var_match['variable_type'],
+                            'object_name': var_match['object_name'],
+                            'variable_base_type': var_match['variable_base_type']
+                        })
+            
+            # Check for legacy AUTOWIRED macro (for backward compatibility)
+            if re.match(r'^\s*AUTOWIRED\s*$', stripped_line):
+                if line_num < len(lines):
+                    next_line = lines[line_num].strip()
                     var_match = parse_variable_declaration(next_line)
                     if var_match:
                         autowired_macros.append({
@@ -76,7 +104,7 @@ def find_autowired_macros(file_path):
 
 def find_autowired_constructor(file_path, class_name):
     """
-    Find AUTOWIRED constructor for the given class.
+    Find @Autowired constructor for the given class.
     
     Args:
         file_path (str): Path to the C++ file
@@ -88,6 +116,10 @@ def find_autowired_constructor(file_path, class_name):
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
+        
+        # Pattern for @Autowired annotation
+        autowired_annotation_pattern = re.compile(r'///\s*@Autowired\b')
+        autowired_processed_pattern = re.compile(r'/\*\s*@Autowired\s*\*/')
             
         for line_num, line in enumerate(lines, 1):
             stripped_line = line.strip()
@@ -95,21 +127,39 @@ def find_autowired_constructor(file_path, class_name):
             # Skip empty lines
             if not stripped_line:
                 continue
-                
-            # Skip commented lines (including lines that start with //)
-            if stripped_line.startswith('//'):
+            
+            # Skip already processed annotations
+            if autowired_processed_pattern.search(stripped_line):
                 continue
                 
-            # Find AUTOWIRED macro (only uncommented ones)
-            autowired_match = re.match(r'^\s*AUTOWIRED\s*$', stripped_line)
+            # Skip comments (but not annotations)
+            if stripped_line.startswith('/*'):
+                continue
+            # Skip other single-line comments that aren't annotations
+            if stripped_line.startswith('//') and not autowired_annotation_pattern.search(stripped_line):
+                continue
+                
+            # Find @Autowired annotation
+            autowired_match = autowired_annotation_pattern.search(stripped_line)
             if autowired_match:
                 # Look for constructor in the next few lines
                 constructor_info = find_constructor_after_autowired(lines, line_num, class_name)
                 if constructor_info:
-                    # Return the AUTOWIRED macro line number, not the constructor line number
+                    # Return the @Autowired annotation line number, not the constructor line number
                     return {
                         'type': 'constructor',
-                        'line_number': line_num,  # This is the AUTOWIRED macro line
+                        'line_number': line_num,  # This is the @Autowired annotation line
+                        'line_content': line.rstrip(),
+                        'constructor_info': constructor_info
+                    }
+            
+            # Check for legacy AUTOWIRED macro (for backward compatibility)
+            if re.match(r'^\s*AUTOWIRED\s*$', stripped_line):
+                constructor_info = find_constructor_after_autowired(lines, line_num, class_name)
+                if constructor_info:
+                    return {
+                        'type': 'constructor',
+                        'line_number': line_num,
                         'line_content': line.rstrip(),
                         'constructor_info': constructor_info
                     }
@@ -123,11 +173,11 @@ def find_autowired_constructor(file_path, class_name):
 
 def find_constructor_after_autowired(lines, autowired_line, class_name):
     """
-    Find constructor after AUTOWIRED macro.
+    Find constructor after @Autowired annotation.
     
     Args:
         lines (list): All lines in the file
-        autowired_line (int): Line number of AUTOWIRED macro
+        autowired_line (int): Line number of @Autowired annotation
         class_name (str): Expected class name for constructor
         
     Returns:
@@ -306,7 +356,7 @@ def process_autowired_macros(file_path, dry_run=False):
     """
     print(f"Processing: {file_path}")
     
-    # Get class name (optional - only needed for constructor AUTOWIRED)
+    # Get class name (optional - only needed for constructor @Autowired)
     class_name = None
     try:
         class_names = get_class_names_from_file(file_path)
@@ -314,29 +364,29 @@ def process_autowired_macros(file_path, dry_run=False):
             class_name = class_names[0]  # Use the first class name
             print(f"  Class name: {class_name}")
         else:
-            print("  ℹ️  No class names found in file (this is OK for simple AUTOWIRED variables)")
+            print("  ℹ️  No class names found in file (this is OK for simple @Autowired variables)")
     except Exception as e:
-        print(f"  ℹ️  Could not get class name: {e} (this is OK for simple AUTOWIRED variables)")
+        print(f"  ℹ️  Could not get class name: {e} (this is OK for simple @Autowired variables)")
     
-    # Find AUTOWIRED variable macros (these don't need class names)
+    # Find @Autowired variable annotations (these don't need class names)
     autowired_macros = find_autowired_macros(file_path)
     
-    # Find AUTOWIRED constructor (this needs class name)
+    # Find @Autowired constructor (this needs class name)
     autowired_constructor = None
     if class_name:
         autowired_constructor = find_autowired_constructor(file_path, class_name)
     else:
-        print("  ℹ️  Skipping constructor AUTOWIRED check (no class name available)")
+        print("  ℹ️  Skipping constructor @Autowired check (no class name available)")
     
     total_autowired = len(autowired_macros) + (1 if autowired_constructor else 0)
     
     if total_autowired == 0:
-        print("  ℹ️  No AUTOWIRED macros found")
-        return {'success': True, 'autowired_count': 0, 'message': 'No AUTOWIRED macros found'}
+        print("  ℹ️  No @Autowired annotations found")
+        return {'success': True, 'autowired_count': 0, 'message': 'No @Autowired annotations found'}
     
-    print(f"  Found {len(autowired_macros)} AUTOWIRED variable macro(s)")
+    print(f"  Found {len(autowired_macros)} @Autowired variable annotation(s)")
     if autowired_constructor:
-        print(f"  Found 1 AUTOWIRED constructor macro")
+        print(f"  Found 1 @Autowired constructor annotation")
     
     # Log whether we're processing with or without class name
     if class_name:
@@ -430,7 +480,7 @@ def process_autowired_macros(file_path, dry_run=False):
     
     # Summary
     if processed_count > 0:
-        print(f"  📊 Summary: {processed_count} AUTOWIRED macro(s) processed")
+        print(f"  📊 Summary: {processed_count} @Autowired annotation(s) processed")
     if errors:
         print(f"  ⚠️  Errors: {len(errors)}")
         for error in errors:
@@ -560,9 +610,21 @@ def apply_all_autowired_changes(file_path, all_macros):
         sorted_macros = sorted(all_macros, key=lambda x: x['line_number'], reverse=True)
         
         for macro_info in sorted_macros:
-            # Comment out the AUTOWIRED macro
+            # Mark @Autowired annotation as processed or comment out legacy AUTOWIRED macro
             autowired_line = macro_info['line_number'] - 1  # Convert to 0-based index
-            lines[autowired_line] = f"// {lines[autowired_line].rstrip()}\n"
+            original_line = lines[autowired_line]
+            stripped_original = original_line.strip()
+            
+            # Check if it's an annotation or legacy macro
+            autowired_annotation_pattern = re.compile(r'///\s*@Autowired\b')
+            if autowired_annotation_pattern.search(stripped_original):
+                # Mark annotation as processed: /// @Autowired → /* @Autowired */
+                indent = len(original_line) - len(original_line.lstrip())
+                indent_str = original_line[:indent]
+                lines[autowired_line] = f"{indent_str}/* @Autowired */\n"
+            else:
+                # Legacy macro: comment it out
+                lines[autowired_line] = f"// {original_line.rstrip()}\n"
             
             if macro_info['type'] == 'variable':
                 # Replace the variable declaration
@@ -594,7 +656,7 @@ def apply_all_autowired_changes(file_path, all_macros):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Process AUTOWIRED macros in C++ files",
+        description="Process @Autowired annotations in C++ files",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:

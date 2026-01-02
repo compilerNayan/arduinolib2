@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script to process component files by running a sequence of scripts when COMPONENT macro is found.
+Script to process component files by running a sequence of scripts when @Component annotation is found.
 Orchestrates multiple L1, L2, and L3 scripts to fully process a component file.
 """
 
@@ -18,13 +18,13 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def check_component_macro(file_path: str) -> bool:
     """
-    Check if a file has the COMPONENT macro using L1_check_component_macro script.
+    Check if a file has the @Component annotation using L1_check_component_macro script.
     
     Args:
         file_path: Path to the C++ file to check
         
     Returns:
-        True if COMPONENT macro is found, False otherwise
+        True if @Component annotation is found, False otherwise
     """
     try:
         # Check if the file has COMPONENT macro
@@ -189,24 +189,24 @@ def run_script_sequence(file_path: str, include_paths: List[str], exclude_paths:
             print(f"✗ {error_msg}")
             return results
         
-        # Step 6: Comment out COMPONENT macro
-        print("\n--- Step 6: Commenting COMPONENT macro ---")
+        # Step 6: Mark @Component annotation as processed
+        print("\n--- Step 6: Processing @Component annotation ---")
         if dry_run:
-            print("Would comment COMPONENT macro (dry run)")
+            print("Would process @Component annotation (dry run)")
             results['steps_completed'].append('comment_component_macro')
         else:
             try:
                 success = L1_check_component_macro.comment_component_macro(file_path)
                 if success:
                     results['steps_completed'].append('comment_component_macro')
-                    print("✓ COMPONENT macro commented successfully")
+                    print("✓ @Component annotation processed successfully")
                 else:
-                    error_msg = "Failed to comment COMPONENT macro"
+                    error_msg = "Failed to process @Component annotation"
                     results['errors'].append(error_msg)
                     print(f"✗ {error_msg}")
                     return results
             except Exception as e:
-                error_msg = f"Error commenting COMPONENT macro: {e}"
+                error_msg = f"Error processing @Component annotation: {e}"
                 results['errors'].append(error_msg)
                 print(f"✗ {error_msg}")
                 return results
@@ -225,7 +225,7 @@ def run_script_sequence(file_path: str, include_paths: List[str], exclude_paths:
 
 def process_file(file_path: str, include_paths: List[str], exclude_paths: List[str], dry_run: bool = False) -> Dict[str, any]:
     """
-    Process a single file to check for COMPONENT macro and run script sequence if found.
+    Process a single file to check for @Component annotation and run script sequence if found.
     
     Args:
         file_path: Path to the C++ file to process
@@ -247,12 +247,12 @@ def process_file(file_path: str, include_paths: List[str], exclude_paths: List[s
     try:
         print(f"\nProcessing file: {file_path}")
         
-        # Step 1: Check if file has COMPONENT macro
+        # Step 1: Check if file has @Component annotation
         has_component = check_component_macro(file_path)
         results['has_component'] = has_component
         
         if has_component:
-            print(f"✓ COMPONENT macro found in {file_path}")
+            print(f"✓ @Component annotation found in {file_path}")
             print("Running script sequence...")
             
             # Run the script sequence
@@ -264,7 +264,7 @@ def process_file(file_path: str, include_paths: List[str], exclude_paths: List[s
             results['errors'].extend(sequence_results['errors'])
             
         else:
-            print(f"✗ No COMPONENT macro found in {file_path}")
+            print(f"✗ No @Component annotation found in {file_path}")
             print("Skipping file (no action needed)")
             results['success'] = True  # Successfully determined no action needed
         
@@ -276,7 +276,7 @@ def process_file(file_path: str, include_paths: List[str], exclude_paths: List[s
 
 def process_multiple_files(file_paths: List[str], include_paths: List[str], exclude_paths: List[str], dry_run: bool = False) -> Dict[str, Dict[str, any]]:
     """
-    Process multiple files to check for COMPONENT macro and run script sequence if found.
+    Process multiple files to check for @Component annotation and run script sequence if found.
     
     Args:
         file_paths: List of file paths to process
@@ -327,7 +327,7 @@ def validate_cpp_file(file_path: str) -> bool:
 def main():
     """Main function to handle command line arguments and execute the component processing."""
     parser = argparse.ArgumentParser(
-        description="Process component files by running a sequence of scripts when COMPONENT macro is found"
+        description="Process component files by running a sequence of scripts when @Component annotation is found"
     )
     parser.add_argument(
         "files", 

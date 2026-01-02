@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Script to check if C++ files contain the COMPONENT macro above class declarations that inherit from interfaces.
-Validates that class inherits from interface and has COMPONENT macro.
+Script to check if C++ files contain the @Component annotation above class declarations that inherit from interfaces.
+Validates that class inherits from interface and has @Component annotation.
 """
 
 import re
@@ -20,7 +20,7 @@ except ImportError:
 
 def find_component_macros(file_path: str) -> List[Dict[str, str]]:
     """
-    Find all COMPONENT macros in a C++ file and their context.
+    Find all @Component annotations in a C++ file and their context.
     
     Args:
         file_path: Path to the C++ file (.cpp, .h, or .hpp)
@@ -40,40 +40,52 @@ def find_component_macros(file_path: str) -> List[Dict[str, str]]:
         print(f"Error reading file '{file_path}': {e}")
         return []
     
-    # Pattern to match COMPONENT macro (case sensitive)
-    # Matches: COMPONENT (standalone)
-    component_pattern = r'^COMPONENT\s*$'
+    # Pattern to match @Component annotation
+    # Pattern: /// @Component or ///@Component (ignoring whitespace)
+    # Also check for already processed /* @Component */ pattern
+    component_annotation_pattern = re.compile(r'///\s*@Component\b')
+    component_processed_pattern = re.compile(r'/\*\s*@Component\s*\*/')
     
     # Pattern to match class declarations
     class_pattern = r'class\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:[:{])'
     
     for line_num, line in enumerate(lines, 1):
-        # Check for COMPONENT macro - must be standalone line (not commented, not part of other text)
         stripped_line = line.strip()
         
-        # Skip commented lines
-        if stripped_line.startswith('//') or stripped_line.startswith('/*') or stripped_line.startswith('*'):
+        # Skip already processed annotations
+        if component_processed_pattern.search(stripped_line):
+            continue
+        
+        # Skip comments (but not the annotation itself which is in a comment)
+        if stripped_line.startswith('/*'):
+            continue
+        # Skip other single-line comments that aren't the annotation
+        if stripped_line.startswith('//') and not component_annotation_pattern.search(stripped_line):
             continue
             
-        # Skip lines that are part of other text (not standalone COMPONENT)
-        if stripped_line and not stripped_line.startswith('COMPONENT'):
-            continue
-            
-        # Check if line contains valid COMPONENT macro
-        component_match = re.search(component_pattern, stripped_line)
+        # Check if line contains valid @Component annotation
+        component_match = component_annotation_pattern.search(stripped_line)
         if component_match:
-            macro_text = component_match.group(0)
+            annotation_text = component_match.group(0)
             
             # Look ahead for class declaration (within next few lines)
+            # Allow other annotations/macros to appear between @Component and class
             class_found = False
             class_name = ""
             context_lines = []
             
-            # Check next 10 lines for class declaration (allowing for multiple macros)
+            # Check next 10 lines for class declaration (allowing for multiple annotations/macros)
             for i in range(line_num, min(line_num + 11, len(lines) + 1)):
                 if i <= len(lines):
                     next_line = lines[i - 1].strip()
                     context_lines.append(next_line)
+                    
+                    # Skip comments (but not annotations)
+                    if next_line.startswith('/*'):
+                        continue
+                    # Skip other single-line comments that aren't annotations
+                    if next_line.startswith('//') and not re.search(r'///\s*@(Component|Scope|Autowired)\b', next_line):
+                        continue
                     
                     # Check for class declaration
                     class_match = re.search(class_pattern, next_line)
@@ -82,12 +94,51 @@ def find_component_macros(file_path: str) -> List[Dict[str, str]]:
                         class_name = class_match.group(1)
                         break
                     
-                    # Stop if we hit a blank line or different macro (not SCOPE, COMPONENT, or VALIDATE)
+                    # Stop if we hit a blank line or something that's not an annotation/macro
+                    if not next_line:
+                        continue
+                    # Allow annotations and common macros to continue searching
+                    is_annotation_or_macro = (
+                        re.search(r'///\s*@(Component|Scope|Autowired)\b', next_line) or
+                        next_line.startswith(('COMPONENT', 'SCOPE', 'VALIDATE', 'AUTOWIRED'))
+                    )
+                    if not is_annotation_or_macro:
+                        break
+            
+            component_macros.append({
+                'macro': annotation_text,
+                'line_number': line_num,
+                'context': context_lines,
+                'class_name': class_name,
+                'has_class': class_found
+            })
+        
+        # Check for legacy COMPONENT macro (for backward compatibility)
+        if re.match(r'^COMPONENT\s*$', stripped_line) and not stripped_line.startswith('//') and not stripped_line.startswith('/*'):
+            # Look ahead for class declaration
+            class_found = False
+            class_name = ""
+            context_lines = []
+            
+            for i in range(line_num, min(line_num + 11, len(lines) + 1)):
+                if i <= len(lines):
+                    next_line = lines[i - 1].strip()
+                    context_lines.append(next_line)
+                    
+                    if next_line.startswith('//') or next_line.startswith('/*'):
+                        continue
+                    
+                    class_match = re.search(class_pattern, next_line)
+                    if class_match:
+                        class_found = True
+                        class_name = class_match.group(1)
+                        break
+                    
                     if not next_line or (next_line and not next_line.startswith(('COMPONENT', 'SCOPE', 'VALIDATE'))):
                         break
             
             component_macros.append({
-                'macro': macro_text,
+                'macro': 'COMPONENT',
                 'line_number': line_num,
                 'context': context_lines,
                 'class_name': class_name,
@@ -99,27 +150,41 @@ def find_component_macros(file_path: str) -> List[Dict[str, str]]:
 
 def check_component_macro_exists(file_path: str) -> bool:
     """
-    Simple check if COMPONENT macro exists in the file (ignoring commented ones).
+    Simple check if @Component annotation or COMPONENT macro exists in the file.
+    Supports both new annotation format and legacy macro format for backward compatibility.
     
     Args:
         file_path: Path to the C++ file
         
     Returns:
-        True if active COMPONENT macro is found, False otherwise
+        True if active @Component annotation or COMPONENT macro is found, False otherwise
     """
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
         
-        # Check each line for standalone COMPONENT macro (not commented)
+        component_annotation_pattern = re.compile(r'///\s*@Component\b')
+        component_processed_pattern = re.compile(r'/\*\s*@Component\s*\*/')
+        
+        # Check each line for @Component annotation or legacy COMPONENT macro
         for line in lines:
             stripped_line = line.strip()
             
-            # Skip commented lines
-            if stripped_line.startswith('//') or stripped_line.startswith('/*') or stripped_line.startswith('*'):
+            # Skip already processed annotations
+            if component_processed_pattern.search(stripped_line):
+                continue
+            
+            # Skip comments (but not annotations)
+            if stripped_line.startswith('/*'):
+                continue
+            if stripped_line.startswith('//') and not component_annotation_pattern.search(stripped_line):
                 continue
                 
-            # Check if line contains standalone COMPONENT macro
+            # Check if line contains @Component annotation
+            if component_annotation_pattern.search(stripped_line):
+                return True
+            
+            # Check for legacy COMPONENT macro (for backward compatibility)
             if stripped_line == 'COMPONENT':
                 return True
         
@@ -215,7 +280,8 @@ def validate_cpp_file(file_path: str) -> bool:
 
 def comment_component_macro(file_path: str) -> bool:
     """
-    Comment out all COMPONENT macros in a C++ file by adding '// ' before them.
+    Mark @Component annotation as processed in a C++ file.
+    Replaces /// @Component with /* @Component */.
     
     Args:
         file_path: Path to the C++ file to modify
@@ -227,27 +293,45 @@ def comment_component_macro(file_path: str) -> bool:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
         
+        component_annotation_pattern = re.compile(r'///\s*@Component\b')
+        component_processed_pattern = re.compile(r'/\*\s*@Component\s*\*/')
+        
         modified = False
+        modified_lines = []
+        
         for i, line in enumerate(lines):
             stripped_line = line.strip()
             
-            # Skip commented lines
-            if stripped_line.startswith('//') or stripped_line.startswith('/*') or stripped_line.startswith('*'):
+            # Skip already processed annotations
+            if component_processed_pattern.search(stripped_line):
+                modified_lines.append(line)
                 continue
-                
-            # Check if line contains standalone COMPONENT macro
-            if stripped_line == 'COMPONENT':
-                # Add comment prefix
-                lines[i] = '// ' + line
+            
+            # Check if line contains @Component annotation
+            component_match = component_annotation_pattern.search(stripped_line)
+            if component_match:
+                indent = len(line) - len(line.lstrip())
+                indent_str = line[:indent]
+                processed_line = f"{indent_str}/* @Component */\n"
+                modified_lines.append(processed_line)
                 modified = True
+                continue
+            
+            # Check for legacy COMPONENT macro (for backward compatibility)
+            if re.match(r'^COMPONENT\s*$', stripped_line):
+                modified_lines.append('// ' + line)
+                modified = True
+                continue
+            
+            modified_lines.append(line)
         
         # Write back to file if modifications were made
         if modified:
             with open(file_path, 'w', encoding='utf-8') as file:
-                file.writelines(lines)
-            print(f"✓ Commented COMPONENT macros in: {file_path}")
+                file.writelines(modified_lines)
+            print(f"✓ Processed @Component annotation in: {file_path}")
         else:
-            print(f"ℹ No COMPONENT macros found to comment in: {file_path}")
+            print(f"ℹ No @Component annotation found to process in: {file_path}")
         
         return True
         
@@ -280,7 +364,7 @@ def comment_component_macros_in_multiple_files(file_paths: List[str]) -> Dict[st
 def main():
     """Main function to handle command line arguments and execute the validation."""
     parser = argparse.ArgumentParser(
-        description="Check if C++ files contain COMPONENT macro above class declarations that inherit from interfaces"
+        description="Check if C++ files contain @Component annotation above class declarations that inherit from interfaces"
     )
     parser.add_argument(
         "files", 
@@ -328,7 +412,7 @@ def main():
             has_component = check_component_macro_exists(file_path)
             results[file_path] = {'has_component': has_component}
             
-            status = "✓ COMPONENT found" if has_component else "✗ No COMPONENT"
+            status = "✓ @Component found" if has_component else "✗ No @Component"
             print(f"{file_path}: {status}")
     else:
         # Detailed validation mode
@@ -341,18 +425,18 @@ def main():
             print(f"{'='*60}")
             
             if result['has_component_macro']:
-                print(f"✓ COMPONENT macro found ({len(result['component_macros'])} occurrences)")
+                print(f"✓ @Component annotation found ({len(result['component_macros'])} occurrences)")
                 print(f"  Classes found: {', '.join(result['class_names']) if result['class_names'] else 'None'}")
                 print(f"  Interfaces found: {', '.join(result['interface_names']) if result['interface_names'] else 'None'}")
                 print(f"  Classes with inheritance: {', '.join(result['classes_with_inheritance']) if result['classes_with_inheritance'] else 'None'}")
                 
                 if result['all_requirements_met']:
-                    print(f"  Status: ✓ All requirements met - COMPONENT macro is valid")
+                    print(f"  Status: ✓ All requirements met - @Component annotation is valid")
                 else:
-                    print(f"  Status: ✗ Requirements not met - COMPONENT macro has no significance")
+                    print(f"  Status: ✗ Requirements not met - @Component annotation has no significance")
                 
                 if args.detailed and result['component_macros']:
-                    print(f"\n  Detailed macro information:")
+                    print(f"\n  Detailed annotation information:")
                     for macro in result['component_macros']:
                         print(f"    Line {macro['line_number']}: {macro['macro']}")
                         if macro['has_class']:
@@ -360,7 +444,7 @@ def main():
                         else:
                             print(f"      → No class found")
             else:
-                print("✗ No COMPONENT macro found")
+                print("✗ No @Component annotation found")
     
     # Show summary if requested
     if args.summary and not args.simple:
@@ -372,27 +456,27 @@ def main():
         files_with_valid_component = len([r for r in results.values() if r.get('all_requirements_met', False)])
         
         print(f"Files analyzed: {total_files}")
-        print(f"Files with COMPONENT macro: {files_with_component}")
-        print(f"Files with valid COMPONENT macro: {files_with_valid_component}")
-        print(f"Files with invalid COMPONENT macro: {files_with_component - files_with_valid_component}")
+        print(f"Files with @Component annotation: {files_with_component}")
+        print(f"Files with valid @Component annotation: {files_with_valid_component}")
+        print(f"Files with invalid @Component annotation: {files_with_component - files_with_valid_component}")
     
     # Save to file if requested
     if args.output:
         with open(args.output, 'w') as f:
             if args.simple:
                 for file_path, result in results.items():
-                    status = "COMPONENT found" if result['has_component'] else "No COMPONENT"
+                    status = "@Component found" if result['has_component'] else "No @Component"
                     f.write(f"{file_path}: {status}\n")
             else:
                 for file_path, result in results.items():
                     f.write(f"{file_path}:\n")
                     if result['has_component_macro']:
-                        f.write(f"  COMPONENT macros: {len(result['component_macros'])}\n")
+                        f.write(f"  @Component annotations: {len(result['component_macros'])}\n")
                         f.write(f"  Classes: {', '.join(result['class_names']) if result['class_names'] else 'None'}\n")
                         f.write(f"  Interfaces: {', '.join(result['interface_names']) if result['interface_names'] else 'None'}\n")
                         f.write(f"  Valid: {result['all_requirements_met']}\n")
                     else:
-                        f.write(f"  No COMPONENT macro found\n")
+                        f.write(f"  No @Component annotation found\n")
                     f.write("\n")
         print(f"\nResults saved to: {args.output}")
     

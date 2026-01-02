@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Script to determine the final scope of a C++ file based on SCOPE macro and validator presence.
-Combines SCOPE macro detection and validator logic to determine final scope.
+Script to determine the final scope of a C++ file based on @Scope annotation and validator presence.
+Combines @Scope annotation detection and validator logic to determine final scope.
 """
 
 import os
@@ -29,20 +29,20 @@ def get_file_scope(file_path: str) -> str:
     Returns:
         Final scope string: SINGLETON, PROTOTYPE, SINGLETON_VALIDATOR, or PROTOTYPE_VALIDATOR
     """
-    # Step 1: Check for SCOPE macro
+    # Step 1: Check for @Scope annotation
     scope_macros = find_scope_macros(file_path)
     
     # Determine base scope
     base_scope = "SINGLETON"  # Default scope
     
     if scope_macros:
-        # Use the first SCOPE macro found (assuming one per file)
+        # Use the first @Scope annotation found (assuming one per file)
         scope_macro = scope_macros[0]
         base_scope = scope_macro['scope_value']
-        print(f"Found SCOPE macro: {scope_macro['macro']}")
+        print(f"Found @Scope annotation: {scope_macro['macro']}")
         print(f"Base scope: {base_scope}")
     else:
-        print(f"No SCOPE macro found, using default: {base_scope}")
+        print(f"No @Scope annotation found, using default: {base_scope}")
     
     # Step 2: Check for validator
     validator_name = get_validator_name(file_path)
@@ -71,7 +71,7 @@ def get_file_scope_info(file_path: str) -> Dict[str, Any]:
     Returns:
         Dictionary with complete scope information
     """
-    # Step 1: Get SCOPE macro information
+    # Step 1: Get @Scope annotation information
     scope_macros = find_scope_macros(file_path)
     
     # Step 2: Get validator information
@@ -84,7 +84,7 @@ def get_file_scope_info(file_path: str) -> Dict[str, Any]:
     if scope_macros:
         scope_macro = scope_macros[0]
         base_scope = scope_macro['scope_value']
-        scope_source = "macro"
+        scope_source = "annotation"
     
     # Step 4: Determine final scope
     has_validator = validator_info is not None
@@ -158,7 +158,7 @@ def validate_cpp_file(file_path: str) -> bool:
 def main():
     """Main function to handle command line arguments and execute the scope detection."""
     parser = argparse.ArgumentParser(
-        description="Determine the final scope of C++ files based on SCOPE macro and validator presence"
+        description="Determine the final scope of C++ files based on @Scope annotation and validator presence"
     )
     parser.add_argument(
         "files", 
