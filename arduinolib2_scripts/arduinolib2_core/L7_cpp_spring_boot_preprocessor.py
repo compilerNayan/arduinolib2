@@ -55,9 +55,9 @@ def run_l6_generate_code(include_paths: list, exclude_paths: list, dispatcher_fi
             cmd.append("--dry-run")
         
         # Run the command
-        print("\n" + "=" * 80)
-        print("🚀 Step 1: Generating endpoint mappings...")
-        print("=" * 80)
+        # print("\n" + "=" * 80)
+        # print("🚀 Step 1: Generating endpoint mappings...")
+        # print("=" * 80)
         result = subprocess.run(cmd, capture_output=False, text=True, cwd=".")
         
         # Parse results
@@ -79,7 +79,7 @@ def run_l6_generate_code(include_paths: list, exclude_paths: list, dispatcher_fi
             'return_code': -1,
             'errors': [f"Exception: {e}"]
         }
-        print(f"❌ Exception running L6_generate_code_for_all_sources.py: {e}")
+        # print(f"❌ Exception running L6_generate_code_for_all_sources.py: {e}")
         return error_result
 
 
@@ -113,9 +113,9 @@ def run_l6_di_preprocessor(include_paths: list, exclude_paths: list, dry_run: bo
             cmd.append("--dry-run")
         
         # Run the command
-        print("\n" + "=" * 80)
-        print("🚀 Step 2: Processing dependency injection...")
-        print("=" * 80)
+        # print("\n" + "=" * 80)
+        # print("🚀 Step 2: Processing dependency injection...")
+        # print("=" * 80)
         result = subprocess.run(cmd, capture_output=False, text=True, cwd=".")
         
         # Parse results
@@ -137,7 +137,7 @@ def run_l6_di_preprocessor(include_paths: list, exclude_paths: list, dry_run: bo
             'return_code': -1,
             'errors': [f"Exception: {e}"]
         }
-        print(f"❌ Exception running L6_cpp_di_preprocessor.py: {e}")
+        # print(f"❌ Exception running L6_cpp_di_preprocessor.py: {e}")
         return error_result
 
 
@@ -150,35 +150,40 @@ def display_summary(step1_result: Dict[str, Any], step2_result: Dict[str, Any], 
         step2_result: Results from L6_cpp_di_preprocessor.py
         dry_run: Whether this was a dry run
     """
-    print("📊 L7 PREPROCESSING SUMMARY")
-    print("=" * 80)
+    # print("📊 L7 PREPROCESSING SUMMARY")
+    # print("=" * 80)
     
     # Step 1 results
     step1_status = "✅ SUCCESS" if step1_result['success'] else "❌ FAILED"
-    print(f"\nStep 1 - Endpoint Mapping Generation: {step1_status}")
+    # print(f"\nStep 1 - Endpoint Mapping Generation: {step1_status}")
     if step1_result['errors']:
         for error in step1_result['errors']:
-            print(f"  ⚠️  {error}")
+            # print(f"  ⚠️  {error}")
     
+            pass
     # Step 2 results
     step2_status = "✅ SUCCESS" if step2_result['success'] else "❌ FAILED"
-    print(f"\nStep 2 - Dependency Injection Processing: {step2_status}")
+    # print(f"\nStep 2 - Dependency Injection Processing: {step2_status}")
     if step2_result['errors']:
         for error in step2_result['errors']:
-            print(f"  ⚠️  {error}")
+            # print(f"  ⚠️  {error}")
     
+            pass
     if dry_run:
-        print(f"\n🔍 This was a dry run - no changes were made")
+        # print(f"\n🔍 This was a dry run - no changes were made")
+        pass
     else:
         overall_success = step1_result['success'] and step2_result['success']
         if overall_success:
-            print(f"\n✅ All preprocessing steps completed successfully")
+            # print(f"\n✅ All preprocessing steps completed successfully")
+            pass
         else:
-            print(f"\n⚠️  Some preprocessing steps failed")
+            # print(f"\n⚠️  Some preprocessing steps failed")
     
+            pass
     # Overall result
     overall_success = step1_result['success'] and step2_result['success']
-    print(f"\n🎯 Overall Result: {'✅ SUCCESS' if overall_success else '❌ FAILED'}")
+    # print(f"\n🎯 Overall Result: {'✅ SUCCESS' if overall_success else '❌ FAILED'}")
 
 
 def main():
@@ -229,15 +234,15 @@ Examples:
     args = parser.parse_args()
     
     # Show configuration
-    print("🔧 L7 CPP Spring Boot Preprocessor Configuration")
-    print("=" * 50)
-    print(f"Include paths: {args.include if args.include else ['current directory']}")
-    print(f"Exclude paths: {args.exclude if args.exclude else ['none']}")
-    print(f"Dispatcher file: {args.dispatcher_file}")
-    print(f"Dry run: {'Yes' if args.dry_run else 'No'}")
-    print("\n" + "=" * 80)
-    print("🚀 Starting complete preprocessing workflow...")
-    print("=" * 80 + "\n")
+    # print("🔧 L7 CPP Spring Boot Preprocessor Configuration")
+    # print("=" * 50)
+    # print(f"Include paths: {args.include if args.include else ['current directory']}")
+    # print(f"Exclude paths: {args.exclude if args.exclude else ['none']}")
+    # print(f"Dispatcher file: {args.dispatcher_file}")
+    # print(f"Dry run: {'Yes' if args.dry_run else 'No'}")
+    # print("\n" + "=" * 80)
+    # print("🚀 Starting complete preprocessing workflow...")
+    # print("=" * 80 + "\n")
     
     # Step 1: Generate endpoint mappings
     step1_result = run_l6_generate_code(
@@ -259,7 +264,7 @@ Examples:
     )
     
     # Display summary
-    print("\n" + "=" * 80)
+    # print("\n" + "=" * 80)
     display_summary(step1_result, step2_result, args.dry_run)
     
     # Exit with appropriate code

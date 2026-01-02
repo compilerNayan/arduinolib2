@@ -117,17 +117,18 @@ def main():
     file_paths = []
     
     for file_path in args.files:
-        print(f"\nFile: {file_path}")
-        print(f"  Absolute path: {get_file_path(file_path)}")
-        print(f"  Directory: {get_directory_path(file_path)}")
+        # print(f"\nFile: {file_path}")
+        # print(f"  Absolute path: {get_file_path(file_path)}")
+        # print(f"  Directory: {get_directory_path(file_path)}")
         
         # Show relative path from specified root
         try:
             relative_path = get_relative_path_from_root(file_path, args.root)
-            print(f"  Relative path from {args.root}: {relative_path}")
+            # print(f"  Relative path from {args.root}: {relative_path}")
         except Exception as e:
-            print(f"  Could not calculate relative path: {e}")
+            # print(f"  Could not calculate relative path: {e}")
         
+            pass
         file_paths.append(get_file_path(file_path))
     
     # If only one file, return its path; otherwise return list of paths

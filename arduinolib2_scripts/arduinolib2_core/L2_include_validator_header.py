@@ -17,7 +17,7 @@ try:
     from find_interface_names import find_interface_names
     from find_cpp_files import find_cpp_files
 except ImportError:
-    print("Error: Could not import required modules. Make sure L1_get_validator_name.py, find_interface_names.py, and find_cpp_files.py are in the same directory.")
+    # print("Error: Could not import required modules. Make sure L1_get_validator_name.py, find_interface_names.py, and find_cpp_files.py are in the same directory.")
     sys.exit(1)
 
 
@@ -56,7 +56,7 @@ def find_validator_header_path(validator_name: str, search_root: str = ".", incl
             potential_headers.append(file_path)
     
     if not potential_headers:
-        print(f"Warning: No header files found for validator '{validator_name}'")
+        # print(f"Warning: No header files found for validator '{validator_name}'")
         return None
     
     # If multiple headers found, prefer .h over .hpp
@@ -96,7 +96,7 @@ def process_file_with_validator_include(file_path: str, search_root: str = ".", 
         }
     
     validator_name = validator_info['validator_name']
-    print(f"Found validator: {validator_name}")
+    # print(f"Found validator: {validator_name}")
     
     # Step 2: Find validator header file
     validator_header = find_validator_header_path(
@@ -116,14 +116,14 @@ def process_file_with_validator_include(file_path: str, search_root: str = ".", 
             'status': 'validator_header_not_found'
         }
     
-    print(f"Found validator header: {validator_header}")
+    # print(f"Found validator header: {validator_header}")
     
     # Step 3: Read the file and process VALIDATE macros
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
     except Exception as e:
-        print(f"Error reading file '{file_path}': {e}")
+        # print(f"Error reading file '{file_path}': {e}")
         return {
             'file_path': file_path,
             'has_validator': True,
@@ -176,9 +176,9 @@ def process_file_with_validator_include(file_path: str, search_root: str = ".", 
         try:
             with open(file_path, 'w', encoding='utf-8') as file:
                 file.writelines(modified_lines)
-            print(f"Modified file: {file_path}")
+            # print(f"Modified file: {file_path}")
         except Exception as e:
-            print(f"Error writing file '{file_path}': {e}")
+            # print(f"Error writing file '{file_path}': {e}")
             return {
                 'file_path': file_path,
                 'has_validator': True,
@@ -216,9 +216,9 @@ def process_multiple_files(file_paths: List[str], search_root: str = ".", includ
     results = {}
     
     for file_path in file_paths:
-        print(f"\n{'='*60}")
-        print(f"Processing: {file_path}")
-        print(f"{'='*60}")
+        # print(f"\n{'='*60}")
+        # print(f"Processing: {file_path}")
+        # print(f"{'='*60}")
         
         result = process_file_with_validator_include(
             file_path, 
@@ -231,20 +231,24 @@ def process_multiple_files(file_paths: List[str], search_root: str = ".", includ
         
         # Display results
         if result['has_validator']:
-            print(f"Validator: {result['validator_name']}")
+            # print(f"Validator: {result['validator_name']}")
             if result['validator_header']:
-                print(f"Header: {result['validator_header']}")
+                # print(f"Header: {result['validator_header']}")
                 if result['changes_made']:
-                    print(f"Changes made: {len(result['changes_made'])}")
+                    # print(f"Changes made: {len(result['changes_made'])}")
                     for change in result['changes_made']:
-                        print(f"  Line {change['line_number']}: {change['original']} → {change['new']}")
+                        # print(f"  Line {change['line_number']}: {change['original']} → {change['new']}")
+                        pass
                 else:
-                    print("No changes needed")
+                    # print("No changes needed")
+                    pass
             else:
-                print("Validator header not found")
+                # print("Validator header not found")
+                pass
         else:
-            print("No validator found")
+            # print("No validator found")
     
+            pass
     return results
 
 
@@ -309,10 +313,11 @@ def main():
     invalid_files = [f for f in args.files if not validate_cpp_file(f)]
     
     if invalid_files:
-        print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
+        # print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
     
+        pass
     if not valid_files:
-        print("No valid C++ files provided")
+        # print("No valid C++ files provided")
         return {}
     
     # Process files
@@ -339,9 +344,9 @@ def main():
     
     # Show summary if requested
     if args.summary:
-        print(f"\n{'='*60}")
-        print("SUMMARY")
-        print(f"{'='*60}")
+        # print(f"\n{'='*60}")
+        # print("SUMMARY")
+        # print(f"{'='*60}")
         
         total_files = len(valid_files)
         files_with_validator = len([r for r in results.values() if r['has_validator']])
@@ -349,15 +354,16 @@ def main():
         files_no_changes = len([r for r in results.values() if r['status'] == 'no_changes_needed'])
         files_errors = len([r for r in results.values() if 'error' in r])
         
-        print(f"Files analyzed: {total_files}")
-        print(f"Files with validator: {files_with_validator}")
-        print(f"Files modified: {files_modified}")
-        print(f"Files no changes needed: {files_no_changes}")
-        print(f"Files with errors: {files_errors}")
+        # print(f"Files analyzed: {total_files}")
+        # print(f"Files with validator: {files_with_validator}")
+        # print(f"Files modified: {files_modified}")
+        # print(f"Files no changes needed: {files_no_changes}")
+        # print(f"Files with errors: {files_errors}")
         
         if args.dry_run:
-            print(f"\nDRY RUN MODE - No files were actually modified")
+            # print(f"\nDRY RUN MODE - No files were actually modified")
     
+            pass
     # Save to file if requested
     if args.output:
         with open(args.output, 'w') as f:
@@ -375,7 +381,7 @@ def main():
                 else:
                     f.write(f"  No validator found\n")
                 f.write("\n")
-        print(f"\nResults saved to: {args.output}")
+        # print(f"\nResults saved to: {args.output}")
     
     return results
 

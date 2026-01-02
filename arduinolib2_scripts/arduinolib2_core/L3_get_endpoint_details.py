@@ -26,10 +26,10 @@ def find_class_and_interface(file_path: str) -> Optional[Dict[str, str]]:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
     except FileNotFoundError:
-        print(f"Error: File '{file_path}' not found")
+        # print(f"Error: File '{file_path}' not found")
         return None
     except Exception as e:
-        print(f"Error reading file '{file_path}': {e}")
+        # print(f"Error reading file '{file_path}': {e}")
         return None
     
     # Pattern to match class declarations with inheritance
@@ -71,7 +71,7 @@ def find_class_boundaries(file_path: str) -> Optional[Tuple[int, int]]:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
     except Exception as e:
-        print(f"Error reading file '{file_path}': {e}")
+        # print(f"Error reading file '{file_path}': {e}")
         return None
     
     class_start = None
@@ -172,7 +172,7 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
     except Exception as e:
-        print(f"Error reading file '{file_path}': {e}")
+        # print(f"Error reading file '{file_path}': {e}")
         return []
     
     # Find class boundaries
@@ -354,37 +354,39 @@ def display_endpoint_details(result: Dict[str, Any]) -> None:
         result: Dictionary with endpoint details
     """
     if not result['success']:
-        print(f"Error: {result.get('error', 'Unknown error')}")
+        # print(f"Error: {result.get('error', 'Unknown error')}")
         return
     
-    print(f"\n{'='*70}")
-    print(f"Class: {result['class_name']}")
-    print(f"Interface: {result['interface_name']}")
-    print(f"Base URL: {result['base_url']}")
-    print(f"{'='*70}")
+    # print(f"\n{'='*70}")
+    # print(f"Class: {result['class_name']}")
+    # print(f"Interface: {result['interface_name']}")
+    # print(f"Base URL: {result['base_url']}")
+    # print(f"{'='*70}")
     
     if not result['endpoints']:
-        print("\nNo HTTP mapping endpoints found inside the class.")
+        # print("\nNo HTTP mapping endpoints found inside the class.")
         return
     
-    print(f"\nFound {len(result['endpoints'])} endpoint(s):\n")
+    # print(f"\nFound {len(result['endpoints'])} endpoint(s):\n")
     
     for idx, endpoint in enumerate(result['endpoints'], 1):
-        print(f"Endpoint {idx}:")
-        print(f"  HTTP Method: {endpoint['http_method']}")
-        print(f"  URL: {endpoint['endpoint_url']}")
-        print(f"  Mapping Annotation: {endpoint.get('mapping_annotation', endpoint.get('mapping_macro', 'N/A'))}")
-        print(f"  Mapping Path: {endpoint['mapping_path']}")
-        print(f"  Function Name: {endpoint['function_name']}")
-        print(f"  Return Type: {endpoint['return_type']}")
-        print(f"  First Argument Type: {endpoint['first_arg_type'] if endpoint['first_arg_type'] else '(none)'}")
-        print(f"  Class Name: {endpoint['class_name']}")
-        print(f"  Interface Name: {endpoint['interface_name']}")
+        # print(f"Endpoint {idx}:")
+        # print(f"  HTTP Method: {endpoint['http_method']}")
+        # print(f"  URL: {endpoint['endpoint_url']}")
+        # print(f"  Mapping Annotation: {endpoint.get('mapping_annotation', endpoint.get('mapping_macro', 'N/A'))}")
+        # print(f"  Mapping Path: {endpoint['mapping_path']}")
+        # print(f"  Function Name: {endpoint['function_name']}")
+        # print(f"  Return Type: {endpoint['return_type']}")
+        # print(f"  First Argument Type: {endpoint['first_arg_type'] if endpoint['first_arg_type'] else '(none)'}")
+        # print(f"  Class Name: {endpoint['class_name']}")
+        # print(f"  Interface Name: {endpoint['interface_name']}")
         if endpoint.get('mapping_line'):
-            print(f"  Mapping at line: {endpoint['mapping_line']}")
+            # print(f"  Mapping at line: {endpoint['mapping_line']}")
+            pass
         if endpoint.get('function_line'):
-            print(f"  Function at line: {endpoint['function_line']}")
-        print()
+            # print(f"  Function at line: {endpoint['function_line']}")
+            pass
+        # print()
 
 
 def main():
@@ -406,7 +408,7 @@ def main():
     
     # Validate file
     if not validate_cpp_file(args.file):
-        print(f"Error: '{args.file}' is not a valid C++ file")
+        # print(f"Error: '{args.file}' is not a valid C++ file")
         return None
     
     # Get endpoint details

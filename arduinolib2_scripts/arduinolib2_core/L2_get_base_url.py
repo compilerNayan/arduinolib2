@@ -25,10 +25,10 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
     except FileNotFoundError:
-        print(f"Error: File '{file_path}' not found")
+        # print(f"Error: File '{file_path}' not found")
         return None
     except Exception as e:
-        print(f"Error reading file '{file_path}': {e}")
+        # print(f"Error reading file '{file_path}': {e}")
         return None
     
     # Pattern to match @RequestMapping annotation with value
@@ -241,10 +241,11 @@ def main():
     invalid_files = [f for f in args.files if not validate_cpp_file(f)]
     
     if invalid_files:
-        print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
+        # print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
     
+        pass
     if not valid_files:
-        print("No valid C++ files provided")
+        # print("No valid C++ files provided")
         return {}
     
     # Process files
@@ -254,15 +255,18 @@ def main():
         base_url = get_base_url(file_path)
         
         if args.simple:
-            print(base_url)
+            # print(base_url)
+            pass
         else:
             base_url_info = get_base_url_info(file_path)
             if base_url_info['found']:
-                print(f"\nBase URL: {base_url_info['base_url']}")
-                print(f"Found at line {base_url_info['line_number']} above class {base_url_info['class_name']}")
+                # print(f"\nBase URL: {base_url_info['base_url']}")
+                # print(f"Found at line {base_url_info['line_number']} above class {base_url_info['class_name']}")
+                pass
             else:
-                print(f"\nBase URL: {base_url_info['base_url']} (default - RequestMapping not found)")
+                # print(f"\nBase URL: {base_url_info['base_url']} (default - RequestMapping not found)")
             
+                pass
         results = {file_path: get_base_url_info(file_path)}
     else:
         # Multiple files - process all
@@ -271,39 +275,44 @@ def main():
         # Display results
         for file_path, info in results.items():
             if args.simple:
-                print(f"{file_path}: {info['base_url']}")
+                # print(f"{file_path}: {info['base_url']}")
+                pass
             else:
-                print(f"\n{'='*60}")
-                print(f"File: {file_path}")
-                print(f"{'='*60}")
+                # print(f"\n{'='*60}")
+                # print(f"File: {file_path}")
+                # print(f"{'='*60}")
                 
                 if info['found']:
-                    print(f"Base URL: {info['base_url']}")
-                    print(f"Found at line {info['line_number']} above class {info['class_name']}")
+                    # print(f"Base URL: {info['base_url']}")
+                    # print(f"Found at line {info['line_number']} above class {info['class_name']}")
+                    pass
                 else:
-                    print(f"Base URL: {info['base_url']} (default - RequestMapping not found)")
+                    # print(f"Base URL: {info['base_url']} (default - RequestMapping not found)")
     
+                    pass
     # Show summary if requested
     if args.summary and len(valid_files) > 1:
-        print(f"\n{'='*60}")
-        print("SUMMARY")
-        print(f"{'='*60}")
+        # print(f"\n{'='*60}")
+        # print("SUMMARY")
+        # print(f"{'='*60}")
         
         files_with_mapping = len([r for r in results.values() if r['found']])
         files_without_mapping = len([r for r in results.values() if not r['found']])
         
-        print(f"Files analyzed: {len(valid_files)}")
-        print(f"Files with RequestMapping: {files_with_mapping}")
-        print(f"Files without RequestMapping: {files_without_mapping}")
+        # print(f"Files analyzed: {len(valid_files)}")
+        # print(f"Files with RequestMapping: {files_with_mapping}")
+        # print(f"Files without RequestMapping: {files_without_mapping}")
         
         if args.detailed:
-            print(f"\nDetailed results:")
+            # print(f"\nDetailed results:")
             for file_path, info in results.items():
                 if info['found']:
-                    print(f"  {file_path}: {info['base_url']} (line {info['line_number']}, class {info['class_name']})")
+                    # print(f"  {file_path}: {info['base_url']} (line {info['line_number']}, class {info['class_name']})")
+                    pass
                 else:
-                    print(f"  {file_path}: {info['base_url']} (default)")
+                    # print(f"  {file_path}: {info['base_url']} (default)")
     
+                    pass
     # Save to file if requested
     if args.output:
         with open(args.output, 'w') as f:
@@ -317,7 +326,7 @@ def main():
                 else:
                     f.write(f"  Found: No (using default '/')\n")
                 f.write("\n")
-        print(f"\nResults saved to: {args.output}")
+        # print(f"\nResults saved to: {args.output}")
     
     return results
 

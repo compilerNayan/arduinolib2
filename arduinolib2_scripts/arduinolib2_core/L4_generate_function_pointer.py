@@ -124,14 +124,16 @@ def main():
             with open(args.output, 'w', encoding='utf-8') as f:
                 f.write(generated_code)
                 f.write('\n')
-            print(f"Generated code saved to: {args.output}")
+            # print(f"Generated code saved to: {args.output}")
         except Exception as e:
-            print(f"Error writing to file '{args.output}': {e}")
-            print("\nGenerated code:")
-            print(generated_code)
+            # print(f"Error writing to file '{args.output}': {e}")
+            # print("\nGenerated code:")
+            # print(generated_code)
+            pass
     else:
-        print(generated_code)
+        # print(generated_code)
     
+        pass
     return generated_code
 
 

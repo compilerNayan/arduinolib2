@@ -34,7 +34,7 @@ def get_interface_name_from_file(file_path: str) -> Optional[str]:
             return interface_names[0]  # Take the first interface
         return None
     except Exception as e:
-        print(f"Error getting interface name from {file_path}: {e}")
+        # print(f"Error getting interface name from {file_path}: {e}")
         return None
 
 
@@ -63,7 +63,7 @@ def find_interface_header_path(interface_name: str, include_paths: List[str], ex
         if exclude_paths:
             cmd.extend(['--exclude'] + exclude_paths)
         
-        print(f"Running command: {' '.join(cmd)}")
+        # print(f"Running command: {' '.join(cmd)}")
         
         # Execute the command
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=os.getcwd())
@@ -90,15 +90,15 @@ def find_interface_header_path(interface_name: str, include_paths: List[str], ex
                     if os.path.exists(file_path):
                         return file_path
             
-            print(f"Could not parse header file path from output: {result.stdout}")
+            # print(f"Could not parse header file path from output: {result.stdout}")
             return None
         else:
-            print(f"L1_find_class_header failed with return code {result.returncode}")
-            print(f"Error output: {result.stderr}")
+            # print(f"L1_find_class_header failed with return code {result.returncode}")
+            # print(f"Error output: {result.stderr}")
             return None
             
     except Exception as e:
-        print(f"Error finding interface header path: {e}")
+        # print(f"Error finding interface header path: {e}")
         return None
 
 
@@ -117,7 +117,7 @@ def get_current_file_info(file_path: str) -> Optional[Dict[str, str]]:
         current_file_info = get_current_file_path.get_file_info(file_path)
         return current_file_info
     except Exception as e:
-        print(f"Error getting current file info: {e}")
+        # print(f"Error getting current file info: {e}")
         return None
 
 
@@ -141,24 +141,25 @@ def add_header_include(target_file: str, header_to_include: str, dry_run: bool =
         if dry_run:
             cmd.append('--dry-run')
         
-        print(f"Running command: {' '.join(cmd)}")
+        # print(f"Running command: {' '.join(cmd)}")
         
         # Execute the command
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=os.getcwd())
         
         if result.returncode == 0:
-            print(f"Successfully added include to {target_file}")
+            # print(f"Successfully added include to {target_file}")
             if dry_run:
-                print("Output (dry run):")
-                print(result.stdout)
+                # print("Output (dry run):")
+                # print(result.stdout)
+                pass
             return True
         else:
-            print(f"add_header_include failed with return code {result.returncode}")
-            print(f"Error output: {result.stderr}")
+            # print(f"add_header_include failed with return code {result.returncode}")
+            # print(f"Error output: {result.stderr}")
             return False
             
     except Exception as e:
-        print(f"Error adding header include: {e}")
+        # print(f"Error adding header include: {e}")
         return False
 
 
@@ -185,7 +186,7 @@ def process_file(file_path: str, include_paths: List[str], exclude_paths: List[s
     }
     
     try:
-        print(f"\nProcessing file: {file_path}")
+        # print(f"\nProcessing file: {file_path}")
         
         # Step 1: Get interface name
         interface_name = get_interface_name_from_file(file_path)
@@ -194,7 +195,7 @@ def process_file(file_path: str, include_paths: List[str], exclude_paths: List[s
             return results
         
         results['interface_name'] = interface_name
-        print(f"Interface name: {interface_name}")
+        # print(f"Interface name: {interface_name}")
         
         # Step 2: Find interface header path
         interface_header_file = find_interface_header_path(interface_name, include_paths, exclude_paths)
@@ -203,7 +204,7 @@ def process_file(file_path: str, include_paths: List[str], exclude_paths: List[s
             return results
         
         results['interface_header_file'] = interface_header_file
-        print(f"Interface header file: {interface_header_file}")
+        # print(f"Interface header file: {interface_header_file}")
         
         # Step 3: Get current file information
         current_file_path = get_current_file_path.get_file_path(file_path)
@@ -212,13 +213,13 @@ def process_file(file_path: str, include_paths: List[str], exclude_paths: List[s
             return results
         
         results['current_file_info'] = {'absolute_path': current_file_path}
-        print(f"Current file path: {current_file_path}")
+        # print(f"Current file path: {current_file_path}")
         
         # Step 4: Add header include
         success = add_header_include(interface_header_file, current_file_path, dry_run)
         if success:
             results['success'] = True
-            print(f"Successfully processed {file_path}")
+            # print(f"Successfully processed {file_path}")
         else:
             results['errors'].append("Failed to add header include")
         
@@ -250,16 +251,19 @@ def process_multiple_files(file_paths: List[str], include_paths: List[str], excl
         # Display results for this file
         if results['success']:
             if dry_run:
-                print(f"  Status: Would process successfully")
+                # print(f"  Status: Would process successfully")
+                pass
             else:
-                print(f"  Status: Processed successfully")
+                # print(f"  Status: Processed successfully")
+                pass
         else:
-            print(f"  Status: Failed to process")
+            # print(f"  Status: Failed to process")
             if results['errors']:
-                print("  Errors:")
+                # print("  Errors:")
                 for error in results['errors']:
-                    print(f"    {error}")
+                    # print(f"    {error}")
     
+                    pass
     return all_results
 
 
@@ -317,10 +321,11 @@ def main():
     invalid_files = [f for f in args.files if not validate_cpp_file(f)]
     
     if invalid_files:
-        print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
+        # print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
     
+        pass
     if not valid_files:
-        print("No valid C++ files provided")
+        # print("No valid C++ files provided")
         return {}
     
     # Process all files
@@ -328,14 +333,14 @@ def main():
     
     # Show summary if requested
     if args.summary:
-        print(f"\n=== Summary ===")
-        print(f"Files processed: {len(valid_files)}")
-        print(f"Files with successful processing: {len([r for r in results.values() if r['success']])}")
-        print(f"Include paths: {args.include if args.include else ['default']}")
-        print(f"Exclude paths: {args.exclude if args.exclude else ['none']}")
+        # print(f"\n=== Summary ===")
+        # print(f"Files processed: {len(valid_files)}")
+        # print(f"Files with successful processing: {len([r for r in results.values() if r['success']])}")
+        # print(f"Include paths: {args.include if args.include else ['default']}")
+        # print(f"Exclude paths: {args.exclude if args.exclude else ['none']}")
         
         total_errors = sum(len(r['errors']) for r in results.values())
-        print(f"Total errors: {total_errors}")
+        # print(f"Total errors: {total_errors}")
     
     return results
 

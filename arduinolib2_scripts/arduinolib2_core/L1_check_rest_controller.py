@@ -28,10 +28,10 @@ def find_rest_controller_macros(file_path: str) -> List[Dict[str, str]]:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
     except FileNotFoundError:
-        print(f"Error: File '{file_path}' not found")
+        # print(f"Error: File '{file_path}' not found")
         return []
     except Exception as e:
-        print(f"Error reading file '{file_path}': {e}")
+        # print(f"Error reading file '{file_path}': {e}")
         return []
     
     # Pattern to match @RestController annotation
@@ -268,10 +268,11 @@ def main():
     invalid_files = [f for f in args.files if not validate_cpp_file(f)]
     
     if invalid_files:
-        print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
+        # print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
     
+        pass
     if not valid_files:
-        print("No valid C++ files provided")
+        # print("No valid C++ files provided")
         return {}
     
     # Check files
@@ -283,60 +284,66 @@ def main():
             results[file_path] = {'has_rest_controller': has_rest_controller}
             
             status = "✓ RestController found" if has_rest_controller else "✗ No RestController"
-            print(f"{file_path}: {status}")
+            # print(f"{file_path}: {status}")
     else:
         # Detailed validation mode
         results = check_multiple_files(valid_files)
         
         # Display results
         for file_path, result in results.items():
-            print(f"\n{'='*60}")
-            print(f"File: {file_path}")
-            print(f"{'='*60}")
+            # print(f"\n{'='*60}")
+            # print(f"File: {file_path}")
+            # print(f"{'='*60}")
             
             if result['has_rest_controller']:
-                print(f"✓ RestController macro found ({result['rest_controller_count']} occurrences)")
-                print(f"  Valid placements: {result['valid_placements']}")
-                print(f"  Invalid placements: {result['invalid_placements']}")
+                # print(f"✓ RestController macro found ({result['rest_controller_count']} occurrences)")
+                # print(f"  Valid placements: {result['valid_placements']}")
+                # print(f"  Invalid placements: {result['invalid_placements']}")
                 
                 if result['valid_placements'] > 0:
-                    print(f"  Status: ✓ RestController macro is properly placed above class")
+                    # print(f"  Status: ✓ RestController macro is properly placed above class")
+                    pass
                 else:
-                    print(f"  Status: ✗ RestController macro found but not followed by class")
+                    # print(f"  Status: ✗ RestController macro found but not followed by class")
                 
+                    pass
                 if args.detailed and result['macros']:
-                    print(f"\n  Detailed macro information:")
+                    # print(f"\n  Detailed macro information:")
                     for macro in result['macros']:
-                        print(f"    Line {macro['line_number']}: {macro['macro']}")
+                        # print(f"    Line {macro['line_number']}: {macro['macro']}")
                         if macro['has_class']:
-                            print(f"      → Class: {macro['class_name']}")
+                            # print(f"      → Class: {macro['class_name']}")
+                            pass
                         else:
-                            print(f"      → No class found")
+                            # print(f"      → No class found")
                 
+                            pass
                 if result['issues']:
-                    print(f"\n  Issues found:")
+                    # print(f"\n  Issues found:")
                     for issue in result['issues']:
-                        print(f"    ⚠ {issue}")
+                        # print(f"    ⚠ {issue}")
+                        pass
             else:
-                print("✗ No RestController macro found")
+                # print("✗ No RestController macro found")
     
+                pass
     # Show summary if requested
     if args.summary and not args.simple:
-        print(f"\n{'='*60}")
-        print("SUMMARY")
-        print(f"{'='*60}")
+        # print(f"\n{'='*60}")
+        # print("SUMMARY")
+        # print(f"{'='*60}")
         total_files = len(valid_files)
         files_with_rest_controller = len([r for r in results.values() if r['has_rest_controller']])
         total_rest_controllers = sum([r.get('rest_controller_count', 0) for r in results.values()])
         total_valid_placements = sum([r.get('valid_placements', 0) for r in results.values()])
         total_invalid_placements = sum([r.get('invalid_placements', 0) for r in results.values()])
         
-        print(f"Files analyzed: {total_files}")
-        print(f"Files with RestController: {files_with_rest_controller}")
-        print(f"Files without RestController: {total_files - files_with_rest_controller}")
-        print(f"Total RestController macros: {total_rest_controllers}")
-        print(f"Valid placements: {total_valid_placements}")
-        print(f"Invalid placements: {total_invalid_placements}")
+        # print(f"Files analyzed: {total_files}")
+        # print(f"Files with RestController: {files_with_rest_controller}")
+        # print(f"Files without RestController: {total_files - files_with_rest_controller}")
+        # print(f"Total RestController macros: {total_rest_controllers}")
+        # print(f"Valid placements: {total_valid_placements}")
+        # print(f"Invalid placements: {total_invalid_placements}")
     
     # Save to file if requested
     if args.output:
@@ -357,7 +364,7 @@ def main():
                     else:
                         f.write(f"  No RestController macro found\n")
                     f.write("\n")
-        print(f"\nResults saved to: {args.output}")
+        # print(f"\nResults saved to: {args.output}")
     
     return results
 

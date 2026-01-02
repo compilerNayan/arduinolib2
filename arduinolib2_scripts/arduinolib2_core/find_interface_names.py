@@ -26,10 +26,10 @@ def find_interface_names(file_path: str) -> List[str]:
         with open(file_path, 'r', encoding='utf-8') as file:
             content = file.read()
     except FileNotFoundError:
-        print(f"Error: File '{file_path}' not found")
+        # print(f"Error: File '{file_path}' not found")
         return []
     except Exception as e:
-        print(f"Error reading file '{file_path}': {e}")
+        # print(f"Error reading file '{file_path}': {e}")
         return []
     
     # Pattern to match class inheritance declarations
@@ -94,10 +94,10 @@ def find_class_inheritance_details(file_path: str) -> List[Dict[str, str]]:
         with open(file_path, 'r', encoding='utf-8') as file:
             content = file.read()
     except FileNotFoundError:
-        print(f"Error: File '{file_path}' not found")
+        # print(f"Error: File '{file_path}' not found")
         return []
     except Exception as e:
-        print(f"Error reading file '{file_path}': {e}")
+        # print(f"Error reading file '{file_path}': {e}")
         return []
     
     # Pattern to capture both class name and interfaces
@@ -171,10 +171,11 @@ def main():
     invalid_files = [f for f in args.files if not validate_cpp_file(f)]
     
     if invalid_files:
-        print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
+        # print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
     
+        pass
     if not valid_files:
-        print("No valid C++ files provided")
+        # print("No valid C++ files provided")
         return []
     
     # Find interface names in all files
@@ -185,34 +186,37 @@ def main():
     unique_interfaces = set()
     
     for file_path, interface_names in results.items():
-        print(f"\nFile: {file_path}")
+        # print(f"\nFile: {file_path}")
         if interface_names:
-            print(f"  Interfaces found: {', '.join(interface_names)}")
+            # print(f"  Interfaces found: {', '.join(interface_names)}")
             total_interfaces += len(interface_names)
             unique_interfaces.update(interface_names)
         else:
-            print("  No interfaces found")
+            # print("  No interfaces found")
     
+            pass
     # Show detailed relationships if requested
     if args.detailed:
-        print(f"\n=== Detailed Class-Interface Relationships ===")
+        # print(f"\n=== Detailed Class-Interface Relationships ===")
         for file_path in valid_files:
             details = find_class_inheritance_details(file_path)
             if details:
-                print(f"\nFile: {file_path}")
+                # print(f"\nFile: {file_path}")
                 for detail in details:
-                    print(f"  Class '{detail['class_name']}' implements: {', '.join(detail['interfaces'])}")
+                    # print(f"  Class '{detail['class_name']}' implements: {', '.join(detail['interfaces'])}")
     
+                    pass
     # Show summary if requested
     if args.summary:
-        print(f"\n=== Summary ===")
-        print(f"Files analyzed: {len(valid_files)}")
-        print(f"Files with interfaces: {len(results)}")
-        print(f"Total interface references: {total_interfaces}")
-        print(f"Unique interfaces: {len(unique_interfaces)}")
+        # print(f"\n=== Summary ===")
+        # print(f"Files analyzed: {len(valid_files)}")
+        # print(f"Files with interfaces: {len(results)}")
+        # print(f"Total interface references: {total_interfaces}")
+        # print(f"Unique interfaces: {len(unique_interfaces)}")
         if unique_interfaces:
-            print(f"Interface names: {', '.join(sorted(unique_interfaces))}")
+            # print(f"Interface names: {', '.join(sorted(unique_interfaces))}")
     
+            pass
     # Save to file if requested
     if args.output:
         with open(args.output, 'w') as f:
@@ -221,7 +225,7 @@ def main():
                 for interface_name in interface_names:
                     f.write(f"  {interface_name}\n")
                 f.write("\n")
-        print(f"\nResults saved to: {args.output}")
+        # print(f"\nResults saved to: {args.output}")
     
     # Return all interface names found for other scripts to consume
     all_interface_names = []
