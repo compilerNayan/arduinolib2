@@ -322,9 +322,6 @@ def main():
     return results
 
 
-# Export functions for other scripts to import
-__all__
-
 # Import debug utility
 try:
     from debug_utils import debug_print
