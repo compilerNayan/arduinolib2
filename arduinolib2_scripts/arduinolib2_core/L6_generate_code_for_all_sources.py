@@ -600,6 +600,9 @@ Examples:
     sys.exit(0)
 
 
+# Export functions for other scripts to import
+__all__
+
 # Import debug utility
 try:
     from debug_utils import debug_print
@@ -607,9 +610,7 @@ except ImportError:
     # Fallback if debug_utils not found - create a no-op function
     def debug_print(*args, **kwargs):
         pass
-
-# Export functions for other scripts to import
-__all__ = [
+ = [
     'find_cpp_files',
     'comment_rest_macros',
     'generate_code_map',
