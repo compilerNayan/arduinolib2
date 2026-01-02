@@ -27,8 +27,8 @@ try:
     import L3_get_endpoint_details
     import L1_find_class_header
 except ImportError as e:
-    debug_print(f"Error: Could not import required modules: {e}")
-    debug_print("Make sure L5_generate_all_endpoints.py, L3_get_endpoint_details.py, and L1_find_class_header.py are in the arduinolib2_core directory.")
+    print(f"Error: Could not import required modules: {e}")
+    print("Make sure L5_generate_all_endpoints.py, L3_get_endpoint_details.py, and L1_find_class_header.py are in the arduinolib2_core directory.")
     sys.exit(1)
 
 
@@ -53,7 +53,7 @@ def find_cpp_files(include_paths: List[str], exclude_paths: List[str]) -> List[s
     for include_path in include_paths:
         include_path_obj = Path(include_path).resolve()
         if not include_path_obj.exists():
-            debug_print(f"⚠️  Warning: Include path '{include_path}' does not exist")
+            print(f"⚠️  Warning: Include path '{include_path}' does not exist")
             continue
             
         # Find all C++ source files (.h, .hpp, .cpp, .cc, .cxx)
@@ -190,19 +190,19 @@ def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
         if modified and not dry_run:
             with open(file_path, 'w', encoding='utf-8') as file:
                 file.writelines(modified_lines)
-            debug_print(f"✓ Processed REST annotations/macros in: {file_path}")
+            print(f"✓ Processed REST annotations/macros in: {file_path}")
         elif modified and dry_run:
-            debug_print(f"  Would process REST annotations/macros in: {file_path}")
+            print(f"  Would process REST annotations/macros in: {file_path}")
         elif not modified:
             pass
         
         return True
         
     except FileNotFoundError:
-        debug_print(f"Error: File '{file_path}' not found")
+        print(f"Error: File '{file_path}' not found")
         return False
     except Exception as e:
-        debug_print(f"Error modifying file '{file_path}': {e}")
+        print(f"Error modifying file '{file_path}': {e}")
         return False
 
 
@@ -218,7 +218,7 @@ def generate_code_map(cpp_files: List[str], dry_run: bool = False) -> Dict[str, 
     Returns:
         Dictionary mapping file paths (absolute) to dictionaries with 'code' and 'interface_name' keys
     """
-    debug_print("🔄 Generating code for files with RestController...")
+    print("🔄 Generating code for files with RestController...")
     
     code_map = {}
     processed_count = 0
@@ -242,15 +242,15 @@ def generate_code_map(cpp_files: List[str], dry_run: bool = False) -> Dict[str, 
             
             # Mark REST-related annotations as processed in this file
             if not dry_run:
-                debug_print(f"  Processing REST annotations in: {file_path}")
+                print(f"  Processing REST annotations in: {file_path}")
             else:
-                debug_print(f"  Would process REST annotations in: {file_path}")
+                print(f"  Would process REST annotations in: {file_path}")
             comment_rest_macros(file_path, dry_run=dry_run)
         else:
             skipped_count += 1
     
-    debug_print(f"✅ Processed {processed_count} file(s) with RestController")
-    debug_print(f"⏭️  Skipped {skipped_count} file(s) without RestController")
+    print(f"✅ Processed {processed_count} file(s) with RestController")
+    print(f"⏭️  Skipped {skipped_count} file(s) without RestController")
     
     return code_map
 
@@ -316,7 +316,7 @@ def generate_includes(code_map: Dict[str, Dict[str, str]], project_root: Optiona
             file_path_obj = Path(file_path).resolve()
             include_path = str(file_path_obj).replace('\\', '/')  # Use absolute path
             includes.append(f'#include "{include_path}"')
-            debug_print(f"⚠️  Warning: Could not find interface header for '{interface_name}', using implementation header instead")
+            print(f"⚠️  Warning: Could not find interface header for '{interface_name}', using implementation header instead")
     
     return includes
 
@@ -341,7 +341,7 @@ def add_includes_to_event_dispatcher(file_path: str, includes: List[str]) -> boo
         insert_index = 6  # After line 6 (0-indexed is line 6)
         
         if insert_index >= len(lines):
-            debug_print(f"Error: Cannot find insertion point in {file_path}")
+            print(f"Error: Cannot find insertion point in {file_path}")
             return False
         
         # Check if includes already exist
@@ -357,7 +357,7 @@ def add_includes_to_event_dispatcher(file_path: str, includes: List[str]) -> boo
                 new_includes.append(include + '\n')
         
         if not new_includes:
-            debug_print("ℹ️  All includes already exist in EventDispatcher.h")
+            print("ℹ️  All includes already exist in EventDispatcher.h")
             return True
         
         # Insert new includes after line 6
@@ -367,11 +367,11 @@ def add_includes_to_event_dispatcher(file_path: str, includes: List[str]) -> boo
         with open(file_path, 'w', encoding='utf-8') as f:
             f.writelines(lines)
         
-        debug_print(f"✅ Added {len(new_includes)} include(s) to EventDispatcher.h")
+        print(f"✅ Added {len(new_includes)} include(s) to EventDispatcher.h")
         return True
         
     except Exception as e:
-        debug_print(f"Error updating EventDispatcher.h: {e}")
+        print(f"Error updating EventDispatcher.h: {e}")
         return False
 
 
@@ -397,7 +397,7 @@ def update_initialize_mappings(file_path: str, code_content: str) -> bool:
         
         match = re.search(pattern, content, flags=re.MULTILINE)
         if not match:
-            debug_print("⚠️  Warning: Could not find InitializeMappings() function to update")
+            print("⚠️  Warning: Could not find InitializeMappings() function to update")
             return False
         
         # Find the matching closing brace by counting braces
@@ -413,7 +413,7 @@ def update_initialize_mappings(file_path: str, code_content: str) -> bool:
             pos += 1
         
         if brace_count != 0:
-            debug_print("⚠️  Warning: Could not find matching closing brace for InitializeMappings()")
+            print("⚠️  Warning: Could not find matching closing brace for InitializeMappings()")
             return False
         
         # Extract the function header and footer
@@ -433,18 +433,18 @@ def update_initialize_mappings(file_path: str, code_content: str) -> bool:
         new_content = content[:match.start()] + replacement + content[pos:]
         
         if new_content == content:
-            debug_print("⚠️  Warning: Could not find InitializeMappings() function to update")
+            print("⚠️  Warning: Could not find InitializeMappings() function to update")
             return False
         
         # Write back to file
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(new_content)
         
-        debug_print("✅ Updated InitializeMappings() function in EventDispatcher.h")
+        print("✅ Updated InitializeMappings() function in EventDispatcher.h")
         return True
         
     except Exception as e:
-        debug_print(f"Error updating InitializeMappings(): {e}")
+        print(f"Error updating InitializeMappings(): {e}")
         return False
 
 
@@ -497,41 +497,41 @@ Examples:
     args = parser.parse_args()
     
     # Show configuration
-    debug_print("🔧 L6 Generate Code for All Sources Configuration")
-    debug_print("=" * 50)
-    debug_print(f"Include paths: {args.include if args.include else ['current directory']}")
-    debug_print(f"Exclude paths: {args.exclude if args.exclude else ['none']}")
-    debug_print(f"Dispatcher file: {args.dispatcher_file}")
-    debug_print(f"Dry run: {'Yes' if args.dry_run else 'No'}")
-    debug_print()
+    print("🔧 L6 Generate Code for All Sources Configuration")
+    print("=" * 50)
+    print(f"Include paths: {args.include if args.include else ['current directory']}")
+    print(f"Exclude paths: {args.exclude if args.exclude else ['none']}")
+    print(f"Dispatcher file: {args.dispatcher_file}")
+    print(f"Dry run: {'Yes' if args.dry_run else 'No'}")
+    print()
     
     # Find all C++ files
-    debug_print("🔍 Discovering C++ source files...")
+    print("🔍 Discovering C++ source files...")
     cpp_files = find_cpp_files(args.include, args.exclude)
     
     if not cpp_files:
-        debug_print("⚠️  No C++ source files found in the specified paths")
+        print("⚠️  No C++ source files found in the specified paths")
         sys.exit(0)
     
-    debug_print(f"📁 Found {len(cpp_files)} C++ source files")
+    print(f"📁 Found {len(cpp_files)} C++ source files")
     
     # Generate code map (this will also comment out REST macros)
     code_map = generate_code_map(cpp_files, dry_run=args.dry_run)
     
     if not code_map:
-        debug_print("⚠️  No files with RestController found. Nothing to update.")
+        print("⚠️  No files with RestController found. Nothing to update.")
         sys.exit(0)
     
-    debug_print(f"\n📊 Generated code for {len(code_map)} file(s)")
+    print(f"\n📊 Generated code for {len(code_map)} file(s)")
     
     if args.dry_run:
-        debug_print("\n🔍 DRY RUN MODE - No changes will be made")
-        debug_print("\nController files found:")
+        print("\n🔍 DRY RUN MODE - No changes will be made")
+        print("\nController files found:")
         for file_path in sorted(code_map.keys()):
             interface_name = code_map[file_path].get('interface_name', 'Unknown')
-            debug_print(f"  {file_path} (interface: {interface_name})")
+            print(f"  {file_path} (interface: {interface_name})")
         # Note: REST macros that would be commented are already shown during generate_code_map
-        debug_print("\nIncludes that would be added (interface headers):")
+        print("\nIncludes that would be added (interface headers):")
         script_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(script_dir)
         includes = generate_includes(code_map, project_root, args.include, args.exclude)
@@ -543,10 +543,10 @@ Examples:
             serialize_utility_include = f'#include "{include_path}"'
             includes.insert(0, serialize_utility_include)
         for include in includes:
-            debug_print(f"  {include}")
-        debug_print("\nCode that would be added to InitializeMappings():")
+            print(f"  {include}")
+        print("\nCode that would be added to InitializeMappings():")
         all_code = '\n\n'.join([info['code'] for info in code_map.values()])
-        debug_print(all_code[:500] + "..." if len(all_code) > 500 else all_code)
+        print(all_code[:500] + "..." if len(all_code) > 500 else all_code)
         return
     
     # Get project root (parent of script directory)
@@ -565,16 +565,16 @@ Examples:
         # Add it at the beginning of includes list (before controller includes)
         includes.insert(0, serialize_utility_include)
     else:
-        debug_print(f"⚠️  Warning: SerializeUtility.h not found at '{serialize_utility_path}', serialize() function may not be available")
+        print(f"⚠️  Warning: SerializeUtility.h not found at '{serialize_utility_path}', serialize() function may not be available")
     
     # Add includes to EventDispatcher.h
     dispatcher_file = args.dispatcher_file
     if not os.path.exists(dispatcher_file):
-        debug_print(f"Error: EventDispatcher.h file not found at '{dispatcher_file}'")
+        print(f"Error: EventDispatcher.h file not found at '{dispatcher_file}'")
         sys.exit(1)
     
     if not add_includes_to_event_dispatcher(dispatcher_file, includes):
-        debug_print("Error: Failed to add includes to EventDispatcher.h")
+        print("Error: Failed to add includes to EventDispatcher.h")
         sys.exit(1)
     
     # Concatenate all code values
@@ -582,35 +582,26 @@ Examples:
     
     # Update InitializeMappings() function
     if not update_initialize_mappings(dispatcher_file, all_code):
-        debug_print("Error: Failed to update InitializeMappings() function")
+        print("Error: Failed to update InitializeMappings() function")
         sys.exit(1)
     
-    debug_print("\n✅ Successfully updated EventDispatcher.h")
-    debug_print(f"   - Added {len(includes)} include(s)")
-    debug_print(f"   - Updated InitializeMappings() with code from {len(code_map)} controller(s)")
+    print("\n✅ Successfully updated EventDispatcher.h")
+    print(f"   - Added {len(includes)} include(s)")
+    print(f"   - Updated InitializeMappings() with code from {len(code_map)} controller(s)")
     
     # Show detailed results if requested
     if args.summary:
-        debug_print(f"\n📋 DETAILED RESULTS")
-        debug_print("=" * 50)
+        print(f"\n📋 DETAILED RESULTS")
+        print("=" * 50)
         for file_path in sorted(code_map.keys()):
-            debug_print(f"  {file_path}: ✅ Generated code")
+            print(f"  {file_path}: ✅ Generated code")
     
     # Exit with appropriate code
     sys.exit(0)
 
 
 # Export functions for other scripts to import
-__all__
-
-# Import debug utility
-try:
-    from debug_utils import debug_print
-except ImportError:
-    # Fallback if debug_utils not found - create a no-op function
-    def debug_print(*args, **kwargs):
-        pass
- = [
+__all__ = [
     'find_cpp_files',
     'comment_rest_macros',
     'generate_code_map',

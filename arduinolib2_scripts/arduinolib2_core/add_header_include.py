@@ -24,10 +24,10 @@ def find_last_endif(file_path: str) -> Optional[Tuple[int, str]]:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
     except FileNotFoundError:
-        debug_print(f"Error: File '{file_path}' not found")
+        print(f"Error: File '{file_path}' not found")
         return None
     except Exception as e:
-        debug_print(f"Error reading file '{file_path}': {e}")
+        print(f"Error reading file '{file_path}': {e}")
         return None
     
     # Look for the last #endif in the file (with or without comments)
@@ -81,19 +81,19 @@ def inject_header_include(file_path: str, header_path: str, dry_run: bool = Fals
         
         line_num, line_content = endif_line
         results['info']['endif_line'] = line_num
-        debug_print(f"Last #endif found at line {line_num}")
+        print(f"Last #endif found at line {line_num}")
         
         # Step 2: Generate the #include statement
         include_statement = generate_include_statement(header_path)
         results['injected_code'] = include_statement
-        debug_print(f"Generated #include statement for: {header_path}")
+        print(f"Generated #include statement for: {header_path}")
         
         # Step 3: Inject the code (or show what would be injected)
         if dry_run:
-            debug_print(f"\nWould inject the following code before line {line_num} (before '#endif'):")
-            debug_print("=" * 60)
-            debug_print(include_statement.rstrip())
-            debug_print("=" * 60)
+            print(f"\nWould inject the following code before line {line_num} (before '#endif'):")
+            print("=" * 60)
+            print(include_statement.rstrip())
+            print("=" * 60)
             results['success'] = True
         else:
             # Actually inject the code
@@ -108,7 +108,7 @@ def inject_header_include(file_path: str, header_path: str, dry_run: bool = Fals
                 with open(file_path, 'w', encoding='utf-8') as file:
                     file.writelines(lines)
                 
-                debug_print(f"Successfully injected #include statement before line {line_num}")
+                print(f"Successfully injected #include statement before line {line_num}")
                 results['success'] = True
                 
             except Exception as e:
@@ -159,7 +159,7 @@ def main():
     
     # Validate C++ file
     if not validate_cpp_file(args.file):
-        debug_print(f"Error: '{args.file}' is not a valid C++ file")
+        print(f"Error: '{args.file}' is not a valid C++ file")
         return False
     
     # Process the file
@@ -167,30 +167,21 @@ def main():
     
     if results['success']:
         if args.dry_run:
-            debug_print("Status: Would inject #include statement successfully")
+            print("Status: Would inject #include statement successfully")
         else:
-            debug_print("Status: #include statement injected successfully")
+            print("Status: #include statement injected successfully")
         return True
     else:
-        debug_print("Status: Failed to inject #include statement")
+        print("Status: Failed to inject #include statement")
         if results['errors']:
-            debug_print("Errors:")
+            print("Errors:")
             for error in results['errors']:
-                debug_print(f"  {error}")
+                print(f"  {error}")
         return False
 
 
 # Export functions for other scripts to import
-__all__
-
-# Import debug utility
-try:
-    from debug_utils import debug_print
-except ImportError:
-    # Fallback if debug_utils not found - create a no-op function
-    def debug_print(*args, **kwargs):
-        pass
- = [
+__all__ = [
     'find_last_endif',
     'generate_include_statement',
     'inject_header_include',

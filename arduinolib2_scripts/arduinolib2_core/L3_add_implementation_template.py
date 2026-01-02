@@ -27,10 +27,10 @@ def find_last_endif(file_path: str) -> Optional[Tuple[int, str]]:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
     except FileNotFoundError:
-        debug_print(f"Error: File '{file_path}' not found")
+        print(f"Error: File '{file_path}' not found")
         return None
     except Exception as e:
-        debug_print(f"Error reading file '{file_path}': {e}")
+        print(f"Error reading file '{file_path}': {e}")
         return None
     
     # Look for the last #endif in the file (with or without comments)
@@ -94,7 +94,7 @@ def inject_implementation_template(file_path: str, dry_run: bool = False) -> Dic
         
         class_name = class_names[0]  # Take the first class
         results['info']['class_name'] = class_name
-        debug_print(f"Class name: {class_name}")
+        print(f"Class name: {class_name}")
         
         # Step 2: Get interface names
         interface_names = find_interface_names.find_interface_names(file_path)
@@ -104,7 +104,7 @@ def inject_implementation_template(file_path: str, dry_run: bool = False) -> Dic
         
         interface_name = interface_names[0]  # Take the first interface
         results['info']['interface_name'] = interface_name
-        debug_print(f"Interface name: {interface_name}")
+        print(f"Interface name: {interface_name}")
         
         # Step 3: Find the last #endif
         endif_line = find_last_endif(file_path)
@@ -114,19 +114,19 @@ def inject_implementation_template(file_path: str, dry_run: bool = False) -> Dic
         
         line_num, line_content = endif_line
         results['info']['endif_line'] = line_num
-        debug_print(f"Last #endif found at line {line_num}")
+        print(f"Last #endif found at line {line_num}")
         
         # Step 4: Generate the implementation template code
         template_code = generate_implementation_template_code(interface_name, class_name)
         results['injected_code'] = template_code
-        debug_print(f"Generated implementation template code")
+        print(f"Generated implementation template code")
         
         # Step 5: Inject the code (or show what would be injected)
         if dry_run:
-            debug_print(f"\nWould inject the following code before line {line_num} (before '#endif'):")
-            debug_print("=" * 60)
-            debug_print(template_code.rstrip())
-            debug_print("=" * 60)
+            print(f"\nWould inject the following code before line {line_num} (before '#endif'):")
+            print("=" * 60)
+            print(template_code.rstrip())
+            print("=" * 60)
             results['success'] = True
         else:
             # Actually inject the code
@@ -141,7 +141,7 @@ def inject_implementation_template(file_path: str, dry_run: bool = False) -> Dic
                 with open(file_path, 'w', encoding='utf-8') as file:
                     file.writelines(lines)
                 
-                debug_print(f"Successfully injected implementation template code before line {line_num}")
+                print(f"Successfully injected implementation template code before line {line_num}")
                 results['success'] = True
                 
             except Exception as e:
@@ -168,22 +168,22 @@ def inject_implementation_template_in_files(file_paths: List[str], dry_run: bool
     all_results = {}
     
     for file_path in file_paths:
-        debug_print(f"\nProcessing: {file_path}")
+        print(f"\nProcessing: {file_path}")
         results = inject_implementation_template(file_path, dry_run)
         all_results[file_path] = results
         
         # Display results for this file
         if results['success']:
             if dry_run:
-                debug_print("  Status: Would inject implementation template code successfully")
+                print("  Status: Would inject implementation template code successfully")
             else:
-                debug_print("  Status: Implementation template code injected successfully")
+                print("  Status: Implementation template code injected successfully")
         else:
-            debug_print("  Status: Failed to inject implementation template code")
+            print("  Status: Failed to inject implementation template code")
             if results['errors']:
-                debug_print("  Errors:")
+                print("  Errors:")
                 for error in results['errors']:
-                    debug_print(f"    {error}")
+                    print(f"    {error}")
     
     return all_results
 
@@ -230,10 +230,10 @@ def main():
     invalid_files = [f for f in args.files if not validate_cpp_file(f)]
     
     if invalid_files:
-        debug_print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
+        print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
     
     if not valid_files:
-        debug_print("No valid C++ files provided")
+        print("No valid C++ files provided")
         return {}
     
     # Process all files
@@ -241,27 +241,18 @@ def main():
     
     # Show summary if requested
     if args.summary:
-        debug_print(f"\n=== Summary ===")
-        debug_print(f"Files processed: {len(valid_files)}")
-        debug_print(f"Files with successful injection: {len([r for r in results.values() if r['success']])}")
+        print(f"\n=== Summary ===")
+        print(f"Files processed: {len(valid_files)}")
+        print(f"Files with successful injection: {len([r for r in results.values() if r['success']])}")
         
         total_errors = sum(len(r['errors']) for r in results.values())
-        debug_print(f"Total errors: {total_errors}")
+        print(f"Total errors: {total_errors}")
     
     return results
 
 
 # Export functions for other scripts to import
-__all__
-
-# Import debug utility
-try:
-    from debug_utils import debug_print
-except ImportError:
-    # Fallback if debug_utils not found - create a no-op function
-    def debug_print(*args, **kwargs):
-        pass
- = [
+__all__ = [
     'find_last_endif',
     'generate_implementation_template_code',
     'inject_implementation_template',

@@ -19,16 +19,7 @@ from pathlib import Path
 try:
     from find_class_names import get_class_names_from_file
 except ImportError:
-    debug_print("Error: Could not import find_class_names
-
-# Import debug utility
-try:
-    from debug_utils import debug_print
-except ImportError:
-    # Fallback if debug_utils not found - create a no-op function
-    def debug_print(*args, **kwargs):
-        pass
-.py")
+    print("Error: Could not import find_class_names.py")
     sys.exit(1)
 
 
@@ -105,7 +96,7 @@ def find_autowired_macros(file_path):
                         })
                         
     except Exception as e:
-        debug_print(f"Error reading file {file_path}: {e}")
+        print(f"Error reading file {file_path}: {e}")
         return []
         
     return autowired_macros
@@ -174,7 +165,7 @@ def find_autowired_constructor(file_path, class_name):
                     }
                     
     except Exception as e:
-        debug_print(f"Error reading file {file_path}: {e}")
+        print(f"Error reading file {file_path}: {e}")
         return None
         
     return None
@@ -363,7 +354,7 @@ def process_autowired_macros(file_path, dry_run=False):
     Returns:
         dict: Processing results
     """
-    debug_print(f"Processing: {file_path}")
+    print(f"Processing: {file_path}")
     
     # Get class name (optional - only needed for constructor @Autowired)
     class_name = None
@@ -371,11 +362,11 @@ def process_autowired_macros(file_path, dry_run=False):
         class_names = get_class_names_from_file(file_path)
         if class_names:
             class_name = class_names[0]  # Use the first class name
-            debug_print(f"  Class name: {class_name}")
+            print(f"  Class name: {class_name}")
         else:
-            debug_print("  ℹ️  No class names found in file (this is OK for simple @Autowired variables)")
+            print("  ℹ️  No class names found in file (this is OK for simple @Autowired variables)")
     except Exception as e:
-        debug_print(f"  ℹ️  Could not get class name: {e} (this is OK for simple @Autowired variables)")
+        print(f"  ℹ️  Could not get class name: {e} (this is OK for simple @Autowired variables)")
     
     # Find @Autowired variable annotations (these don't need class names)
     autowired_macros = find_autowired_macros(file_path)
@@ -385,26 +376,26 @@ def process_autowired_macros(file_path, dry_run=False):
     if class_name:
         autowired_constructor = find_autowired_constructor(file_path, class_name)
     else:
-        debug_print("  ℹ️  Skipping constructor @Autowired check (no class name available)")
+        print("  ℹ️  Skipping constructor @Autowired check (no class name available)")
     
     total_autowired = len(autowired_macros) + (1 if autowired_constructor else 0)
     
     if total_autowired == 0:
-        debug_print("  ℹ️  No @Autowired annotations found")
+        print("  ℹ️  No @Autowired annotations found")
         return {'success': True, 'autowired_count': 0, 'message': 'No @Autowired annotations found'}
     
-    debug_print(f"  Found {len(autowired_macros)} @Autowired variable annotation(s)")
+    print(f"  Found {len(autowired_macros)} @Autowired variable annotation(s)")
     if autowired_constructor:
-        debug_print(f"  Found 1 @Autowired constructor annotation")
+        print(f"  Found 1 @Autowired constructor annotation")
     
     # Log whether we're processing with or without class name
     if class_name:
-        debug_print(f"  ℹ️  Processing with class name: {class_name}")
+        print(f"  ℹ️  Processing with class name: {class_name}")
     else:
-        debug_print(f"  ℹ️  Processing simple AUTOWIRED variables (no class name required)")
+        print(f"  ℹ️  Processing simple AUTOWIRED variables (no class name required)")
     
     if dry_run:
-        debug_print("  🔍 DRY RUN - No changes will be made")
+        print("  🔍 DRY RUN - No changes will be made")
     
     # Process AUTOWIRED variable macros
     processed_count = 0
@@ -413,10 +404,10 @@ def process_autowired_macros(file_path, dry_run=False):
     
     for macro_info in autowired_macros:
         try:
-            debug_print(f"  Processing AUTOWIRED variable at line {macro_info['line_number']}:")
-            debug_print(f"    Variable type: {macro_info['variable_type']}")
-            debug_print(f"    Object name: {macro_info['object_name']}")
-            debug_print(f"    Base type: {macro_info['variable_base_type']}")
+            print(f"  Processing AUTOWIRED variable at line {macro_info['line_number']}:")
+            print(f"    Variable type: {macro_info['variable_type']}")
+            print(f"    Object name: {macro_info['object_name']}")
+            print(f"    Base type: {macro_info['variable_base_type']}")
             
             # Generate replacement code
             replacement_code = (macro_info['variable_type'] + " " + macro_info['object_name'] + 
@@ -425,75 +416,75 @@ def process_autowired_macros(file_path, dry_run=False):
             # Store the replacement code for later use
             macro_info['replacement_code'] = replacement_code
             
-            debug_print(f"    Would replace: {macro_info['next_line_content']}")
-            debug_print(f"    With: {replacement_code}")
-            debug_print(f"    Would comment: {macro_info['line_content']}")
+            print(f"    Would replace: {macro_info['next_line_content']}")
+            print(f"    With: {replacement_code}")
+            print(f"    Would comment: {macro_info['line_content']}")
             
             if not dry_run:
                 # Collect changes for later application
                 all_changes.append(macro_info)
                 processed_count += 1
-                debug_print(f"    ✅ Would process successfully")
+                print(f"    ✅ Would process successfully")
             else:
                 processed_count += 1
-                debug_print(f"    ✅ Would process successfully")
+                print(f"    ✅ Would process successfully")
                 
         except Exception as e:
             error_msg = f"Error processing AUTOWIRED variable at line {macro_info['line_number']}: {e}"
             errors.append(error_msg)
-            debug_print(f"    ❌ {error_msg}")
+            print(f"    ❌ {error_msg}")
     
     # Process AUTOWIRED constructor
     if autowired_constructor:
         try:
             constructor_info = autowired_constructor['constructor_info']
-            debug_print(f"  Processing AUTOWIRED constructor at line {autowired_constructor['line_number']}:")
-            debug_print(f"    Constructor: {constructor_info['line_content']}")
+            print(f"  Processing AUTOWIRED constructor at line {autowired_constructor['line_number']}:")
+            print(f"    Constructor: {constructor_info['line_content']}")
             
             if constructor_info['parameters']:
-                debug_print("    Parameters to expand:")
+                print("    Parameters to expand:")
                 for param in constructor_info['parameters']:
-                    debug_print("      " + param['type'] + " " + param['name'] + " -> Implementation<" + param['base_type'] + ">::type::GetInstance()")
+                    print("      " + param['type'] + " " + param['name'] + " -> Implementation<" + param['base_type'] + ">::type::GetInstance()")
                 
                 # Store constructor info for line-by-line processing
                 autowired_constructor['constructor_info'] = constructor_info
                 
-                debug_print(f"    Would replace: {constructor_info['line_content']}")
-                debug_print(f"    With: [Line-by-line replacement preserving structure]")
-                debug_print(f"    Would comment: {autowired_constructor['line_content']}")
+                print(f"    Would replace: {constructor_info['line_content']}")
+                print(f"    With: [Line-by-line replacement preserving structure]")
+                print(f"    Would comment: {autowired_constructor['line_content']}")
                 
                 if not dry_run:
                     all_changes.append(autowired_constructor)
                     processed_count += 1
-                    debug_print(f"    ✅ Would process successfully")
+                    print(f"    ✅ Would process successfully")
                 else:
                     processed_count += 1
-                    debug_print(f"    ✅ Would process successfully")
+                    print(f"    ✅ Would process successfully")
             else:
-                debug_print(f"    No parameters to expand")
+                print(f"    No parameters to expand")
                 
         except Exception as e:
             error_msg = f"Error processing AUTOWIRED constructor at line {autowired_constructor['line_number']}: {e}"
             errors.append(error_msg)
-            debug_print(f"    ❌ {error_msg}")
+            print(f"    ❌ {error_msg}")
     
     # Apply all changes at once if not in dry run
     if not dry_run and all_changes:
-        debug_print(f"  🔧 Applying all {len(all_changes)} changes...")
+        print(f"  🔧 Applying all {len(all_changes)} changes...")
         success = apply_all_autowired_changes(file_path, all_changes)
         if not success:
             errors.append("Failed to apply changes to file")
-            debug_print(f"  ❌ Failed to apply changes to file")
+            print(f"  ❌ Failed to apply changes to file")
         else:
-            debug_print(f"  ✅ Successfully applied all changes to file")
+            print(f"  ✅ Successfully applied all changes to file")
     
     # Summary
     if processed_count > 0:
-        debug_print(f"  📊 Summary: {processed_count} @Autowired annotation(s) processed")
+        print(f"  📊 Summary: {processed_count} @Autowired annotation(s) processed")
     if errors:
-        debug_print(f"  ⚠️  Errors: {len(errors)}")
+        print(f"  ⚠️  Errors: {len(errors)}")
         for error in errors:
-            debug_print(f"    - {error}")
+            print(f"    - {error}")
     
     # Success if we processed at least one macro or if there were no macros to process
     success = len(errors) == 0 and (processed_count > 0 or total_autowired == 0)
@@ -537,7 +528,7 @@ def apply_autowired_changes(file_path, macro_info, replacement_code):
         return True
         
     except Exception as e:
-        debug_print(f"    Error applying changes: {e}")
+        print(f"    Error applying changes: {e}")
         return False
 
 
@@ -659,7 +650,7 @@ def apply_all_autowired_changes(file_path, all_macros):
         return True
         
     except Exception as e:
-        debug_print(f"    Error applying all changes: {e}")
+        print(f"    Error applying all changes: {e}")
         return False
 
 
@@ -694,34 +685,34 @@ Examples:
     
     for file_path in args.files:
         if not Path(file_path).exists():
-            debug_print(f"❌ File not found: {file_path}")
+            print(f"❌ File not found: {file_path}")
             all_results[file_path] = {'success': False, 'errors': ['File not found']}
             continue
             
         result = process_autowired_macros(file_path, args.dry_run)
         all_results[file_path] = result
-        debug_print()  # Add spacing between files
+        print()  # Add spacing between files
     
     # Summary
     if len(args.files) > 1:
-        debug_print("=" * 60)
-        debug_print("SUMMARY")
-        debug_print("=" * 60)
+        print("=" * 60)
+        print("SUMMARY")
+        print("=" * 60)
         
         total_files = len(args.files)
         successful_files = sum(1 for r in all_results.values() if r['success'])
         total_autowired = sum(r.get('autowired_count', 0) for r in all_results.values())
         total_processed = sum(r.get('processed_count', 0) for r in all_results.values())
         
-        debug_print(f"Files processed: {total_files}")
-        debug_print(f"Files successful: {successful_files}")
-        debug_print(f"Total AUTOWIRED macros found: {total_autowired}")
-        debug_print(f"Total AUTOWIRED macros processed: {total_processed}")
+        print(f"Files processed: {total_files}")
+        print(f"Files successful: {successful_files}")
+        print(f"Total AUTOWIRED macros found: {total_autowired}")
+        print(f"Total AUTOWIRED macros processed: {total_processed}")
         
         if args.dry_run:
-            debug_print("🔍 This was a dry run - no changes were made")
+            print("🔍 This was a dry run - no changes were made")
         else:
-            debug_print("✅ Changes applied successfully")
+            print("✅ Changes applied successfully")
 
 
 if __name__ == "__main__":

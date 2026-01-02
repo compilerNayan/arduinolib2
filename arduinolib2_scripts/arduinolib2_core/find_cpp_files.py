@@ -63,11 +63,11 @@ def find_cpp_files(
     # Search through include folders
     for include_path in include_paths:
         if not include_path.exists():
-            debug_print(f"Warning: Include folder '{include_path}' does not exist")
+            print(f"Warning: Include folder '{include_path}' does not exist")
             continue
             
         if not include_path.is_dir():
-            debug_print(f"Warning: Include path '{include_path}' is not a directory")
+            print(f"Warning: Include path '{include_path}' is not a directory")
             continue
         
         # Walk through the directory tree
@@ -124,41 +124,32 @@ def main():
     )
     
     # Print summary
-    debug_print(f"Found {len(cpp_files)} C++ source files")
+    print(f"Found {len(cpp_files)} C++ source files")
     
     # Print files if not too many
     if len(cpp_files) <= 20:
-        debug_print("\nFiles found:")
+        print("\nFiles found:")
         for file_path in cpp_files:
-            debug_print(f"  {file_path}")
+            print(f"  {file_path}")
     else:
-        debug_print(f"\nFirst 20 files (showing {min(20, len(cpp_files))} of {len(cpp_files)}):")
+        print(f"\nFirst 20 files (showing {min(20, len(cpp_files))} of {len(cpp_files)}):")
         for file_path in cpp_files[:20]:
-            debug_print(f"  {file_path}")
-        debug_print("  ... (use --output to save full list)")
+            print(f"  {file_path}")
+        print("  ... (use --output to save full list)")
     
     # Save to file if requested
     if args.output:
         with open(args.output, 'w') as f:
             for file_path in cpp_files:
                 f.write(f"{file_path}\n")
-        debug_print(f"\nFull list saved to: {args.output}")
+        print(f"\nFull list saved to: {args.output}")
     
     # Return the list for other scripts to consume
     return cpp_files
 
 
 # Export functions for other scripts to import
-__all__
-
-# Import debug utility
-try:
-    from debug_utils import debug_print
-except ImportError:
-    # Fallback if debug_utils not found - create a no-op function
-    def debug_print(*args, **kwargs):
-        pass
- = ['find_cpp_files', 'main', 'get_cpp_files_command']
+__all__ = ['find_cpp_files', 'main', 'get_cpp_files_command']
 
 def get_cpp_files_command():
     """Command-line interface function that returns the list of C++ files."""

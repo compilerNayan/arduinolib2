@@ -15,7 +15,7 @@ try:
     from check_scope_macro import find_scope_macros, check_scope_macro_exists
     from L1_get_validator_name import get_validator_name, get_validator_info
 except ImportError:
-    debug_print("Error: Could not import required modules. Make sure check_scope_macro.py and L1_get_validator_name.py are in the same directory.")
+    print("Error: Could not import required modules. Make sure check_scope_macro.py and L1_get_validator_name.py are in the same directory.")
     sys.exit(1)
 
 
@@ -39,25 +39,25 @@ def get_file_scope(file_path: str) -> str:
         # Use the first @Scope annotation found (assuming one per file)
         scope_macro = scope_macros[0]
         base_scope = scope_macro['scope_value']
-        debug_print(f"Found @Scope annotation: {scope_macro['macro']}")
-        debug_print(f"Base scope: {base_scope}")
+        print(f"Found @Scope annotation: {scope_macro['macro']}")
+        print(f"Base scope: {base_scope}")
     else:
-        debug_print(f"No @Scope annotation found, using default: {base_scope}")
+        print(f"No @Scope annotation found, using default: {base_scope}")
     
     # Step 2: Check for validator
     validator_name = get_validator_name(file_path)
     
     if validator_name:
-        debug_print(f"Found validator: {validator_name}")
+        print(f"Found validator: {validator_name}")
         # If validator exists, scope becomes SCOPE_VALIDATOR
         final_scope = f"{base_scope}_VALIDATOR"
-        debug_print(f"Final scope: {final_scope}")
+        print(f"Final scope: {final_scope}")
         return final_scope
     else:
-        debug_print("No validator found")
+        print("No validator found")
         # If no validator, scope is just the base scope
         final_scope = base_scope
-        debug_print(f"Final scope: {final_scope}")
+        print(f"Final scope: {final_scope}")
         return final_scope
 
 
@@ -123,20 +123,20 @@ def process_multiple_files(file_paths: list) -> Dict[str, Dict[str, Any]]:
     results = {}
     
     for file_path in file_paths:
-        debug_print(f"\n{'='*60}")
-        debug_print(f"Processing: {file_path}")
-        debug_print(f"{'='*60}")
+        print(f"\n{'='*60}")
+        print(f"Processing: {file_path}")
+        print(f"{'='*60}")
         
         scope_info = get_file_scope_info(file_path)
         results[file_path] = scope_info
         
         # Display results
-        debug_print(f"Base scope: {scope_info['base_scope']} ({scope_info['scope_source']})")
+        print(f"Base scope: {scope_info['base_scope']} ({scope_info['scope_source']})")
         if scope_info['has_validator']:
-            debug_print(f"Validator: {scope_info['validator_name']}")
+            print(f"Validator: {scope_info['validator_name']}")
         else:
-            debug_print("Validator: None")
-        debug_print(f"Final scope: {scope_info['final_scope']}")
+            print("Validator: None")
+        print(f"Final scope: {scope_info['final_scope']}")
     
     return results
 
@@ -192,10 +192,10 @@ def main():
     invalid_files = [f for f in args.files if not validate_cpp_file(f)]
     
     if invalid_files:
-        debug_print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
+        print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
     
     if not valid_files:
-        debug_print("No valid C++ files provided")
+        print("No valid C++ files provided")
         return {}
     
     # Process files
@@ -205,9 +205,9 @@ def main():
         final_scope = get_file_scope(file_path)
         
         if args.simple:
-            debug_print(final_scope)
+            print(final_scope)
         else:
-            debug_print(f"\nFinal scope: {final_scope}")
+            print(f"\nFinal scope: {final_scope}")
             
         results = {file_path: get_file_scope_info(file_path)}
     else:
@@ -216,9 +216,9 @@ def main():
     
     # Show summary if requested
     if args.summary and len(valid_files) > 1:
-        debug_print(f"\n{'='*60}")
-        debug_print("SUMMARY")
-        debug_print(f"{'='*60}")
+        print(f"\n{'='*60}")
+        print("SUMMARY")
+        print(f"{'='*60}")
         
         # Count different scope types
         scope_counts = {}
@@ -233,23 +233,23 @@ def main():
             else:
                 validator_counts['without_validator'] += 1
         
-        debug_print(f"Files analyzed: {len(valid_files)}")
-        debug_print(f"\nScope distribution:")
+        print(f"Files analyzed: {len(valid_files)}")
+        print(f"\nScope distribution:")
         for scope, count in sorted(scope_counts.items()):
-            debug_print(f"  {scope}: {count}")
+            print(f"  {scope}: {count}")
         
-        debug_print(f"\nValidator distribution:")
-        debug_print(f"  With validator: {validator_counts['with_validator']}")
-        debug_print(f"  Without validator: {validator_counts['without_validator']}")
+        print(f"\nValidator distribution:")
+        print(f"  With validator: {validator_counts['with_validator']}")
+        print(f"  Without validator: {validator_counts['without_validator']}")
         
         if args.detailed:
-            debug_print(f"\nDetailed results:")
+            print(f"\nDetailed results:")
             for file_path, info in results.items():
-                debug_print(f"  {file_path}: {info['final_scope']}")
+                print(f"  {file_path}: {info['final_scope']}")
                 if info['has_validator']:
-                    debug_print(f"    → {info['base_scope']} + {info['validator_name']}")
+                    print(f"    → {info['base_scope']} + {info['validator_name']}")
                 else:
-                    debug_print(f"    → {info['base_scope']} (default)")
+                    print(f"    → {info['base_scope']} (default)")
     
     # Save to file if requested
     if args.output:
@@ -262,22 +262,13 @@ def main():
                     f.write(f"  Validator: {info['validator_name']}\n")
                 f.write(f"  Final scope: {info['final_scope']}\n")
                 f.write("\n")
-        debug_print(f"\nResults saved to: {args.output}")
+        print(f"\nResults saved to: {args.output}")
     
     return results
 
 
 # Export functions for other scripts to import
-__all__
-
-# Import debug utility
-try:
-    from debug_utils import debug_print
-except ImportError:
-    # Fallback if debug_utils not found - create a no-op function
-    def debug_print(*args, **kwargs):
-        pass
- = [
+__all__ = [
     'get_file_scope',
     'get_file_scope_info',
     'process_multiple_files',

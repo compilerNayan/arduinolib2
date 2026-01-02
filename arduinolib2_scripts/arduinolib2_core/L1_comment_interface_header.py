@@ -29,10 +29,10 @@ def find_interface_header_include(file_path: str, interface_name: str) -> List[T
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
     except FileNotFoundError:
-        debug_print(f"Error: File '{file_path}' not found")
+        print(f"Error: File '{file_path}' not found")
         return []
     except Exception as e:
-        debug_print(f"Error reading file '{file_path}': {e}")
+        print(f"Error reading file '{file_path}': {e}")
         return []
     
     # Pattern to match #include statements containing interface name (case insensitive)
@@ -128,20 +128,20 @@ def comment_interface_headers_in_files(file_paths: List[str], dry_run: bool = Fa
     all_results = {}
     
     for file_path in file_paths:
-        debug_print(f"\nProcessing: {file_path}")
+        print(f"\nProcessing: {file_path}")
         results = comment_interface_header_includes(file_path, dry_run)
         all_results[file_path] = results
         
         # Display results for this file
         if results['commented_includes']:
-            debug_print("  Commented includes:")
+            print("  Commented includes:")
             for include in results['commented_includes']:
-                debug_print(f"    {include}")
+                print(f"    {include}")
         
         if results['errors']:
-            debug_print("  Errors:")
+            print("  Errors:")
             for error in results['errors']:
-                debug_print(f"    {error}")
+                print(f"    {error}")
     
     return all_results
 
@@ -188,10 +188,10 @@ def main():
     invalid_files = [f for f in args.files if not validate_cpp_file(f)]
     
     if invalid_files:
-        debug_print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
+        print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
     
     if not valid_files:
-        debug_print("No valid C++ files provided")
+        print("No valid C++ files provided")
         return {}
     
     # Process all files
@@ -199,30 +199,21 @@ def main():
     
     # Show summary if requested
     if args.summary:
-        debug_print(f"\n=== Summary ===")
-        debug_print(f"Files processed: {len(valid_files)}")
-        debug_print(f"Files with changes: {len([r for r in results.values() if r['commented_includes']])}")
+        print(f"\n=== Summary ===")
+        print(f"Files processed: {len(valid_files)}")
+        print(f"Files with changes: {len([r for r in results.values() if r['commented_includes']])}")
         
         total_commented = sum(len(r['commented_includes']) for r in results.values())
         total_errors = sum(len(r['errors']) for r in results.values())
         
-        debug_print(f"Total includes commented: {total_commented}")
-        debug_print(f"Total errors: {total_errors}")
+        print(f"Total includes commented: {total_commented}")
+        print(f"Total errors: {total_errors}")
     
     return results
 
 
 # Export functions for other scripts to import
-__all__
-
-# Import debug utility
-try:
-    from debug_utils import debug_print
-except ImportError:
-    # Fallback if debug_utils not found - create a no-op function
-    def debug_print(*args, **kwargs):
-        pass
- = [
+__all__ = [
     'find_interface_header_include',
     'comment_interface_header_includes',
     'comment_interface_headers_in_files',
