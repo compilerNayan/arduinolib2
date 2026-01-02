@@ -96,17 +96,17 @@ def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
             lines = file.readlines()
         
         # Pattern for @RestController annotation (/// @RestController or ///@RestController)
-        rest_controller_annotation_pattern = re.compile(r'///\s*@RestController\b')
-        rest_controller_processed_pattern = re.compile(r'/\*\s*@RestController\s*\*/')
+        rest_controller_annotation_pattern = r'///\s*@RestController\b'
+        rest_controller_processed_pattern = r'/\*\s*@RestController\s*\*/'
         
-        # Patterns for REST mapping annotations (compiled regex patterns)
+        # Patterns for REST mapping annotations
         rest_mapping_annotations = {
-            'RequestMapping': (re.compile(r'///\s*@RequestMapping\s*\(\s*["\'][^"\']+["\']\s*\)'), re.compile(r'/\*\s*@RequestMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/')),
-            'GetMapping': (re.compile(r'///\s*@GetMapping\s*\(\s*["\'][^"\']+["\']\s*\)'), re.compile(r'/\*\s*@GetMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/')),
-            'PostMapping': (re.compile(r'///\s*@PostMapping\s*\(\s*["\'][^"\']+["\']\s*\)'), re.compile(r'/\*\s*@PostMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/')),
-            'PutMapping': (re.compile(r'///\s*@PutMapping\s*\(\s*["\'][^"\']+["\']\s*\)'), re.compile(r'/\*\s*@PutMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/')),
-            'DeleteMapping': (re.compile(r'///\s*@DeleteMapping\s*\(\s*["\'][^"\']+["\']\s*\)'), re.compile(r'/\*\s*@DeleteMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/')),
-            'PatchMapping': (re.compile(r'///\s*@PatchMapping\s*\(\s*["\'][^"\']+["\']\s*\)'), re.compile(r'/\*\s*@PatchMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/'))
+            'RequestMapping': (r'///\s*@RequestMapping\s*\(\s*["\'][^"\']+["\']\s*\)', r'/\*\s*@RequestMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/'),
+            'GetMapping': (r'///\s*@GetMapping\s*\(\s*["\'][^"\']+["\']\s*\)', r'/\*\s*@GetMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/'),
+            'PostMapping': (r'///\s*@PostMapping\s*\(\s*["\'][^"\']+["\']\s*\)', r'/\*\s*@PostMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/'),
+            'PutMapping': (r'///\s*@PutMapping\s*\(\s*["\'][^"\']+["\']\s*\)', r'/\*\s*@PutMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/'),
+            'DeleteMapping': (r'///\s*@DeleteMapping\s*\(\s*["\'][^"\']+["\']\s*\)', r'/\*\s*@DeleteMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/'),
+            'PatchMapping': (r'///\s*@PatchMapping\s*\(\s*["\'][^"\']+["\']\s*\)', r'/\*\s*@PatchMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/')
         }
         
         # REST-related macros to comment out (legacy macros, not annotations)
@@ -125,7 +125,7 @@ def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
                 continue
             
             # Check if line has @RestController annotation
-            rest_controller_match = rest_controller_annotation_pattern.search(stripped_line)
+            rest_controller_match = re.search(rest_controller_annotation_pattern, stripped_line)
             if rest_controller_match:
                 # Mark as processed: replace /// @RestController with /* @RestController */
                 # Preserve indentation
@@ -145,13 +145,13 @@ def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
             annotation_processed = False
             for annotation_name, (annotation_pattern, processed_pattern) in rest_mapping_annotations.items():
                 # Check if already processed
-                if processed_pattern.search(stripped_line):
+                if re.search(processed_pattern, stripped_line):
                     modified_lines.append(line)
                     annotation_processed = True
                     break
                 
                 # Check if line has the annotation
-                annotation_match = annotation_pattern.search(stripped_line)
+                annotation_match = re.search(annotation_pattern, stripped_line)
                 if annotation_match:
                     # Mark as processed: replace /// @Annotation("path") with /* @Annotation("path") */
                     # Preserve indentation and the full annotation with path

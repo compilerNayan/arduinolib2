@@ -35,8 +35,8 @@ def find_rest_controller_macros(file_path: str) -> List[Dict[str, str]]:
     # Pattern to match @RestController annotation
     # Pattern: /// @RestController or ///@RestController (ignoring whitespace)
     # Also check for already processed /* @RestController */ pattern
-    rest_controller_annotation_pattern = re.compile(r'///\s*@RestController\b')
-    rest_controller_processed_pattern = re.compile(r'/\*\s*@RestController\s*\*/')
+    rest_controller_annotation_pattern = r'///\s*@RestController\b'
+    rest_controller_processed_pattern = r'/\*\s*@RestController\s*\*/'
     
     # Pattern to match class declarations
     # Allow for keywords like 'final', inheritance, etc. between class name and colon/brace
@@ -53,11 +53,11 @@ def find_rest_controller_macros(file_path: str) -> List[Dict[str, str]]:
         if stripped_line.startswith('/*'):
             continue
         # Skip other single-line comments that aren't the annotation
-        if stripped_line.startswith('//') and not rest_controller_annotation_pattern.search(stripped_line):
+        if stripped_line.startswith('//') and not re.search(rest_controller_annotation_pattern, stripped_line):
             continue
             
         # Check if line contains valid @RestController annotation
-        rest_controller_match = rest_controller_annotation_pattern.search(stripped_line)
+        rest_controller_match = re.search(rest_controller_annotation_pattern, stripped_line)
         if rest_controller_match:
             annotation_text = rest_controller_match.group(0)
             
