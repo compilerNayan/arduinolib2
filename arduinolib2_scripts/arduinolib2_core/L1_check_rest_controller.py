@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Script to check if C++ files contain the RestController macro above class declarations.
-Validates that RestController macro appears before a class definition (not commented).
+Script to check if C++ files contain the @RestController annotation above class declarations.
+Validates that @RestController annotation appears before a class definition.
 """
 
 import re
@@ -12,7 +12,7 @@ from typing import List, Dict, Optional, Tuple, Set
 
 def find_rest_controller_macros(file_path: str) -> List[Dict[str, str]]:
     """
-    Find all RestController macros in a C++ file and their context.
+    Find all @RestController annotations in a C++ file and their context.
     
     Args:
         file_path: Path to the C++ file (.cpp, .h, or .hpp)
@@ -32,46 +32,53 @@ def find_rest_controller_macros(file_path: str) -> List[Dict[str, str]]:
         print(f"Error reading file '{file_path}': {e}")
         return []
     
-    # Pattern to match RestController macro (case sensitive)
-    # Matches: RestController (standalone)
-    rest_controller_pattern = r'^RestController\s*$'
+    # Pattern to match @RestController annotation
+    # Pattern: /// @RestController or ///@RestController (ignoring whitespace)
+    # Also check for already processed /* @RestController */ pattern
+    rest_controller_annotation_pattern = r'///\s*@RestController\b'
+    rest_controller_processed_pattern = r'/\*\s*@RestController\s*\*/'
     
     # Pattern to match class declarations
     # Allow for keywords like 'final', inheritance, etc. between class name and colon/brace
     class_pattern = r'class\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:.*?[:{]|[:{])'
     
     for line_num, line in enumerate(lines, 1):
-        # Check for RestController macro - must be standalone line (not commented, not part of other text)
         stripped_line = line.strip()
         
-        # Skip commented lines
-        if stripped_line.startswith('//') or stripped_line.startswith('/*') or stripped_line.startswith('*'):
+        # Skip already processed annotations
+        if rest_controller_processed_pattern.search(stripped_line):
+            continue
+        
+        # Skip comments (but not the annotation itself which is in a comment)
+        if stripped_line.startswith('/*'):
+            continue
+        # Skip other single-line comments that aren't the annotation
+        if stripped_line.startswith('//') and not re.search(rest_controller_annotation_pattern, stripped_line):
             continue
             
-        # Skip lines that are part of other text (not standalone RestController)
-        if stripped_line and not stripped_line.startswith('RestController'):
-            continue
-            
-        # Check if line contains valid RestController macro
-        rest_controller_match = re.search(rest_controller_pattern, stripped_line)
+        # Check if line contains valid @RestController annotation
+        rest_controller_match = re.search(rest_controller_annotation_pattern, stripped_line)
         if rest_controller_match:
-            macro_text = rest_controller_match.group(0)
+            annotation_text = rest_controller_match.group(0)
             
             # Look ahead for class declaration (within next few lines)
-            # Allow other macros to appear between RestController and class
+            # Allow other annotations/macros to appear between @RestController and class
             class_found = False
             class_name = ""
             context_lines = []
             
-            # Check next 10 lines for class declaration (allowing for multiple macros)
-            # Start from the line after RestController (line_num + 1)
+            # Check next 10 lines for class declaration (allowing for multiple annotations/macros)
+            # Start from the line after @RestController (line_num + 1)
             for i in range(line_num + 1, min(line_num + 11, len(lines) + 1)):
                 if i <= len(lines):
                     next_line = lines[i - 1].strip()
                     context_lines.append(next_line)
                     
-                    # Skip commented lines in lookahead
-                    if next_line.startswith('//') or next_line.startswith('/*') or next_line.startswith('*'):
+                    # Skip comments (but not annotations)
+                    if next_line.startswith('/*'):
+                        continue
+                    # Skip other single-line comments that aren't annotations
+                    if next_line.startswith('//') and not re.search(r'///\s*@(RestController|RequestMapping|GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping|NotNull|NotEmpty|NotBlank|Id|Entity|Serializable|Repository|ServerImpl)\b', next_line):
                         continue
                     
                     # Check for class declaration first
@@ -85,19 +92,20 @@ def find_rest_controller_macros(file_path: str) -> List[Dict[str, str]]:
                     if not next_line:
                         continue
                     
-                    # Check if it's a macro - allow any uppercase identifier that might be a macro
-                    # Pattern: starts with uppercase letter(s), optionally followed by parentheses
-                    is_macro = next_line.startswith(('RestController', 'RequestMapping', 'GetMapping', 
-                                                    'PostMapping', 'PutMapping', 'DeleteMapping', 'PatchMapping',
-                                                    'COMPONENT', 'SCOPE', 'VALIDATE')) or \
-                              re.match(r'^[A-Z][A-Za-z0-9_]*\s*(?:\(|$)', next_line)
+                    # Check if it's an annotation or macro - allow REST annotations and other macros
+                    # Pattern: starts with uppercase letter(s), optionally followed by parentheses, or annotation pattern
+                    is_annotation_or_macro = (
+                        re.search(r'///\s*@(RestController|RequestMapping|GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\b', next_line) or
+                        next_line.startswith(('COMPONENT', 'SCOPE', 'VALIDATE')) or
+                        re.match(r'^[A-Z][A-Za-z0-9_]*\s*(?:\(|$)', next_line)
+                    )
                     
-                    # If it's not a macro and not a class, stop looking
-                    if not is_macro:
+                    # If it's not an annotation/macro and not a class, stop looking
+                    if not is_annotation_or_macro:
                         break
             
             rest_controller_macros.append({
-                'macro': macro_text,
+                'macro': annotation_text,
                 'line_number': line_num,
                 'context': context_lines,
                 'class_name': class_name,
@@ -109,13 +117,13 @@ def find_rest_controller_macros(file_path: str) -> List[Dict[str, str]]:
 
 def check_rest_controller_macro_exists(file_path: str) -> bool:
     """
-    Simple check if RestController macro exists in the file (ignoring commented ones).
+    Simple check if @RestController annotation exists in the file.
     
     Args:
         file_path: Path to the C++ file
         
     Returns:
-        True if active RestController macro is found above a class, False otherwise
+        True if active @RestController annotation is found above a class, False otherwise
     """
     rest_controller_macros = find_rest_controller_macros(file_path)
     
@@ -129,7 +137,7 @@ def check_rest_controller_macro_exists(file_path: str) -> bool:
 
 def validate_rest_controller_macro_placement(file_path: str) -> Dict[str, any]:
     """
-    Comprehensive validation of RestController macro placement and usage.
+    Comprehensive validation of @RestController annotation placement and usage.
     
     Args:
         file_path: Path to the C++ file
@@ -146,7 +154,7 @@ def validate_rest_controller_macro_placement(file_path: str) -> Dict[str, any]:
             'rest_controller_count': 0,
             'valid_placements': 0,
             'invalid_placements': 0,
-            'issues': ['No RestController macro found']
+            'issues': ['No @RestController annotation found']
         }
     
     valid_placements = 0
@@ -158,7 +166,7 @@ def validate_rest_controller_macro_placement(file_path: str) -> Dict[str, any]:
             valid_placements += 1
         else:
             invalid_placements += 1
-            issues.append(f"RestController macro at line {macro_info['line_number']} not followed by class declaration")
+            issues.append(f"@RestController annotation at line {macro_info['line_number']} not followed by class declaration")
     
     return {
         'file_path': file_path,
@@ -206,7 +214,7 @@ def validate_cpp_file(file_path: str) -> bool:
 def main():
     """Main function to handle command line arguments and execute the validation."""
     parser = argparse.ArgumentParser(
-        description="Check if C++ files contain RestController macro above class declarations"
+        description="Check if C++ files contain @RestController annotation above class declarations"
     )
     parser.add_argument(
         "files", 
@@ -254,7 +262,7 @@ def main():
             has_rest_controller = check_rest_controller_macro_exists(file_path)
             results[file_path] = {'has_rest_controller': has_rest_controller}
             
-            status = "✓ RestController found" if has_rest_controller else "✗ No RestController"
+            status = "✓ @RestController found" if has_rest_controller else "✗ No @RestController"
             print(f"{file_path}: {status}")
     else:
         # Detailed validation mode
@@ -267,17 +275,17 @@ def main():
             print(f"{'='*60}")
             
             if result['has_rest_controller']:
-                print(f"✓ RestController macro found ({result['rest_controller_count']} occurrences)")
+                print(f"✓ @RestController annotation found ({result['rest_controller_count']} occurrences)")
                 print(f"  Valid placements: {result['valid_placements']}")
                 print(f"  Invalid placements: {result['invalid_placements']}")
                 
                 if result['valid_placements'] > 0:
-                    print(f"  Status: ✓ RestController macro is properly placed above class")
+                    print(f"  Status: ✓ @RestController annotation is properly placed above class")
                 else:
-                    print(f"  Status: ✗ RestController macro found but not followed by class")
+                    print(f"  Status: ✗ @RestController annotation found but not followed by class")
                 
                 if args.detailed and result['macros']:
-                    print(f"\n  Detailed macro information:")
+                    print(f"\n  Detailed annotation information:")
                     for macro in result['macros']:
                         print(f"    Line {macro['line_number']}: {macro['macro']}")
                         if macro['has_class']:
@@ -290,7 +298,7 @@ def main():
                     for issue in result['issues']:
                         print(f"    ⚠ {issue}")
             else:
-                print("✗ No RestController macro found")
+                print("✗ No @RestController annotation found")
     
     # Show summary if requested
     if args.summary and not args.simple:
@@ -304,9 +312,9 @@ def main():
         total_invalid_placements = sum([r.get('invalid_placements', 0) for r in results.values()])
         
         print(f"Files analyzed: {total_files}")
-        print(f"Files with RestController: {files_with_rest_controller}")
-        print(f"Files without RestController: {total_files - files_with_rest_controller}")
-        print(f"Total RestController macros: {total_rest_controllers}")
+        print(f"Files with @RestController: {files_with_rest_controller}")
+        print(f"Files without @RestController: {total_files - files_with_rest_controller}")
+        print(f"Total @RestController annotations: {total_rest_controllers}")
         print(f"Valid placements: {total_valid_placements}")
         print(f"Invalid placements: {total_invalid_placements}")
     
@@ -315,19 +323,19 @@ def main():
         with open(args.output, 'w') as f:
             if args.simple:
                 for file_path, result in results.items():
-                    status = "RestController found" if result['has_rest_controller'] else "No RestController"
+                    status = "@RestController found" if result['has_rest_controller'] else "No @RestController"
                     f.write(f"{file_path}: {status}\n")
             else:
                 for file_path, result in results.items():
                     f.write(f"{file_path}:\n")
                     if result['has_rest_controller']:
-                        f.write(f"  RestController macros: {result['rest_controller_count']}\n")
+                        f.write(f"  @RestController annotations: {result['rest_controller_count']}\n")
                         f.write(f"  Valid placements: {result['valid_placements']}\n")
                         f.write(f"  Invalid placements: {result['invalid_placements']}\n")
                         if result['issues']:
                             f.write(f"  Issues: {', '.join(result['issues'])}\n")
                     else:
-                        f.write(f"  No RestController macro found\n")
+                        f.write(f"  No @RestController annotation found\n")
                     f.write("\n")
         print(f"\nResults saved to: {args.output}")
     

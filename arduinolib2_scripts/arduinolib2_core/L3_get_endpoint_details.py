@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Script to extract endpoint details from HTTP mapping macros inside C++ controller classes.
-Finds GetMapping, PostMapping, PutMapping, DeleteMapping, and PatchMapping macros above functions 
+Script to extract endpoint details from HTTP mapping annotations inside C++ controller classes.
+Finds @GetMapping, @PostMapping, @PutMapping, @DeleteMapping, and @PatchMapping annotations above functions 
 inside the class, extracts function details, and combines with base URL to form complete endpoint URLs.
 """
 
@@ -154,7 +154,7 @@ def parse_function_signature(line: str) -> Optional[Dict[str, str]]:
 
 def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, interface_name: str) -> List[Dict[str, Any]]:
     """
-    Find all HTTP mapping endpoints (GetMapping, PostMapping, PutMapping, DeleteMapping, PatchMapping) 
+    Find all HTTP mapping endpoints (@GetMapping, @PostMapping, @PutMapping, @DeleteMapping, @PatchMapping) 
     inside the class and extract their details.
     
     Args:
@@ -182,8 +182,9 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
     
     endpoints = []
     
-    # Pattern to match any HTTP mapping macro: GetMapping, PostMapping, PutMapping, DeleteMapping, PatchMapping
-    mapping_pattern = r'(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\s*\(\s*["\']([^"\']+)["\']\s*\)'
+    # Pattern to match any HTTP mapping annotation: /// @GetMapping("path"), /// @PostMapping("path"), etc.
+    # Pattern: /// @GetMapping("path") or ///@GetMapping("path") (ignoring whitespace)
+    mapping_annotation_pattern = r'///\s*@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\s*\(\s*["\']([^"\']+)["\']\s*\)'
     
     # Pattern to match function signature
     function_pattern = r'([A-Za-z_][A-Za-z0-9_<>*&:,\s]*?)\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)'
@@ -193,19 +194,23 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
     while i < class_end:
         line = lines[i - 1].strip()  # Convert to 0-indexed
         
-        # Skip commented lines
-        if line.startswith('//') or line.startswith('/*') or line.startswith('*'):
+        # Skip comments (but not annotations)
+        if line.startswith('/*'):
+            i += 1
+            continue
+        # Skip other single-line comments that aren't annotations
+        if line.startswith('//') and not re.search(mapping_annotation_pattern, line):
             i += 1
             continue
         
-        # Check for any HTTP mapping macro
-        mapping_match = re.search(mapping_pattern, line)
+        # Check for any HTTP mapping annotation
+        mapping_match = re.search(mapping_annotation_pattern, line)
         if mapping_match:
-            http_method_macro = mapping_match.group(1)  # e.g., "GetMapping", "PostMapping", etc.
+            http_method_annotation = mapping_match.group(1)  # e.g., "GetMapping", "PostMapping", etc.
             mapping_path = mapping_match.group(2)
             
-            # Extract HTTP method from macro name (GetMapping -> GET, PostMapping -> POST, etc.)
-            http_method = http_method_macro.replace('Mapping', '').upper()
+            # Extract HTTP method from annotation name (@GetMapping -> GET, @PostMapping -> POST, etc.)
+            http_method = http_method_annotation.replace('Mapping', '').upper()
             
             # Construct full endpoint URL
             # Ensure proper URL concatenation: base_url + mapping_path
@@ -225,8 +230,11 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
                 
                 next_line = lines[j - 1].strip()
                 
-                # Skip commented lines
-                if next_line.startswith('//') or next_line.startswith('/*') or next_line.startswith('*'):
+                # Skip comments (but not annotations)
+                if next_line.startswith('/*'):
+                    continue
+                # Skip other single-line comments that aren't annotations
+                if next_line.startswith('//') and not re.search(mapping_annotation_pattern, next_line):
                     continue
                 
                 # Skip empty lines
@@ -244,7 +252,7 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
                 endpoint_info = {
                     'endpoint_url': endpoint_url,
                     'http_method': http_method,
-                    'mapping_macro': http_method_macro,
+                    'mapping_annotation': http_method_annotation,
                     'mapping_path': mapping_path,
                     'function_name': function_details['function_name'],
                     'return_type': function_details['return_type'],
