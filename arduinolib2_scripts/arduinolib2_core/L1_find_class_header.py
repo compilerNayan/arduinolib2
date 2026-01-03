@@ -111,7 +111,7 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
     else:
         # Exactly one matching header found
         class_header = matching_headers[0]
-        # print(f"\n✓ Found class header: {class_header}")
+        print(f"\n✓ Found class header: {class_header}")
         return class_header
 
 
