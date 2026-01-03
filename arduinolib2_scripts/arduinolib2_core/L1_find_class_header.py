@@ -100,15 +100,15 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
         # print(f"Error: No header files found with class name matching '{class_name}'")
         return None
     elif len(matching_headers) > 1:
-        print(f"Error: Multiple header files found with matching class name '{class_name}':")
-        for header in matching_headers:
-            print(f"  {header}")
-        print("Expected exactly one matching header file.")
+        # print(f"Error: Multiple header files found with matching class name '{class_name}':")
+        # for header in matching_headers:
+        #     print(f"  {header}")
+        # print("Expected exactly one matching header file.")
         return None
     else:
         # Exactly one matching header found
         class_header = matching_headers[0]
-        print(f"\n✓ Found class header: {class_header}")
+        # print(f"\n✓ Found class header: {class_header}")
         return class_header
 
 
@@ -128,9 +128,9 @@ def find_class_headers_for_names(class_names: List[str], search_root: str = ".",
     results = {}
     
     for class_name in class_names:
-        print(f"\n{'='*60}")
-        print(f"Processing: {class_name}")
-        print(f"{'='*60}")
+        # print(f"\n{'='*60}")
+        # print(f"Processing: {class_name}")
+        # print(f"{'='*60}")
         
         class_header = find_class_header_file(class_name, search_root, include_folders, exclude_folders)
         if class_header:
@@ -196,7 +196,7 @@ def main():
     class_names = args.class_names
     
     if not class_names:
-        print("No class names provided")
+        # print("No class names provided")
         return {}
     
     # Find class headers for all class names
@@ -226,7 +226,7 @@ def main():
                     f.write(f"{class_name} -> {class_header}\n")
                 else:
                     f.write(f"{class_name} -> No class header found\n")
-        print(f"\nResults saved to: {args.output}")
+        # print(f"\nResults saved to: {args.output}")
     
     return results
 
