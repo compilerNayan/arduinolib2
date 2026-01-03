@@ -26,10 +26,10 @@ def find_class_names(file_path: str) -> List[str]:
         with open(file_path, 'r', encoding='utf-8') as file:
             content = file.read()
     except FileNotFoundError:
-        print(f"Error: File '{file_path}' not found")
+        # print(f"Error: File '{file_path}' not found")
         return []
     except Exception as e:
-        print(f"Error reading file '{file_path}': {e}")
+        # print(f"Error reading file '{file_path}': {e}")
         return []
     
     # Enhanced pattern to match class declarations including final, template, etc.
@@ -115,10 +115,11 @@ def main():
     invalid_files = [f for f in args.files if not validate_cpp_file(f)]
     
     if invalid_files:
-        print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
+        # print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
+        pass
     
     if not valid_files:
-        print("No valid C++ files provided")
+        # print("No valid C++ files provided")
         return []
     
     # Find class names in all files
@@ -127,19 +128,21 @@ def main():
     # Display results
     total_classes = 0
     for file_path, class_names in results.items():
-        print(f"\nFile: {file_path}")
+        # print(f"\nFile: {file_path}")
         if class_names:
-            print(f"  Classes found: {', '.join(class_names)}")
+            # print(f"  Classes found: {', '.join(class_names)}")
             total_classes += len(class_names)
         else:
-            print("  No classes found")
+            # print("  No classes found")
+            pass
     
     # Show summary if requested
     if args.summary:
-        print(f"\n=== Summary ===")
-        print(f"Files analyzed: {len(valid_files)}")
-        print(f"Files with classes: {len(results)}")
-        print(f"Total classes found: {total_classes}")
+        # print(f"\n=== Summary ===")
+        # print(f"Files analyzed: {len(valid_files)}")
+        # print(f"Files with classes: {len(results)}")
+        # print(f"Total classes found: {total_classes}")
+        pass
     
     # Save to file if requested
     if args.output:
@@ -149,7 +152,7 @@ def main():
                 for class_name in class_names:
                     f.write(f"  {class_name}\n")
                 f.write("\n")
-        print(f"\nResults saved to: {args.output}")
+        # print(f"\nResults saved to: {args.output}")
     
     # Return all class names found for other scripts to consume
     all_class_names = []
