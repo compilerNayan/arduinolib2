@@ -131,9 +131,9 @@ def find_class_headers_for_names(class_names: List[str], search_root: str = ".",
     results = {}
     
     for class_name in class_names:
-        print(f"\n{'='*60}")
-        print(f"Processing: {class_name}")
-        print(f"{'='*60}")
+        # print(f"\n{'='*60}")
+        # print(f"Processing: {class_name}")
+        # print(f"{'='*60}")
         
         class_header = find_class_header_file(class_name, search_root, include_folders, exclude_folders)
         if class_header:
