@@ -1,29 +1,6 @@
 #!/usr/bin/env python3
 """
 Script to process @Autowired annotations in C++ files.
-"""
-import sys
-import os
-from pathlib import Path
-
-# Import logging utility
-try:
-    # Try to find and import pre_build_logger
-    script_dir = Path(__file__).parent if '__file__' in globals() else Path(os.getcwd())
-    for parent in [script_dir] + list(script_dir.parents)[:10]:
-        logger_path = parent / "arduinolib0" / "arduinolib0_scripts" / "pre_build_logger.py"
-        if logger_path.exists():
-            sys.path.insert(0, str(logger_path.parent))
-            from pre_build_logger import log_annotation_processed
-            break
-    else:
-        # Fallback: create minimal logger functions
-        def log_annotation_processed(annotation, file_path, details=None):
-            pass
-except Exception:
-    # Fallback: create minimal logger functions
-    def log_annotation_processed(annotation, file_path, details=None):
-        pass
 
 This script:
 1. Gets the class name from the file
@@ -510,12 +487,14 @@ def process_autowired_macros(file_path, dry_run=False):
             # print(f"  ✅ Successfully applied all changes to file")
             pass
     
-    # Summary and logging
-    if processed_count > 0 and not dry_run:
-        count_str = f"{processed_count} annotation(s)" if processed_count > 1 else "annotation"
-        log_annotation_processed("@Autowired", file_path, count_str)
-    
+    # Summary
+    if processed_count > 0:
+        # print(f"  📊 Summary: {processed_count} @Autowired annotation(s) processed")
+        pass
     if errors:
+        # print(f"  ⚠️  Errors: {len(errors)}")
+        # for error in errors:
+        #     print(f"    - {error}")
         pass
     
     # Success if we processed at least one macro or if there were no macros to process

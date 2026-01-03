@@ -1,9 +1,13 @@
+# Print message immediately when script is loaded
+# print("Hello from library number 2")
+
 # Import PlatformIO environment first (if available)
 env = None
 try:
     Import("env")
 except NameError:
     # Not running in PlatformIO environment (e.g., running from CMake)
+    # print("Note: Not running in PlatformIO environment - some features may be limited")
     # Create a mock env object for CMake builds
     class MockEnv:
         def get(self, key, default=None):
@@ -13,32 +17,6 @@ except NameError:
 import sys
 import os
 from pathlib import Path
-
-# Import logging utility
-try:
-    # Try to find and import pre_build_logger
-    script_dir = Path(__file__).parent if '__file__' in globals() else Path(os.getcwd())
-    # Search for arduinolib0_scripts
-    for parent in [script_dir] + list(script_dir.parents)[:10]:
-        logger_path = parent / "arduinolib0" / "arduinolib0_scripts" / "pre_build_logger.py"
-        if logger_path.exists():
-            sys.path.insert(0, str(logger_path.parent))
-            from pre_build_logger import print_banner, log_processing_start
-            print_banner()
-            log_processing_start("Spring Boot Processing")
-            break
-    else:
-        # Fallback: create minimal logger functions
-        def print_banner():
-            pass
-        def log_processing_start(name):
-            pass
-except Exception:
-    # Fallback: create minimal logger functions
-    def print_banner():
-        pass
-    def log_processing_start(name):
-        pass
 
 
 def get_library_dir():
