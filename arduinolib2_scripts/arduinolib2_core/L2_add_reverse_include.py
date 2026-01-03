@@ -10,15 +10,13 @@ import argparse
 import subprocess
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
-
-# Get the directory where this script is located and add it to path for imports
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-if SCRIPT_DIR not in sys.path:
-    sys.path.insert(0, SCRIPT_DIR)
-
 import find_interface_names
 import L1_find_class_header
 import get_current_file_path
+import os
+
+# Get the directory where this script is located
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def get_interface_name_from_file(file_path: str) -> Optional[str]:
@@ -41,7 +39,7 @@ def get_interface_name_from_file(file_path: str) -> Optional[str]:
         return None
 
 
-def find_interface_header_path(interface_name: str, include_paths: List[str], exclude_paths: List[str], file_path: str = None) -> Optional[str]:
+def find_interface_header_path(interface_name: str, include_paths: List[str], exclude_paths: List[str]) -> Optional[str]:
     """
     Find the interface header file path using L1_find_class_header script.
     
@@ -49,7 +47,6 @@ def find_interface_header_path(interface_name: str, include_paths: List[str], ex
         interface_name: Name of the interface to search for
         include_paths: List of include paths to search in
         exclude_paths: List of exclude paths to avoid
-        file_path: Optional path to the file being processed (used to determine search root)
         
     Returns:
         Full path to the interface header file if found, None otherwise
@@ -57,25 +54,12 @@ def find_interface_header_path(interface_name: str, include_paths: List[str], ex
     try:
         # Use the function directly instead of calling as subprocess
         # This avoids needing to parse stdout and doesn't require print statements
-        # Use current working directory as search root - this works reliably regardless of where script is called from
-        # The include_folders parameter will filter to the correct paths
         search_root = os.getcwd()
-        
-        # Convert include_paths to absolute paths if they're relative
-        abs_include_paths = None
-        if include_paths:
-            abs_include_paths = [os.path.abspath(path) if not os.path.isabs(path) else path for path in include_paths]
-        
-        # Convert exclude_paths to absolute paths if they're relative
-        abs_exclude_paths = None
-        if exclude_paths:
-            abs_exclude_paths = [os.path.abspath(path) if not os.path.isabs(path) else path for path in exclude_paths]
-        
         header_path = L1_find_class_header.get_class_header_for_name(
             interface_name, 
             search_root=search_root,
-            include_folders=abs_include_paths,
-            exclude_folders=abs_exclude_paths
+            include_folders=include_paths if include_paths else None,
+            exclude_folders=exclude_paths if exclude_paths else None
         )
         return header_path
             
@@ -180,7 +164,7 @@ def process_file(file_path: str, include_paths: List[str], exclude_paths: List[s
         # print(f"Interface name: {interface_name}")
         
         # Step 2: Find interface header path
-        interface_header_file = find_interface_header_path(interface_name, include_paths, exclude_paths, file_path)
+        interface_header_file = find_interface_header_path(interface_name, include_paths, exclude_paths)
         if not interface_header_file:
             results['errors'].append(f"Could not find header file for interface: {interface_name}")
             return results
@@ -197,9 +181,33 @@ def process_file(file_path: str, include_paths: List[str], exclude_paths: List[s
         results['current_file_info'] = {'absolute_path': current_file_path}
         # print(f"Current file path: {current_file_path}")
         
-        # Step 4: Use absolute path for include statement
-        # The include should use the absolute path to the file
-        include_path = os.path.abspath(current_file_path)
+        # Step 4: Convert absolute path to relative path for include statement
+        # If both files are in the same directory, use just the filename
+        # Otherwise, try to make it relative to one of the include paths
+        current_file_dir = os.path.dirname(current_file_path)
+        interface_file_dir = os.path.dirname(interface_header_file)
+        current_file_name = os.path.basename(current_file_path)
+        
+        # If files are in the same directory, use just the filename
+        if current_file_dir == interface_file_dir:
+            include_path = current_file_name
+        else:
+            # Try to find a relative path based on include_paths
+            include_path = current_file_path
+            for include_path_dir in include_paths:
+                # Convert include_path_dir to absolute path for comparison
+                abs_include_dir = os.path.abspath(include_path_dir)
+                try:
+                    # Check if current_file_path is under the include directory
+                    common = os.path.commonpath([current_file_path, abs_include_dir])
+                    if common == abs_include_dir:
+                        # Make path relative to include directory
+                        rel_path = os.path.relpath(current_file_path, abs_include_dir)
+                        include_path = rel_path.replace(os.sep, '/')  # Use forward slashes for includes
+                        break
+                except ValueError:
+                    # Paths don't have a common base, skip this include_path_dir
+                    continue
         
         # Step 5: Add header include
         success = add_header_include(interface_header_file, include_path, dry_run)
