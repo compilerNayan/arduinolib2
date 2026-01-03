@@ -195,19 +195,11 @@ def process_file(file_path: str, include_paths: List[str], exclude_paths: List[s
             # Try to find a relative path based on include_paths
             include_path = current_file_path
             for include_path_dir in include_paths:
-                # Convert include_path_dir to absolute path for comparison
-                abs_include_dir = os.path.abspath(include_path_dir)
-                try:
-                    # Check if current_file_path is under the include directory
-                    common = os.path.commonpath([current_file_path, abs_include_dir])
-                    if common == abs_include_dir:
-                        # Make path relative to include directory
-                        rel_path = os.path.relpath(current_file_path, abs_include_dir)
-                        include_path = rel_path.replace(os.sep, '/')  # Use forward slashes for includes
-                        break
-                except ValueError:
-                    # Paths don't have a common base, skip this include_path_dir
-                    continue
+                if os.path.commonpath([current_file_path, include_path_dir]) == include_path_dir:
+                    # Make path relative to include directory
+                    rel_path = os.path.relpath(current_file_path, include_path_dir)
+                    include_path = rel_path.replace(os.sep, '/')  # Use forward slashes for includes
+                    break
         
         # Step 5: Add header include
         success = add_header_include(interface_header_file, include_path, dry_run)
