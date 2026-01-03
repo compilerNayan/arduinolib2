@@ -3,6 +3,28 @@
 Script to check if C++ files contain the @Scope annotation with valid values above class declarations.
 Only accepts @Scope("PROTOTYPE") or @Scope("SINGLETON"). Ignores processed annotations.
 """
+import sys
+import os
+from pathlib import Path
+
+# Import logging utility
+try:
+    # Try to find and import pre_build_logger
+    script_dir = Path(__file__).parent if '__file__' in globals() else Path(os.getcwd())
+    for parent in [script_dir] + list(script_dir.parents)[:10]:
+        logger_path = parent / "arduinolib0" / "arduinolib0_scripts" / "pre_build_logger.py"
+        if logger_path.exists():
+            sys.path.insert(0, str(logger_path.parent))
+            from pre_build_logger import log_annotation_processed
+            break
+    else:
+        # Fallback: create minimal logger functions
+        def log_annotation_processed(annotation, file_path, details=None):
+            pass
+except Exception:
+    # Fallback: create minimal logger functions
+    def log_annotation_processed(annotation, file_path, details=None):
+        pass
 
 import re
 import argparse
@@ -473,10 +495,18 @@ def mark_scope_annotation_processed(file_path: str) -> bool:
         if modified:
             with open(file_path, 'w', encoding='utf-8') as file:
                 file.writelines(modified_lines)
-            # print(f"✓ Processed @Scope annotation in: {file_path}")
-        else:
-            # print(f"ℹ No @Scope annotation found to process in: {file_path}")
-            pass
+            # Find scope value for logging
+            scope_value = None
+            for line in modified_lines:
+                if '@Scope' in line:
+                    match = re.search(r'@Scope\(["\']([^"\']+)["\']\)', line)
+                    if match:
+                        scope_value = match.group(1)
+                        break
+            if scope_value:
+                log_annotation_processed("@Scope", file_path, f'value: "{scope_value}"')
+            else:
+                log_annotation_processed("@Scope", file_path)
         
         return True
         
