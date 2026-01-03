@@ -14,6 +14,10 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
     Private std::unordered_map<StdString, std::function<StdString(CStdString)>> putMappings;
     Private std::unordered_map<StdString, std::function<StdString(CStdString)>> patchMappings;
     Private std::unordered_map<StdString, std::function<StdString(CStdString)>> deleteMappings;
+    Private std::unordered_map<StdString, std::function<StdString(CStdString)>> optionsMappings;
+    Private std::unordered_map<StdString, std::function<StdString(CStdString)>> headMappings;
+    Private std::unordered_map<StdString, std::function<StdString(CStdString)>> traceMappings;
+    Private std::unordered_map<StdString, std::function<StdString(CStdString)>> connectMappings;
 
     Public HttpRequestDispatcher() {
         InitializeMappings();
@@ -35,6 +39,14 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
                 return patchMappings[url](payload);
             case HttpMethod::DELETE:
                 return deleteMappings[url](payload);
+            case HttpMethod::OPTIONS:
+                return optionsMappings[url](payload);
+            case HttpMethod::HEAD:
+                return headMappings[url](payload);
+            case HttpMethod::TRACE:
+                return traceMappings[url](payload);
+            case HttpMethod::CONNECT:
+                return connectMappings[url](payload);
         } 
         return StdString();
     }
