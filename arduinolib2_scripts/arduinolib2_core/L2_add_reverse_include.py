@@ -13,7 +13,6 @@ from typing import List, Dict, Optional, Tuple
 import find_interface_names
 import L1_find_class_header
 import get_current_file_path
-import os
 
 # Get the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -52,16 +51,51 @@ def find_interface_header_path(interface_name: str, include_paths: List[str], ex
         Full path to the interface header file if found, None otherwise
     """
     try:
-        # Use the function directly instead of calling as subprocess
-        # This avoids needing to parse stdout and doesn't require print statements
-        search_root = os.getcwd()
-        header_path = L1_find_class_header.get_class_header_for_name(
-            interface_name, 
-            search_root=search_root,
-            include_folders=include_paths if include_paths else None,
-            exclude_folders=exclude_paths if exclude_paths else None
-        )
-        return header_path
+        # Build the command for L1_find_class_header
+        script_path = os.path.join(SCRIPT_DIR, 'L1_find_class_header.py')
+        cmd = ['python', script_path, interface_name]
+        
+        # Add include paths (all in one --include argument)
+        if include_paths:
+            cmd.extend(['--include'] + include_paths)
+        
+        # Add exclude paths (all in one --exclude argument)
+        if exclude_paths:
+            cmd.extend(['--exclude'] + exclude_paths)
+        
+        # print(f"Running command: {' '.join(cmd)}")
+        
+        # Execute the command
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=os.getcwd())
+        
+        if result.returncode == 0:
+            # Parse the output to find the header file path
+            output_lines = result.stdout.strip().split('\n')
+            
+            # Look for the line that shows "Found class header: <path>"
+            for line in output_lines:
+                if line.strip().startswith('✓ Found class header:'):
+                    # Extract the file path from "✓ Found class header: <path>"
+                    parts = line.split(':', 1)
+                    if len(parts) == 2:
+                        file_path = parts[1].strip()
+                        if os.path.exists(file_path):
+                            return file_path
+            
+            # Fallback: look for lines ending with .h or .hpp
+            for line in output_lines:
+                if line.strip().endswith('.h') or line.strip().endswith('.hpp'):
+                    # Extract the file path from the output
+                    file_path = line.strip()
+                    if os.path.exists(file_path):
+                        return file_path
+            
+            # print(f"Could not parse header file path from output: {result.stdout}")
+            return None
+        else:
+            # print(f"L1_find_class_header failed with return code {result.returncode}")
+            # print(f"Error output: {result.stderr}")
+            return None
             
     except Exception as e:
         # print(f"Error finding interface header path: {e}")
