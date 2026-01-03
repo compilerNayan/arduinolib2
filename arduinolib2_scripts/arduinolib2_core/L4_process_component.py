@@ -201,6 +201,7 @@ def run_script_sequence(file_path: str, include_paths: List[str], exclude_paths:
             # print(f"✗ {error_msg}")
             should_continue = False
             # Don't return - continue to step 6 to mark annotation as processed
+            # This ensures step 6 always runs even if step 5 fails
         
         # Step 6: Mark @Component annotation as processed
         # This step should run even if earlier steps had issues, as it's independent
@@ -271,7 +272,19 @@ def process_file(file_path: str, include_paths: List[str], exclude_paths: List[s
         has_component = check_component_macro(file_path)
         results['has_component'] = has_component
         
-        if has_component:
+        # Also check if file has processed @Component annotation
+        # This ensures we still run the script sequence (especially reverse include) 
+        # even if the annotation was already marked as processed
+        has_processed_component = False
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                if '/* @Component */' in content:
+                    has_processed_component = True
+        except Exception:
+            pass
+        
+        if has_component or has_processed_component:
             # print(f"✓ @Component annotation found in {file_path}")
             # print("Running script sequence...")
             
