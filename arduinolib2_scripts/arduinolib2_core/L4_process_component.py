@@ -15,6 +15,25 @@ import L1_check_component_macro
 # Get the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# Import logging utility
+try:
+    # Try to find and import pre_build_logger
+    script_dir = Path(SCRIPT_DIR)
+    for parent in [script_dir] + list(script_dir.parents)[:10]:
+        logger_path = parent / "arduinolib0" / "arduinolib0_scripts" / "pre_build_logger.py"
+        if logger_path.exists():
+            sys.path.insert(0, str(logger_path.parent))
+            from pre_build_logger import log_annotation_processed
+            break
+    else:
+        # Fallback: create minimal logger functions
+        def log_annotation_processed(annotation, file_path, details=None):
+            pass
+except Exception:
+    # Fallback: create minimal logger functions
+    def log_annotation_processed(annotation, file_path, details=None):
+        pass
+
 
 def check_component_macro(file_path: str) -> bool:
     """
@@ -195,25 +214,28 @@ def run_script_sequence(file_path: str, include_paths: List[str], exclude_paths:
             return results
         
         # Step 6: Mark @Component annotation as processed
-        # print("\n--- Step 6: Processing @Component annotation ---")
         if dry_run:
-            # print("Would process @Component annotation (dry run)")
             results['steps_completed'].append('comment_component_macro')
         else:
             try:
                 success = L1_check_component_macro.comment_component_macro(file_path)
                 if success:
                     results['steps_completed'].append('comment_component_macro')
-                    # print("✓ @Component annotation processed successfully")
+                    # Get class name for logging
+                    try:
+                        import L1_find_class_header
+                        class_names = L1_find_class_header.get_class_names_from_file(file_path)
+                        class_name = class_names[0] if class_names else "Unknown"
+                        log_annotation_processed("@Component", file_path, f"class {class_name}")
+                    except:
+                        log_annotation_processed("@Component", file_path)
                 else:
                     error_msg = "Failed to process @Component annotation"
                     results['errors'].append(error_msg)
-                    # print(f"✗ {error_msg}")
                     return results
             except Exception as e:
                 error_msg = f"Error processing @Component annotation: {e}"
                 results['errors'].append(error_msg)
-                # print(f"✗ {error_msg}")
                 return results
         
         # All steps completed successfully

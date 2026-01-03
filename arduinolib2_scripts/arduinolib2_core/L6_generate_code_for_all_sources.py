@@ -22,6 +22,28 @@ from typing import Dict, List, Optional
 script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, script_dir)
 
+# Import logging utility
+try:
+    # Try to find and import pre_build_logger
+    for parent in [Path(script_dir)] + list(Path(script_dir).parents)[:10]:
+        logger_path = parent / "arduinolib0" / "arduinolib0_scripts" / "pre_build_logger.py"
+        if logger_path.exists():
+            sys.path.insert(0, str(logger_path.parent))
+            from pre_build_logger import log_annotation_processed, log_summary
+            break
+    else:
+        # Fallback: create minimal logger functions
+        def log_annotation_processed(annotation, file_path, details=None):
+            pass
+        def log_summary(module_name, processed_count, total_count=None):
+            pass
+except Exception:
+    # Fallback: create minimal logger functions
+    def log_annotation_processed(annotation, file_path, details=None):
+        pass
+    def log_summary(module_name, processed_count, total_count=None):
+        pass
+
 try:
     import L5_generate_all_endpoints as L5_generate_code_for_file
     import L3_get_endpoint_details
@@ -243,12 +265,11 @@ def generate_code_map(cpp_files: List[str], dry_run: bool = False) -> Dict[str, 
             
             # Mark REST-related annotations as processed in this file
             if not dry_run:
-                # print(f"  Processing REST annotations in: {file_path}")
-                pass
-            else:
-                # print(f"  Would process REST annotations in: {file_path}")
-                pass
-            comment_rest_macros(file_path, dry_run=dry_run)
+                comment_rest_macros(file_path, dry_run=dry_run)
+                # Log that REST annotations were processed
+                class_info = L3_get_endpoint_details.find_class_and_interface(file_path)
+                class_name = class_info.get('class_name', 'Unknown') if class_info else 'Unknown'
+                log_annotation_processed("@RestController", file_path, f"class {class_name}")
         else:
             skipped_count += 1
     
