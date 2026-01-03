@@ -103,10 +103,10 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
         # print(f"Error: No header files found with class name matching '{class_name}'")
         return None
     elif len(matching_headers) > 1:
-        # print(f"Error: Multiple header files found with matching class name '{class_name}':")
-        # for header in matching_headers:
-        #     print(f"  {header}")
-        # print("Expected exactly one matching header file.")
+        print(f"Error: Multiple header files found with matching class name '{class_name}':")
+        for header in matching_headers:
+            print(f"  {header}")
+        print("Expected exactly one matching header file.")
         return None
     else:
         # Exactly one matching header found
