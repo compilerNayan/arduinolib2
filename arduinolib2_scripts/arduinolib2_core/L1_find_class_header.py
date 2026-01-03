@@ -199,7 +199,7 @@ def main():
     class_names = args.class_names
     
     if not class_names:
-        print("No class names provided")
+        # print("No class names provided")
         return {}
     
     # Find class headers for all class names
@@ -230,7 +230,7 @@ def main():
                     f.write(f"{class_name} -> {class_header}\n")
                 else:
                     f.write(f"{class_name} -> No class header found\n")
-        print(f"\nResults saved to: {args.output}")
+        # print(f"\nResults saved to: {args.output}")
     
     return results
 
