@@ -29,10 +29,10 @@ def find_interface_header_include(file_path: str, interface_name: str) -> List[T
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
     except FileNotFoundError:
-        print(f"Error: File '{file_path}' not found")
+        # print(f"Error: File '{file_path}' not found")
         return []
     except Exception as e:
-        print(f"Error reading file '{file_path}': {e}")
+        # print(f"Error reading file '{file_path}': {e}")
         return []
     
     # Pattern to match #include statements containing interface name (case insensitive)
@@ -128,20 +128,22 @@ def comment_interface_headers_in_files(file_paths: List[str], dry_run: bool = Fa
     all_results = {}
     
     for file_path in file_paths:
-        print(f"\nProcessing: {file_path}")
+        # print(f"\nProcessing: {file_path}")
         results = comment_interface_header_includes(file_path, dry_run)
         all_results[file_path] = results
         
         # Display results for this file
         if results['commented_includes']:
-            print("  Commented includes:")
-            for include in results['commented_includes']:
-                print(f"    {include}")
+            # print("  Commented includes:")
+            # for include in results['commented_includes']:
+            #     print(f"    {include}")
+            pass
         
         if results['errors']:
-            print("  Errors:")
-            for error in results['errors']:
-                print(f"    {error}")
+            # print("  Errors:")
+            # for error in results['errors']:
+            #     print(f"    {error}")
+            pass
     
     return all_results
 
@@ -188,10 +190,11 @@ def main():
     invalid_files = [f for f in args.files if not validate_cpp_file(f)]
     
     if invalid_files:
-        print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
+        # print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
+        pass
     
     if not valid_files:
-        print("No valid C++ files provided")
+        # print("No valid C++ files provided")
         return {}
     
     # Process all files
@@ -199,15 +202,16 @@ def main():
     
     # Show summary if requested
     if args.summary:
-        print(f"\n=== Summary ===")
-        print(f"Files processed: {len(valid_files)}")
-        print(f"Files with changes: {len([r for r in results.values() if r['commented_includes']])}")
-        
-        total_commented = sum(len(r['commented_includes']) for r in results.values())
-        total_errors = sum(len(r['errors']) for r in results.values())
-        
-        print(f"Total includes commented: {total_commented}")
-        print(f"Total errors: {total_errors}")
+        # print(f"\n=== Summary ===")
+        # print(f"Files processed: {len(valid_files)}")
+        # print(f"Files with changes: {len([r for r in results.values() if r['commented_includes']])}")
+        # 
+        # total_commented = sum(len(r['commented_includes']) for r in results.values())
+        # total_errors = sum(len(r['errors']) for r in results.values())
+        # 
+        # print(f"Total includes commented: {total_commented}")
+        # print(f"Total errors: {total_errors}")
+        pass
     
     return results
 

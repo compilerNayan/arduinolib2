@@ -14,7 +14,7 @@ try:
     from find_class_names import find_class_names
     from find_interface_names import find_interface_names
 except ImportError:
-    print("Error: Could not import required modules. Make sure find_class_names.py and find_interface_names.py are in the same directory.")
+    # print("Error: Could not import required modules. Make sure find_class_names.py and find_interface_names.py are in the same directory.")
     sys.exit(1)
 
 
@@ -34,10 +34,10 @@ def find_component_macros(file_path: str) -> List[Dict[str, str]]:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
     except FileNotFoundError:
-        print(f"Error: File '{file_path}' not found")
+        # print(f"Error: File '{file_path}' not found")
         return []
     except Exception as e:
-        print(f"Error reading file '{file_path}': {e}")
+        # print(f"Error reading file '{file_path}': {e}")
         return []
     
     # Pattern to match @Component annotation
@@ -329,17 +329,18 @@ def comment_component_macro(file_path: str) -> bool:
         if modified:
             with open(file_path, 'w', encoding='utf-8') as file:
                 file.writelines(modified_lines)
-            print(f"✓ Processed @Component annotation in: {file_path}")
+            # print(f"✓ Processed @Component annotation in: {file_path}")
         else:
-            print(f"ℹ No @Component annotation found to process in: {file_path}")
+            # print(f"ℹ No @Component annotation found to process in: {file_path}")
+            pass
         
         return True
         
     except FileNotFoundError:
-        print(f"Error: File '{file_path}' not found")
+        # print(f"Error: File '{file_path}' not found")
         return False
     except Exception as e:
-        print(f"Error modifying file '{file_path}': {e}")
+        # print(f"Error modifying file '{file_path}': {e}")
         return False
 
 
@@ -398,10 +399,11 @@ def main():
     invalid_files = [f for f in args.files if not validate_cpp_file(f)]
     
     if invalid_files:
-        print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
+        # print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
+        pass
     
     if not valid_files:
-        print("No valid C++ files provided")
+        # print("No valid C++ files provided")
         return {}
     
     # Check files
@@ -412,53 +414,55 @@ def main():
             has_component = check_component_macro_exists(file_path)
             results[file_path] = {'has_component': has_component}
             
-            status = "✓ @Component found" if has_component else "✗ No @Component"
-            print(f"{file_path}: {status}")
+            # status = "✓ @Component found" if has_component else "✗ No @Component"
+            # print(f"{file_path}: {status}")
     else:
         # Detailed validation mode
         results = check_multiple_files(valid_files)
         
         # Display results
-        for file_path, result in results.items():
-            print(f"\n{'='*60}")
-            print(f"File: {file_path}")
-            print(f"{'='*60}")
-            
-            if result['has_component_macro']:
-                print(f"✓ @Component annotation found ({len(result['component_macros'])} occurrences)")
-                print(f"  Classes found: {', '.join(result['class_names']) if result['class_names'] else 'None'}")
-                print(f"  Interfaces found: {', '.join(result['interface_names']) if result['interface_names'] else 'None'}")
-                print(f"  Classes with inheritance: {', '.join(result['classes_with_inheritance']) if result['classes_with_inheritance'] else 'None'}")
-                
-                if result['all_requirements_met']:
-                    print(f"  Status: ✓ All requirements met - @Component annotation is valid")
-                else:
-                    print(f"  Status: ✗ Requirements not met - @Component annotation has no significance")
-                
-                if args.detailed and result['component_macros']:
-                    print(f"\n  Detailed annotation information:")
-                    for macro in result['component_macros']:
-                        print(f"    Line {macro['line_number']}: {macro['macro']}")
-                        if macro['has_class']:
-                            print(f"      → Class: {macro['class_name']}")
-                        else:
-                            print(f"      → No class found")
-            else:
-                print("✗ No @Component annotation found")
+        # for file_path, result in results.items():
+        #     print(f"\n{'='*60}")
+        #     print(f"File: {file_path}")
+        #     print(f"{'='*60}")
+        #     
+        #     if result['has_component_macro']:
+        #         print(f"✓ @Component annotation found ({len(result['component_macros'])} occurrences)")
+        #         print(f"  Classes found: {', '.join(result['class_names']) if result['class_names'] else 'None'}")
+        #         print(f"  Interfaces found: {', '.join(result['interface_names']) if result['interface_names'] else 'None'}")
+        #         print(f"  Classes with inheritance: {', '.join(result['classes_with_inheritance']) if result['classes_with_inheritance'] else 'None'}")
+        #         
+        #         if result['all_requirements_met']:
+        #             print(f"  Status: ✓ All requirements met - @Component annotation is valid")
+        #         else:
+        #             print(f"  Status: ✗ Requirements not met - @Component annotation has no significance")
+        #         
+        #         if args.detailed and result['component_macros']:
+        #             print(f"\n  Detailed annotation information:")
+        #             for macro in result['component_macros']:
+        #                 print(f"    Line {macro['line_number']}: {macro['macro']}")
+        #                 if macro['has_class']:
+        #                     print(f"      → Class: {macro['class_name']}")
+        #                 else:
+        #                     print(f"      → No class found")
+        #     else:
+        #         print("✗ No @Component annotation found")
+        pass
     
     # Show summary if requested
     if args.summary and not args.simple:
-        print(f"\n{'='*60}")
-        print("SUMMARY")
-        print(f"{'='*60}")
-        total_files = len(valid_files)
-        files_with_component = len([r for r in results.values() if r['has_component_macro']])
-        files_with_valid_component = len([r for r in results.values() if r.get('all_requirements_met', False)])
-        
-        print(f"Files analyzed: {total_files}")
-        print(f"Files with @Component annotation: {files_with_component}")
-        print(f"Files with valid @Component annotation: {files_with_valid_component}")
-        print(f"Files with invalid @Component annotation: {files_with_component - files_with_valid_component}")
+        # print(f"\n{'='*60}")
+        # print("SUMMARY")
+        # print(f"{'='*60}")
+        # total_files = len(valid_files)
+        # files_with_component = len([r for r in results.values() if r['has_component_macro']])
+        # files_with_valid_component = len([r for r in results.values() if r.get('all_requirements_met', False)])
+        # 
+        # print(f"Files analyzed: {total_files}")
+        # print(f"Files with @Component annotation: {files_with_component}")
+        # print(f"Files with valid @Component annotation: {files_with_valid_component}")
+        # print(f"Files with invalid @Component annotation: {files_with_component - files_with_valid_component}")
+        pass
     
     # Save to file if requested
     if args.output:
@@ -478,7 +482,7 @@ def main():
                     else:
                         f.write(f"  No @Component annotation found\n")
                     f.write("\n")
-        print(f"\nResults saved to: {args.output}")
+        # print(f"\nResults saved to: {args.output}")
     
     return results
 

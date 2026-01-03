@@ -29,10 +29,10 @@ def find_class_closing_brace(file_path: str) -> Optional[Tuple[int, str]]:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
     except FileNotFoundError:
-        print(f"Error: File '{file_path}' not found")
+        # print(f"Error: File '{file_path}' not found")
         return None
     except Exception as e:
-        print(f"Error reading file '{file_path}': {e}")
+        # print(f"Error reading file '{file_path}': {e}")
         return None
     
     # Pattern to match class declaration
@@ -149,7 +149,7 @@ def inject_instance_code(file_path: str, dry_run: bool = False) -> Dict[str, any
         # Step 1: Get the file scope
         scope = L2_get_file_scope.get_file_scope(file_path)
         results['info']['scope'] = scope
-        print(f"File scope: {scope}")
+        # print(f"File scope: {scope}")
         
         # Step 2: Get class names
         class_names = find_class_names.find_class_names(file_path)
@@ -159,7 +159,7 @@ def inject_instance_code(file_path: str, dry_run: bool = False) -> Dict[str, any
         
         class_name = class_names[0]  # Take the first class
         results['info']['class_name'] = class_name
-        print(f"Class name: {class_name}")
+        # print(f"Class name: {class_name}")
         
         # Step 3: Get interface names
         interface_names = find_interface_names.find_interface_names(file_path)
@@ -169,7 +169,7 @@ def inject_instance_code(file_path: str, dry_run: bool = False) -> Dict[str, any
         
         interface_name = interface_names[0]  # Take the first interface
         results['info']['interface_name'] = interface_name
-        print(f"Interface name: {interface_name}")
+        # print(f"Interface name: {interface_name}")
         
         # Step 4: Get validator name (if applicable)
         validator_name = None
@@ -179,7 +179,7 @@ def inject_instance_code(file_path: str, dry_run: bool = False) -> Dict[str, any
                 results['errors'].append(f"Validator required for scope {scope} but none found")
                 return results
             results['info']['validator_name'] = validator_name
-            print(f"Validator name: {validator_name}")
+            # print(f"Validator name: {validator_name}")
         
         # Step 5: Find the class closing brace
         closing_brace = find_class_closing_brace(file_path)
@@ -189,23 +189,23 @@ def inject_instance_code(file_path: str, dry_run: bool = False) -> Dict[str, any
         
         line_num, line_content = closing_brace
         results['info']['closing_brace_line'] = line_num
-        print(f"Class closing brace found at line {line_num}")
+        # print(f"Class closing brace found at line {line_num}")
         
         # Step 6: Generate the instance code
         try:
             instance_code = generate_instance_code(scope, class_name, interface_name, validator_name)
             results['injected_code'] = instance_code
-            print(f"Generated instance code for scope {scope}")
+            # print(f"Generated instance code for scope {scope}")
         except ValueError as e:
             results['errors'].append(f"Error generating instance code: {e}")
             return results
         
         # Step 7: Inject the code (or show what would be injected)
         if dry_run:
-            print(f"\nWould inject the following code before line {line_num} (before '}};'):")
-            print("=" * 50)
-            print(instance_code)
-            print("=" * 50)
+            # print(f"\nWould inject the following code before line {line_num} (before '}};'):")
+            # print("=" * 50)
+            # print(instance_code)
+            # print("=" * 50)
             results['success'] = True
         else:
             # Actually inject the code
@@ -225,7 +225,7 @@ def inject_instance_code(file_path: str, dry_run: bool = False) -> Dict[str, any
                 with open(file_path, 'w', encoding='utf-8') as file:
                     file.writelines(lines)
                 
-                print(f"Successfully injected instance code before line {line_num}")
+                # print(f"Successfully injected instance code before line {line_num}")
                 results['success'] = True
                 
             except Exception as e:
@@ -252,22 +252,25 @@ def inject_instance_code_in_files(file_paths: List[str], dry_run: bool = False) 
     all_results = {}
     
     for file_path in file_paths:
-        print(f"\nProcessing: {file_path}")
+        # print(f"\nProcessing: {file_path}")
         results = inject_instance_code(file_path, dry_run)
         all_results[file_path] = results
         
         # Display results for this file
         if results['success']:
             if dry_run:
-                print("  Status: Would inject instance code successfully")
+                # print("  Status: Would inject instance code successfully")
+                pass
             else:
-                print("  Status: Instance code injected successfully")
+                # print("  Status: Instance code injected successfully")
+                pass
         else:
-            print("  Status: Failed to inject instance code")
+            # print("  Status: Failed to inject instance code")
             if results['errors']:
-                print("  Errors:")
-                for error in results['errors']:
-                    print(f"    {error}")
+                # print("  Errors:")
+                # for error in results['errors']:
+                #     print(f"    {error}")
+                pass
     
     return all_results
 
@@ -314,10 +317,11 @@ def main():
     invalid_files = [f for f in args.files if not validate_cpp_file(f)]
     
     if invalid_files:
-        print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
+        # print(f"Warning: Skipping non-C++ files: {', '.join(invalid_files)}")
+        pass
     
     if not valid_files:
-        print("No valid C++ files provided")
+        # print("No valid C++ files provided")
         return {}
     
     # Process all files
@@ -325,12 +329,13 @@ def main():
     
     # Show summary if requested
     if args.summary:
-        print(f"\n=== Summary ===")
-        print(f"Files processed: {len(valid_files)}")
-        print(f"Files with successful injection: {len([r for r in results.values() if r['success']])}")
-        
-        total_errors = sum(len(r['errors']) for r in results.values())
-        print(f"Total errors: {total_errors}")
+        # print(f"\n=== Summary ===")
+        # print(f"Files processed: {len(valid_files)}")
+        # print(f"Files with successful injection: {len([r for r in results.values() if r['success']])}")
+        # 
+        # total_errors = sum(len(r['errors']) for r in results.values())
+        # print(f"Total errors: {total_errors}")
+        pass
     
     return results
 
