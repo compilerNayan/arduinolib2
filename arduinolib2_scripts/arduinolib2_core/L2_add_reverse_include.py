@@ -181,8 +181,28 @@ def process_file(file_path: str, include_paths: List[str], exclude_paths: List[s
         results['current_file_info'] = {'absolute_path': current_file_path}
         # print(f"Current file path: {current_file_path}")
         
-        # Step 4: Add header include
-        success = add_header_include(interface_header_file, current_file_path, dry_run)
+        # Step 4: Convert absolute path to relative path for include statement
+        # If both files are in the same directory, use just the filename
+        # Otherwise, try to make it relative to one of the include paths
+        current_file_dir = os.path.dirname(current_file_path)
+        interface_file_dir = os.path.dirname(interface_header_file)
+        current_file_name = os.path.basename(current_file_path)
+        
+        # If files are in the same directory, use just the filename
+        if current_file_dir == interface_file_dir:
+            include_path = current_file_name
+        else:
+            # Try to find a relative path based on include_paths
+            include_path = current_file_path
+            for include_path_dir in include_paths:
+                if os.path.commonpath([current_file_path, include_path_dir]) == include_path_dir:
+                    # Make path relative to include directory
+                    rel_path = os.path.relpath(current_file_path, include_path_dir)
+                    include_path = rel_path.replace(os.sep, '/')  # Use forward slashes for includes
+                    break
+        
+        # Step 5: Add header include
+        success = add_header_include(interface_header_file, include_path, dry_run)
         if success:
             results['success'] = True
             # print(f"Successfully processed {file_path}")
