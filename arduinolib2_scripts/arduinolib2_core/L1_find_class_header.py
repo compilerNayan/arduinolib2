@@ -14,7 +14,7 @@ from typing import List, Optional, Tuple
 try:
     from find_cpp_files import find_cpp_files
 except ImportError:
-    print("Error: Could not import required modules. Make sure find_cpp_files.py is in the same directory.")
+    # print("Error: Could not import required modules. Make sure find_cpp_files.py is in the same directory.")
     sys.exit(1)
 
 
@@ -31,7 +31,7 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
     Returns:
         Path to the class header file, or None if not found
     """
-    print(f"Searching for class: {class_name}")
+    # print(f"Searching for class: {class_name}")
     
     # Step 1: Get all C++ source files in the search directory with include/exclude options
     all_files = find_cpp_files(
@@ -51,12 +51,12 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
             potential_headers.append(file_path)
     
     if not potential_headers:
-        print(f"Error: No header files found ending with {class_name}.h or {class_name}.hpp")
+        # print(f"Error: No header files found ending with {class_name}.h or {class_name}.hpp")
         return None
     
-    print(f"Found {len(potential_headers)} potential header files:")
-    for header in potential_headers:
-        print(f"  {header}")
+    # print(f"Found {len(potential_headers)} potential header files:")
+    # for header in potential_headers:
+    #     print(f"  {header}")
     
     # Step 3: Check class names in each potential header
     matching_headers = []
@@ -81,12 +81,12 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
             
             if matches:
                 found_class_name = matches[0]  # Take the first class found
-                print(f"  {header_file}: contains class '{found_class_name}'")
+                # print(f"  {header_file}: contains class '{found_class_name}'")
                 
                 # Check if class name matches target class name (case insensitive)
                 if found_class_name.lower() == class_name_lower:
                     matching_headers.append(header_file)
-                    print(f"    ✓ Class name matches target class name!")
+                    # print(f"    ✓ Class name matches target class name!")
                 else:
                     print(f"    ✗ Class name '{found_class_name}' doesn't match target '{class_name}'")
             else:
@@ -97,7 +97,7 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
     
     # Step 4: Validate results
     if len(matching_headers) == 0:
-        print(f"Error: No header files found with class name matching '{class_name}'")
+        # print(f"Error: No header files found with class name matching '{class_name}'")
         return None
     elif len(matching_headers) > 1:
         print(f"Error: Multiple header files found with matching class name '{class_name}':")
