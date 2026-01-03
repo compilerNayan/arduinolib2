@@ -88,12 +88,15 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
                     matching_headers.append(header_file)
                     # print(f"    ✓ Class name matches target class name!")
                 else:
-                    print(f"    ✗ Class name '{found_class_name}' doesn't match target '{class_name}'")
+                    # print(f"    ✗ Class name '{found_class_name}' doesn't match target '{class_name}'")
+                    pass
             else:
-                print(f"  {header_file}: no class found")
+                # print(f"  {header_file}: no class found")
+                pass
                 
         except Exception as e:
-            print(f"  Error reading {header_file}: {e}")
+            # print(f"  Error reading {header_file}: {e}")
+            pass
     
     # Step 4: Validate results
     if len(matching_headers) == 0:
@@ -204,19 +207,20 @@ def main():
     
     # Show summary if requested
     if args.summary:
-        print(f"\n{'='*60}")
-        print("SUMMARY")
-        print(f"{'='*60}")
-        print(f"Classes searched: {len(class_names)}")
-        print(f"Class headers found: {len([r for r in results.values() if r is not None])}")
-        print(f"Classes without headers: {len([r for r in results.values() if r is None])}")
-        
-        print(f"\nResults:")
-        for class_name, class_header in results.items():
-            if class_header:
-                print(f"  ✓ {class_name} -> {class_header}")
-            else:
-                print(f"  ✗ {class_name} -> No class header found")
+        # print(f"\n{'='*60}")
+        # print("SUMMARY")
+        # print(f"{'='*60}")
+        # print(f"Classes searched: {len(class_names)}")
+        # print(f"Class headers found: {len([r for r in results.values() if r is not None])}")
+        # print(f"Classes without headers: {len([r for r in results.values() if r is None])}")
+        # 
+        # print(f"\nResults:")
+        # for class_name, class_header in results.items():
+        #     if class_header:
+        #         print(f"  ✓ {class_name} -> {class_header}")
+        #     else:
+        #         print(f"  ✗ {class_name} -> No class header found")
+        pass
     
     # Save to file if requested
     if args.output:
@@ -277,7 +281,8 @@ def find_interface_header_file(source_file: str, search_root: str = ".", include
         if class_names:
             return find_class_header_file(class_names[0], search_root, include_folders, exclude_folders)
     except ImportError:
-        print("Warning: find_class_names.py not available for backward compatibility")
+        # print("Warning: find_class_names.py not available for backward compatibility")
+        pass
     return None
 
 # Export functions for other scripts to import
