@@ -18,11 +18,6 @@ from typing import List, Dict, Optional
 
 # Get the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-if SCRIPT_DIR not in sys.path:
-    sys.path.insert(0, SCRIPT_DIR)
-
-# Get the directory where this script is located
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def find_cpp_files(include_paths: List[str], exclude_paths: List[str]) -> List[str]:

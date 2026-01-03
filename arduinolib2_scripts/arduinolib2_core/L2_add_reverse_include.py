@@ -201,28 +201,13 @@ def process_file(file_path: str, include_paths: List[str], exclude_paths: List[s
         # The include should use the absolute path to the file
         include_path = os.path.abspath(current_file_path)
         
-        # Step 5: Check if include already exists, if not, add it
-        include_already_exists = False
-        if os.path.exists(interface_header_file):
-            with open(interface_header_file, 'r', encoding='utf-8') as f:
-                content = f.read()
-                # Check if the include already exists (check for both absolute path and just filename)
-                include_filename = os.path.basename(include_path)
-                if include_path in content or f'#include "{include_path}"' in content:
-                    include_already_exists = True
-        
-        if include_already_exists:
-            # Include already exists, nothing to do
+        # Step 5: Add header include
+        success = add_header_include(interface_header_file, include_path, dry_run)
+        if success:
             results['success'] = True
-            # print(f"Reverse include already exists in {interface_header_file}")
+            # print(f"Successfully processed {file_path}")
         else:
-            # Include doesn't exist, add it
-            success = add_header_include(interface_header_file, include_path, dry_run)
-            if success:
-                results['success'] = True
-                # print(f"Successfully added reverse include to {interface_header_file}")
-            else:
-                results['errors'].append("Failed to add header include")
+            results['errors'].append("Failed to add header include")
         
     except Exception as e:
         results['errors'].append(f"Error processing file: {e}")
