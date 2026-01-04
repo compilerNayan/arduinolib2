@@ -4,7 +4,6 @@
 #include "IHttpRequestProcessor.h"
 #include "IHttpRequestQueue.h"
 #include "IHttpRequestDispatcher.h"
-#include <ServerFactory.h>
 
 /// @Component
 class HttpRequestProcessor final : public IHttpRequestProcessor {
@@ -15,11 +14,8 @@ class HttpRequestProcessor final : public IHttpRequestProcessor {
     /// @Autowired
     Private IHttpRequestDispatcherPtr dispatcher;
 
-    Private IServerPtr server;
-
-    Public HttpRequestProcessor() : server(ServerFactory::GetDefaultServer()) {
-    }
-
+    Public HttpRequestProcessor() = default;
+    
     Public ~HttpRequestProcessor() override = default;
 
     // ============================================================================
@@ -36,10 +32,7 @@ class HttpRequestProcessor final : public IHttpRequestProcessor {
             return false;
         }
         
-        Val response = dispatcher->DispatchRequest(request);
-        if (response.length() > 0) {
-            server->SendMessage(request->GetRequestId(), response);
-        }
+        dispatcher->DispatchRequest(request);
         return true;
     }
 };
