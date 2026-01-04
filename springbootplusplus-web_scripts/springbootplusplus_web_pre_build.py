@@ -326,6 +326,6 @@ if all_libs['scripts_dirs']:
     pass
 
 # Import and execute scripts
-from springbootplusplus-web_execute_scripts import execute_scripts
+from springbootplusplus_web_execute_scripts import execute_scripts
 execute_scripts(project_dir, library_dir, all_libs, library_scripts_dir)
 

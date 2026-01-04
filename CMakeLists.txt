@@ -36,7 +36,7 @@ FetchContent_MakeAvailable(serializationlib arduionolibserver arduinodesktopserv
 # This will run whenever this CMakeLists.txt is processed
 # Note: All dependencies are now available since FetchContent_MakeAvailable was called above
 find_program(PYTHON_EXECUTABLE python3 python)
-if(PYTHON_EXECUTABLE AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/springbootplusplus-web_scripts/springbootplusplus-web_pre_build.py")
+if(PYTHON_EXECUTABLE AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/springbootplusplus-web_scripts/springbootplusplus_web_pre_build.py")
     # Get the client project directory (CMAKE_SOURCE_DIR is the top-level project source directory)
     # When this library is included via FetchContent, CMAKE_SOURCE_DIR points to the client project
     set(CLIENT_PROJECT_DIR ${CMAKE_SOURCE_DIR})
@@ -46,7 +46,7 @@ if(PYTHON_EXECUTABLE AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/springbootplusplus-
     
     execute_process(
         COMMAND ${PYTHON_EXECUTABLE} 
-            "${CMAKE_CURRENT_SOURCE_DIR}/springbootplusplus-web_scripts/springbootplusplus-web_pre_build.py"
+            "${CMAKE_CURRENT_SOURCE_DIR}/springbootplusplus-web_scripts/springbootplusplus_web_pre_build.py"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         RESULT_VARIABLE PRE_BUILD_RESULT
         OUTPUT_VARIABLE PRE_BUILD_OUTPUT
@@ -149,7 +149,7 @@ endif()
 add_custom_target(springbootplusplus-web_pre_build
     COMMAND ${CMAKE_COMMAND} -E env "CMAKE_PROJECT_DIR=${CLIENT_PROJECT_DIR}"
         ${PYTHON_EXECUTABLE} 
-        "${CMAKE_CURRENT_SOURCE_DIR}/springbootplusplus-web_scripts/springbootplusplus-web_pre_build.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/springbootplusplus-web_scripts/springbootplusplus_web_pre_build.py"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Running springbootplusplus-web pre-build script"
     VERBATIM

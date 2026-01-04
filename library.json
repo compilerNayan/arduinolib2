@@ -22,7 +22,7 @@
   "frameworks": "arduino",
   "platforms": "*",
   "build": {
-    "extraScript": "springbootplusplus-web_scripts/springbootplusplus-web_pre_build.py"
+    "extraScript": "springbootplusplus-web_scripts/springbootplusplus_web_pre_build.py"
   }
 }
 
