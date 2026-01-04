@@ -16,9 +16,9 @@ FetchContent_Declare(
     GIT_TAG        dev
 )
 
-# Fetch ArduionoLibServer
+# Fetch serverlib
 FetchContent_Declare(
-    arduionolibserver
+    serverlib
     GIT_REPOSITORY https://github.com/compilerNayan/arduionolibserver.git
     GIT_TAG        dev
 )
@@ -30,7 +30,7 @@ FetchContent_Declare(
     GIT_TAG        dev
 )
 
-FetchContent_MakeAvailable(serializationlib arduionolibserver arduinodesktopserver)
+FetchContent_MakeAvailable(serializationlib serverlib arduinodesktopserver)
 
 # Run pre-build script during configuration (runs even if client creates own library)
 # This will run whenever this CMakeLists.txt is processed
@@ -96,18 +96,18 @@ else()
     endif()
 endif()
 
-# Link arduionolibserver (header-only library)
+# Link serverlib (header-only library)
 # Try the namespaced target first, fallback to non-namespaced
-if(TARGET arduionolibserver::arduionolibserver)
-    target_link_libraries(springbootplusplus-web INTERFACE arduionolibserver::arduionolibserver)
-elseif(TARGET arduionolibserver)
-    target_link_libraries(springbootplusplus-web INTERFACE arduionolibserver)
+if(TARGET serverlib::serverlib)
+    target_link_libraries(springbootplusplus-web INTERFACE serverlib::serverlib)
+elseif(TARGET serverlib)
+    target_link_libraries(springbootplusplus-web INTERFACE serverlib)
 else()
     # Fallback: manually add include directory if target doesn't exist
-    FetchContent_GetProperties(arduionolibserver)
-    if(arduionolibserver_SOURCE_DIR)
+    FetchContent_GetProperties(serverlib)
+    if(serverlib_SOURCE_DIR)
         target_include_directories(springbootplusplus-web INTERFACE
-            $<BUILD_INTERFACE:${arduionolibserver_SOURCE_DIR}/src>
+            $<BUILD_INTERFACE:${serverlib_SOURCE_DIR}/include>
             $<INSTALL_INTERFACE:include>
         )
     endif()
