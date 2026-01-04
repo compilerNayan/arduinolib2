@@ -15,7 +15,7 @@ import os
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-# Add arduinolib2_core directory to path for imports (current directory)
+# Add springbootplusplus-web_core directory to path for imports (current directory)
 script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, script_dir)
 
@@ -26,7 +26,7 @@ try:
     import L4_generate_function_pointer
 except ImportError as e:
     # print(f"Error: Could not import required modules: {e}")
-    # print("Make sure L1_check_rest_controller.py, L2_get_base_url.py, L3_get_endpoint_details.py, and L4_generate_function_pointer.py are in the arduinolib2_core directory.")
+    # print("Make sure L1_check_rest_controller.py, L2_get_base_url.py, L3_get_endpoint_details.py, and L4_generate_function_pointer.py are in the springbootplusplus-web_core directory.")
     sys.exit(1)
 
 

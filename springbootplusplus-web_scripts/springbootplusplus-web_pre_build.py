@@ -21,10 +21,10 @@ from pathlib import Path
 
 def get_library_dir():
     """
-    Find the arduinolib2_scripts directory by searching up the directory tree.
+    Find the springbootplusplus-web_scripts directory by searching up the directory tree.
     
     Returns:
-        Path: Path to the arduinolib2_scripts directory
+        Path: Path to the springbootplusplus-web_scripts directory
         
     Raises:
         ImportError: If the directory cannot be found
@@ -32,7 +32,7 @@ def get_library_dir():
     cwd = Path(os.getcwd())
     current = cwd
     for _ in range(10):  # Search up to 10 levels
-        potential = current / "arduinolib2_scripts"
+        potential = current / "springbootplusplus-web_scripts"
         if potential.exists() and potential.is_dir():
             # print(f"✓ Found library path by searching up directory tree: {potential}")
             return potential
@@ -40,7 +40,7 @@ def get_library_dir():
         if parent == current:  # Reached filesystem root
             break
         current = parent
-    raise ImportError("Could not find arduinolib2_scripts directory")
+    raise ImportError("Could not find springbootplusplus-web_scripts directory")
 
 
 def get_project_dir():
@@ -121,13 +121,13 @@ def get_all_library_dirs(project_dir=None):
                     if scripts_dir.exists() and scripts_dir.is_dir():
                         scripts_dirs.append(scripts_dir.resolve())
     
-    # Add library directory (parent of arduinolib2_scripts)
+    # Add library directory (parent of springbootplusplus-web_scripts)
     library_scripts_dir = get_library_dir()
     library_dir = library_scripts_dir.parent
     search_paths.append(library_dir)
     
     # If we're in a CMake build, check sibling directories in _deps
-    if "arduinolib2-src" in str(library_dir) or "_deps" in str(library_dir):
+    if "springbootplusplus-web-src" in str(library_dir) or "_deps" in str(library_dir):
         parent_deps = library_dir.parent
         if parent_deps.exists() and parent_deps.name == "_deps":
             # Find all library directories in _deps
@@ -232,13 +232,13 @@ def find_library_scripts(scripts_dir_name):
             # print(f"✓ Found {scripts_dir_name} (CMake from project): {build_deps}")
             return build_deps
     
-    # Add library directory (parent of arduinolib2_scripts)
+    # Add library directory (parent of springbootplusplus-web_scripts)
     library_scripts_dir = get_library_dir()
     library_dir = library_scripts_dir.parent
     search_paths.append(library_dir)
     
-    # If we're in a CMake build, check sibling directory ({lib_src_name} next to arduinolib2-src)
-    if "arduinolib2-src" in str(library_dir) or "_deps" in str(library_dir):
+    # If we're in a CMake build, check sibling directory ({lib_src_name} next to springbootplusplus-web-src)
+    if "springbootplusplus-web-src" in str(library_dir) or "_deps" in str(library_dir):
         # We're in a CMake FetchContent location, check sibling
         parent_deps = library_dir.parent
         if parent_deps.exists() and parent_deps.name == "_deps":
@@ -308,7 +308,7 @@ serializationlib_scripts_dir = find_library_scripts("serializationlib_scripts")
 if serializationlib_scripts_dir:
     sys.path.insert(0, str(serializationlib_scripts_dir))
 
-# Get library root directory (parent of arduinolib2_scripts)
+# Get library root directory (parent of springbootplusplus-web_scripts)
 library_dir = library_scripts_dir.parent
 
 # Get project directory
@@ -326,6 +326,6 @@ if all_libs['scripts_dirs']:
     pass
 
 # Import and execute scripts
-from arduinolib2_execute_scripts import execute_scripts
+from springbootplusplus-web_execute_scripts import execute_scripts
 execute_scripts(project_dir, library_dir, all_libs, library_scripts_dir)
 

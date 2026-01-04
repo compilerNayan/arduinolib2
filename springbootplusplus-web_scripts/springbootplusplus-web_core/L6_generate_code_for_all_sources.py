@@ -18,7 +18,7 @@ import re
 from pathlib import Path
 from typing import Dict, List, Optional
 
-# Add arduinolib2_core directory to path for imports (current directory)
+# Add springbootplusplus-web_core directory to path for imports (current directory)
 script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, script_dir)
 
@@ -28,7 +28,7 @@ try:
     import L1_find_class_header
 except ImportError as e:
     # print(f"Error: Could not import required modules: {e}")
-    # print("Make sure L5_generate_all_endpoints.py, L3_get_endpoint_details.py, and L1_find_class_header.py are in the arduinolib2_core directory.")
+    # print("Make sure L5_generate_all_endpoints.py, L3_get_endpoint_details.py, and L1_find_class_header.py are in the springbootplusplus-web_core directory.")
     sys.exit(1)
 
 
@@ -277,7 +277,7 @@ def generate_includes(code_map: Dict[str, Dict[str, str]], project_root: Optiona
     if project_root is None:
         # Try to find project root by looking for common markers
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(os.path.dirname(script_dir))  # Go up from arduinolib2_core/arduinolib2_scripts/ to project root
+        project_root = os.path.dirname(os.path.dirname(script_dir))  # Go up from springbootplusplus-web_core/springbootplusplus-web_scripts/ to project root
     
     project_root_path = Path(project_root).resolve()
     
@@ -458,10 +458,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python arduinolib2_core/L6_generate_code_for_all_sources.py --include src platform                    # Process all files in src and platform
-  python arduinolib2_core/L6_generate_code_for_all_sources.py --include src --exclude platform/arduino  # Process with exclude
-  python arduinolib2_core/L6_generate_code_for_all_sources.py --include src platform --dry-run          # Dry run to see what would happen
-  python arduinolib2_core/L6_generate_code_for_all_sources.py --dry-run                                 # Dry run on all files in current directory
+  python springbootplusplus-web_core/L6_generate_code_for_all_sources.py --include src platform                    # Process all files in src and platform
+  python springbootplusplus-web_core/L6_generate_code_for_all_sources.py --include src --exclude platform/arduino  # Process with exclude
+  python springbootplusplus-web_core/L6_generate_code_for_all_sources.py --include src platform --dry-run          # Dry run to see what would happen
+  python springbootplusplus-web_core/L6_generate_code_for_all_sources.py --dry-run                                 # Dry run on all files in current directory
         """
     )
     

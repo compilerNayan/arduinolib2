@@ -182,12 +182,12 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python arduinolib2_core/L5_process_di.py file.h                                    # Process single file
-  python arduinolib2_core/L5_process_di.py file1.h file2.h                           # Process multiple files
-  python arduinolib2_core/L5_process_di.py file.h --include src platform              # Process with include paths
-  python arduinolib2_core/L5_process_di.py file.h --include src --exclude platform/arduino  # Process with include/exclude
-  python arduinolib2_core/L5_process_di.py file.h --include src platform --dry-run    # Dry run to see what would happen
-  python arduinolib2_core/L5_process_di.py file.h --dry-run                          # Dry run on specific file
+  python springbootplusplus-web_core/L5_process_di.py file.h                                    # Process single file
+  python springbootplusplus-web_core/L5_process_di.py file1.h file2.h                           # Process multiple files
+  python springbootplusplus-web_core/L5_process_di.py file.h --include src platform              # Process with include paths
+  python springbootplusplus-web_core/L5_process_di.py file.h --include src --exclude platform/arduino  # Process with include/exclude
+  python springbootplusplus-web_core/L5_process_di.py file.h --include src platform --dry-run    # Dry run to see what would happen
+  python springbootplusplus-web_core/L5_process_di.py file.h --dry-run                          # Dry run on specific file
         """
     )
     

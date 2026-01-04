@@ -27,7 +27,7 @@ def execute_scripts(project_dir, library_dir, all_libs=None, library_scripts_dir
         project_dir: Path to the client project root (where platformio.ini is)
         library_dir: Path to the library directory
         all_libs: Dictionary with library directories (from get_all_library_dirs)
-        library_scripts_dir: Path to the arduinolib2_scripts directory (optional, will be derived from library_dir if not provided)
+        library_scripts_dir: Path to the springbootplusplus-web_scripts directory (optional, will be derived from library_dir if not provided)
     """
     # Process client files if cppcore is available
     if HAS_CPPCORE:
@@ -62,15 +62,15 @@ def execute_scripts(project_dir, library_dir, all_libs=None, library_scripts_dir
         # print("🚀 Running L7 CPP Spring Boot Preprocessor with all library directories...")
         # print("=" * 80)
         
-        # Get the path to L7 script (in arduinolib2_core directory)
+        # Get the path to L7 script (in springbootplusplus-web_core directory)
         # Determine the scripts directory
         if library_scripts_dir:
             scripts_dir = Path(library_scripts_dir)
         else:
             # Fallback: construct from library_dir
-            scripts_dir = Path(library_dir) / "arduinolib2_scripts"
+            scripts_dir = Path(library_dir) / "springbootplusplus-web_scripts"
         
-        l7_script_path = scripts_dir / "arduinolib2_core" / "L7_cpp_spring_boot_preprocessor.py"
+        l7_script_path = scripts_dir / "springbootplusplus-web_core" / "L7_cpp_spring_boot_preprocessor.py"
         
         if not l7_script_path.exists():
             # print(f"⚠️  Warning: L7 script not found at {l7_script_path}")
@@ -106,7 +106,7 @@ def execute_scripts(project_dir, library_dir, all_libs=None, library_scripts_dir
         if include_paths:
             cmd.extend(["--include"] + include_paths)
         
-        # Add dispatcher file - look in the library directory (arduinolib2) instead of client project
+        # Add dispatcher file - look in the library directory (springbootplusplus-web) instead of client project
         dispatcher_file = Path(library_dir) / "src" / "HttpRequestDispatcher.h"
         if dispatcher_file.exists():
             cmd.extend(["--dispatcher-file", str(dispatcher_file)])

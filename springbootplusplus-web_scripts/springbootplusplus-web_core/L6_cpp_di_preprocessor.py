@@ -239,10 +239,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python arduinolib2_core/L6_cpp_di_preprocessor.py --include src platform                    # Process all files in src and platform
-  python arduinolib2_core/L6_cpp_di_preprocessor.py --include src --exclude platform/arduino  # Process with exclude
-  python arduinolib2_core/L6_cpp_di_preprocessor.py --include src platform --dry-run          # Dry run to see what would happen
-  python arduinolib2_core/L6_cpp_di_preprocessor.py --dry-run                                 # Dry run on all files in current directory
+  python springbootplusplus-web_core/L6_cpp_di_preprocessor.py --include src platform                    # Process all files in src and platform
+  python springbootplusplus-web_core/L6_cpp_di_preprocessor.py --include src --exclude platform/arduino  # Process with exclude
+  python springbootplusplus-web_core/L6_cpp_di_preprocessor.py --include src platform --dry-run          # Dry run to see what would happen
+  python springbootplusplus-web_core/L6_cpp_di_preprocessor.py --dry-run                                 # Dry run on all files in current directory
         """
     )
     
