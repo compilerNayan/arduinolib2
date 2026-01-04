@@ -298,12 +298,12 @@ def find_library_scripts(scripts_dir_name):
 library_scripts_dir = get_library_dir()
 sys.path.insert(0, str(library_scripts_dir))
 
-# Find and add arduinolib0_scripts to Python path
-arduinolib0_scripts_dir = find_library_scripts("arduinolib0_scripts")
-if arduinolib0_scripts_dir:
-    sys.path.insert(0, str(arduinolib0_scripts_dir))
+# Find and add cppcore scripts to Python path
+cppcore_scripts_dir = find_library_scripts("cppcore_scripts")
+if cppcore_scripts_dir:
+    sys.path.insert(0, str(cppcore_scripts_dir))
 
-# Find and add arduinolib0_scripts to Python path
+# Find and add arduinolib1_scripts to Python path
 arduinolib1_scripts_dir = find_library_scripts("arduinolib1_scripts")
 if arduinolib1_scripts_dir:
     sys.path.insert(0, str(arduinolib1_scripts_dir))

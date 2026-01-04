@@ -9,12 +9,12 @@ import subprocess
 from pathlib import Path
 
 try:
-    from arduinolib0_core.arduinolib0_get_client_files import get_client_files
-    HAS_ARDUINOLIB0 = True
+    from cppcore_core.cppcore_get_client_files import get_client_files
+    HAS_CPPCORE = True
 except ImportError:
-    # print("Warning: Could not import arduinolib0_core.arduinolib0_get_client_files")
+    # print("Warning: Could not import cppcore_core.cppcore_get_client_files")
     # print("         Some features may be unavailable.")
-    HAS_ARDUINOLIB0 = False
+    HAS_CPPCORE = False
     # Create a dummy function to avoid errors
     def get_client_files(*args, **kwargs):
         return []
@@ -29,8 +29,8 @@ def execute_scripts(project_dir, library_dir, all_libs=None, library_scripts_dir
         all_libs: Dictionary with library directories (from get_all_library_dirs)
         library_scripts_dir: Path to the arduinolib2_scripts directory (optional, will be derived from library_dir if not provided)
     """
-    # Process client files if arduinolib0 is available
-    if HAS_ARDUINOLIB0:
+    # Process client files if cppcore is available
+    if HAS_CPPCORE:
         # print(f"\nproject_dir: {project_dir}")
         # print(f"library_dir: {library_dir}")
 
@@ -52,11 +52,11 @@ def execute_scripts(project_dir, library_dir, all_libs=None, library_scripts_dir
             # print("=" * 60)
             pass
     else:
-        # print("Skipping file processing - arduinolib0_core not available")
+        # print("Skipping file processing - cppcore_core not available")
         pass
     
     # Call L7_cpp_spring_boot_preprocessor.py with all library directories
-    # This should run regardless of HAS_ARDUINOLIB0
+    # This should run regardless of HAS_CPPCORE
     if all_libs and all_libs.get('root_dirs'):
         # print("\n" + "=" * 80)
         # print("🚀 Running L7 CPP Spring Boot Preprocessor with all library directories...")
