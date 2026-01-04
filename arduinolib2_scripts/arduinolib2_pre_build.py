@@ -303,10 +303,10 @@ cppcore_scripts_dir = find_library_scripts("cppcore_scripts")
 if cppcore_scripts_dir:
     sys.path.insert(0, str(cppcore_scripts_dir))
 
-# Find and add arduinolib1_scripts to Python path
-arduinolib1_scripts_dir = find_library_scripts("arduinolib1_scripts")
-if arduinolib1_scripts_dir:
-    sys.path.insert(0, str(arduinolib1_scripts_dir))
+# Find and add serializationlib_scripts to Python path
+serializationlib_scripts_dir = find_library_scripts("serializationlib_scripts")
+if serializationlib_scripts_dir:
+    sys.path.insert(0, str(serializationlib_scripts_dir))
 
 # Get library root directory (parent of arduinolib2_scripts)
 library_dir = library_scripts_dir.parent
