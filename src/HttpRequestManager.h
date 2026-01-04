@@ -42,21 +42,20 @@ class HttpRequestManager final : public IHttpRequestManager {
         return true;
     }
     
-    Public Bool ProcessRequest() override {
+    Public StdString ProcessRequest() override {
         if (requestProcessor == nullptr) {
-            return false;
+            return "";
         }
         
         Bool processedAny = false;
-        while (requestQueue->HasRequests()) {
-            if (requestProcessor->ProcessRequest()) {
-                processedAny = true;
-            } else {
-                break;
+        if (requestQueue->HasRequests()) {
+            Val response = requestProcessor->ProcessRequest();
+            if (response.length() > 0) {
+                server->SendMessage(response);
             }
         }
         
-        return processedAny;
+        return "";
     }
 };
 
