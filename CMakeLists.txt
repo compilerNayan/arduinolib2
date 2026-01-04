@@ -23,14 +23,14 @@ FetchContent_Declare(
     GIT_TAG        dev
 )
 
-# Fetch ArduinoDesktopServer
+# Fetch server-posix
 FetchContent_Declare(
-    arduinodesktopserver
+    server-posix
     GIT_REPOSITORY https://github.com/compilerNayan/arduinodesktopserver.git
     GIT_TAG        dev
 )
 
-FetchContent_MakeAvailable(serializationlib serverlib arduinodesktopserver)
+FetchContent_MakeAvailable(serializationlib serverlib server-posix)
 
 # Run pre-build script during configuration (runs even if client creates own library)
 # This will run whenever this CMakeLists.txt is processed
@@ -113,18 +113,19 @@ else()
     endif()
 endif()
 
-# Link arduinodesktopserver (header-only library)
+# Link server-posix (header-only library)
+# Note: CMake target name is server_posix (no hyphen allowed in target names)
 # Try the namespaced target first, fallback to non-namespaced
-if(TARGET arduinodesktopserver::arduinodesktopserver)
-    target_link_libraries(springbootplusplus-web INTERFACE arduinodesktopserver::arduinodesktopserver)
-elseif(TARGET arduinodesktopserver)
-    target_link_libraries(springbootplusplus-web INTERFACE arduinodesktopserver)
+if(TARGET server_posix::server_posix)
+    target_link_libraries(springbootplusplus-web INTERFACE server_posix::server_posix)
+elseif(TARGET server_posix)
+    target_link_libraries(springbootplusplus-web INTERFACE server_posix)
 else()
     # Fallback: manually add include directory if target doesn't exist
-    FetchContent_GetProperties(arduinodesktopserver)
-    if(arduinodesktopserver_SOURCE_DIR)
+    FetchContent_GetProperties(server-posix)
+    if(server-posix_SOURCE_DIR)
         target_include_directories(springbootplusplus-web INTERFACE
-            $<BUILD_INTERFACE:${arduinodesktopserver_SOURCE_DIR}/src>
+            $<BUILD_INTERFACE:${server-posix_SOURCE_DIR}/include>
             $<INSTALL_INTERFACE:include>
         )
     endif()
