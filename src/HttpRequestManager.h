@@ -24,6 +24,7 @@ class HttpRequestManager final : public IHttpRequestManager {
 
     Public HttpRequestManager() 
         : server(ServerFactory::GetDefaultServer()) {
+            std::cout << "[HttpRequestManager] Constructor: Server instance address: " << server.get() << std::endl;
             server->Start(8080);
     }
     
@@ -32,6 +33,10 @@ class HttpRequestManager final : public IHttpRequestManager {
     // ============================================================================
     // HTTP Request Management Operations
     // ============================================================================
+    
+    Public IServerPtr GetServer() const override {
+        return server;
+    }
     
     Public Bool RetrieveRequest() override {
         if (server == nullptr) {
