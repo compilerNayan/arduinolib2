@@ -5,6 +5,7 @@
 #include "IHttpRequestQueue.h"
 #include "IHttpRequestProcessor.h"
 #include <ServerFactory.h>
+#include <iostream>
 
 /// @Component
 class HttpRequestManager final : public IHttpRequestManager {
@@ -34,6 +35,8 @@ class HttpRequestManager final : public IHttpRequestManager {
         }
         
         IHttpRequestPtr request = server->ReceiveMessage();
+        StdString requestId = request->GetRequestId();
+        std::cout << "Request ID: " << requestId.c_str() << std::endl;
         if (request == nullptr) {
             return false;
         }
