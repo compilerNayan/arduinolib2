@@ -549,9 +549,46 @@ Examples:
         #     print(f"  {file_path} (interface: {interface_name})")
         # Note: REST macros that would be commented are already shown during generate_code_map
         # print("\nIncludes that would be added (interface headers):")
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(script_dir)
-        includes = generate_includes(code_map, project_root, args.include, args.exclude)
+        # Determine project root from code_map (same logic as main execution)
+        if code_map:
+            file_paths = [Path(fp).resolve() for fp in code_map.keys()]
+            if len(file_paths) == 1:
+                project_root = str(file_paths[0].parent.parent)
+            else:
+                common_parts = []
+                for parts in zip(*[p.parts for p in file_paths]):
+                    if len(set(parts)) == 1:
+                        common_parts.append(parts[0])
+                    else:
+                        break
+                if common_parts:
+                    project_root = str(Path(*common_parts))
+                else:
+                    project_root = str(file_paths[0].parent.parent)
+        else:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(script_dir)
+        
+        # Convert include paths for search
+        if args.include and len(args.include) > 0:
+            search_include_folders = []
+            project_root_path = Path(project_root).resolve()
+            for inc_path in args.include:
+                inc_path_obj = Path(inc_path).resolve()
+                if inc_path_obj.is_absolute():
+                    try:
+                        rel_path = inc_path_obj.relative_to(project_root_path)
+                        search_include_folders.append(str(rel_path))
+                    except ValueError:
+                        if inc_path_obj.name == 'src':
+                            search_include_folders.append('src')
+                        else:
+                            search_include_folders.append(str(inc_path_obj))
+                else:
+                    search_include_folders.append(inc_path)
+            includes = generate_includes(code_map, project_root, search_include_folders, args.exclude)
+        else:
+            includes = generate_includes(code_map, project_root, args.include, args.exclude)
         # Add SerializeUtility.h include for dry run display
         serialize_utility_path = os.path.join(project_root, "src/01-framework/01-core/01-serializer/02-generic/04-SerializeUtility.h")
         serialize_utility_path_obj = Path(serialize_utility_path).resolve()
@@ -566,12 +603,71 @@ Examples:
         # print(all_code[:500] + "..." if len(all_code) > 500 else all_code)
         return
     
-    # Get project root (parent of script directory)
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(script_dir)
+    # Determine project root from the file paths in code_map
+    # Extract common root from all file paths in code_map
+    if code_map:
+        file_paths = [Path(fp).resolve() for fp in code_map.keys()]
+        # Find common parent directory
+        if len(file_paths) == 1:
+            # Single file - use its parent's parent (assuming structure like .../src/controller/file.h)
+            project_root = str(file_paths[0].parent.parent)
+        else:
+            # Multiple files - find common parent
+            common_parts = []
+            for parts in zip(*[p.parts for p in file_paths]):
+                if len(set(parts)) == 1:
+                    common_parts.append(parts[0])
+                else:
+                    break
+            if common_parts:
+                project_root = str(Path(*common_parts))
+            else:
+                # Fallback: use parent of first file's parent
+                project_root = str(file_paths[0].parent.parent)
+    else:
+        # No files in code_map - determine from include paths
+        if args.include and len(args.include) > 0:
+            first_include = Path(args.include[0]).resolve()
+            if first_include.is_absolute() and first_include.name == 'src':
+                project_root = str(first_include.parent)
+            elif first_include.is_absolute():
+                project_root = str(first_include)
+            else:
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                project_root = os.path.dirname(script_dir)
+        else:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(script_dir)
+    
+    print(f"[DEBUG main] Determined project_root: {project_root}")
+    print(f"[DEBUG main] args.include: {args.include}")
     
     # Generate includes (for interface headers)
-    includes = generate_includes(code_map, project_root, args.include, args.exclude)
+    # Convert absolute include paths to relative folder names for the search
+    if args.include and len(args.include) > 0:
+        # If include paths are absolute, extract relative paths from project_root
+        search_include_folders = []
+        project_root_path = Path(project_root).resolve()
+        for inc_path in args.include:
+            inc_path_obj = Path(inc_path).resolve()
+            if inc_path_obj.is_absolute():
+                try:
+                    # Try to get relative path from project_root
+                    rel_path = inc_path_obj.relative_to(project_root_path)
+                    search_include_folders.append(str(rel_path))
+                except ValueError:
+                    # Path is not within project_root, check if it ends with 'src'
+                    if inc_path_obj.name == 'src':
+                        search_include_folders.append('src')
+                    else:
+                        # Use as-is but this might not work correctly
+                        search_include_folders.append(str(inc_path_obj))
+            else:
+                search_include_folders.append(inc_path)
+        print(f"[DEBUG main] Using search_include_folders: {search_include_folders}")
+        includes = generate_includes(code_map, project_root, search_include_folders, args.exclude)
+    else:
+        includes = generate_includes(code_map, project_root, args.include, args.exclude)
     
     # Add SerializeUtility.h include (required for serialize template function)
     serialize_utility_path = os.path.join(project_root, "src/01-framework/01-core/01-serializer/02-generic/04-SerializeUtility.h")
