@@ -3,10 +3,8 @@
 
 #include <unordered_map>
 #include <NayanSerializer.h>
-#include <iostream>
 
 #include "IHttpRequestDispatcher.h"
-#include "HttpMethod.h"
 
 /// @Component
 class HttpRequestDispatcher : public IHttpRequestDispatcher {
@@ -30,79 +28,27 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
     Public StdString DispatchRequest(IHttpRequestPtr request) override {
         CStdString url = request->GetPath();
         CStdString payload = request->GetBody();
-        
-        std::cout << "[HttpRequestDispatcher] DispatchRequest() called for URL: '" << url << "', Method: " << MethodToString(request->GetMethod()) << std::endl;
-        
-        std::function<StdString(CStdString)> handler;
-        Bool found = false;
-        
         switch (request->GetMethod()) {
             case HttpMethod::GET:
-                if (getMappings.find(StdString(url)) != getMappings.end()) {
-                    handler = getMappings[StdString(url)];
-                    found = true;
-                }
-                break;
+                return getMappings[url](payload);
             case HttpMethod::POST:
-                if (postMappings.find(StdString(url)) != postMappings.end()) {
-                    handler = postMappings[StdString(url)];
-                    found = true;
-                }
-                break;
+                return postMappings[url](payload);
             case HttpMethod::PUT:
-                if (putMappings.find(StdString(url)) != putMappings.end()) {
-                    handler = putMappings[StdString(url)];
-                    found = true;
-                }
-                break;
+                return putMappings[url](payload);
             case HttpMethod::PATCH:
-                if (patchMappings.find(StdString(url)) != patchMappings.end()) {
-                    handler = patchMappings[StdString(url)];
-                    found = true;
-                }
-                break;
+                return patchMappings[url](payload);
             case HttpMethod::DELETE:
-                if (deleteMappings.find(StdString(url)) != deleteMappings.end()) {
-                    handler = deleteMappings[StdString(url)];
-                    found = true;
-                }
-                break;
+                return deleteMappings[url](payload);
             case HttpMethod::OPTIONS:
-                if (optionsMappings.find(StdString(url)) != optionsMappings.end()) {
-                    handler = optionsMappings[StdString(url)];
-                    found = true;
-                }
-                break;
+                return optionsMappings[url](payload);
             case HttpMethod::HEAD:
-                if (headMappings.find(StdString(url)) != headMappings.end()) {
-                    handler = headMappings[StdString(url)];
-                    found = true;
-                }
-                break;
+                return headMappings[url](payload);
             case HttpMethod::TRACE:
-                if (traceMappings.find(StdString(url)) != traceMappings.end()) {
-                    handler = traceMappings[StdString(url)];
-                    found = true;
-                }
-                break;
+                return traceMappings[url](payload);
             case HttpMethod::CONNECT:
-                if (connectMappings.find(StdString(url)) != connectMappings.end()) {
-                    handler = connectMappings[StdString(url)];
-                    found = true;
-                }
-                break;
-        }
-        
-        if (found && handler) {
-            std::cout << "[HttpRequestDispatcher] Handler found for URL: '" << url << "', calling handler..." << std::endl;
-            StdString result = handler(payload);
-            std::cout << "[HttpRequestDispatcher] Handler returned result length: " << result.length() << std::endl;
-            return result;
-        }
-        
-        // No handler found for this URL/method combination
-        std::cout << "[HttpRequestDispatcher] WARNING: No handler found for URL: '" << url << "', Method: " << MethodToString(request->GetMethod()) << std::endl;
-        return StdString("{\"error\":\"Not Found\",\"message\":\"No handler found for " + StdString(url) + "\"}");
+                return connectMappings[url](payload);
+        } 
+        return StdString();
     }
 
     Private Void InitializeMappings() {
