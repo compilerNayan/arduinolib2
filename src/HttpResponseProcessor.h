@@ -3,7 +3,6 @@
 
 #include "IHttpResponseProcessor.h"
 #include "IHttpResponseQueue.h"
-#include "IHttpRequestManager.h"
 #include <ServerFactory.h>
 #include <IHttpResponse.h>
 #include <iostream>
@@ -14,29 +13,10 @@ class HttpResponseProcessor final : public IHttpResponseProcessor {
     /// @Autowired
     Private IHttpResponseQueuePtr responseQueue;
 
-    /// @Autowired
-    Private IHttpRequestManagerPtr requestManager;
-
     Private IServerPtr server;
 
-    Public HttpResponseProcessor() {
-        // Get server from HttpRequestManager to ensure we use the same instance
-        if (requestManager != nullptr) {
-            server = requestManager->GetServer();
-            std::cout << "[HttpResponseProcessor] Constructor: Got server from RequestManager" << std::endl;
-            std::cout << "[HttpResponseProcessor] Server instance address: " << server.get() << std::endl;
-        } else {
-            // Fallback to GetDefaultServer if requestManager is not available
-            server = ServerFactory::GetDefaultServer();
-            std::cout << "[HttpResponseProcessor] Constructor: RequestManager is nullptr, using GetDefaultServer()" << std::endl;
-            std::cout << "[HttpResponseProcessor] Server instance address: " << server.get() << std::endl;
-        }
-        
-        if (server == nullptr) {
-            std::cout << "[HttpResponseProcessor] WARNING: Server is nullptr!" << std::endl;
-        } else {
-            std::cout << "[HttpResponseProcessor] Server is running: " << (server->IsRunning() ? "true" : "false") << std::endl;
-        }
+    Public HttpResponseProcessor() 
+        : server(ServerFactory::GetDefaultServer()) {
     }
     
     Public ~HttpResponseProcessor() override = default;
