@@ -609,8 +609,18 @@ Examples:
         file_paths = [Path(fp).resolve() for fp in code_map.keys()]
         # Find common parent directory
         if len(file_paths) == 1:
-            # Single file - use its parent's parent (assuming structure like .../src/controller/file.h)
-            project_root = str(file_paths[0].parent.parent)
+            # Single file - find the project root by going up until we find a directory that contains 'src'
+            # For paths like .../arduino-core-src/src/controller/file.h, we want .../arduino-core-src
+            current = file_paths[0].parent
+            while current.parent != current:
+                # If current directory is 'src', the project root is its parent
+                if current.name == 'src':
+                    project_root = str(current.parent)
+                    break
+                current = current.parent
+            else:
+                # Fallback: use parent's parent
+                project_root = str(file_paths[0].parent.parent)
         else:
             # Multiple files - find common parent
             common_parts = []
@@ -620,10 +630,19 @@ Examples:
                 else:
                     break
             if common_parts:
-                project_root = str(Path(*common_parts))
+                common_path = Path(*common_parts)
+                # If the common path ends with 'src', go up one level to get the project root
+                if common_path.name == 'src':
+                    project_root = str(common_path.parent)
+                else:
+                    project_root = str(common_path)
             else:
-                # Fallback: use parent of first file's parent
-                project_root = str(file_paths[0].parent.parent)
+                # Fallback: use parent of first file's parent, but check if we need to go up more
+                fallback_path = file_paths[0].parent.parent
+                if fallback_path.name == 'src':
+                    project_root = str(fallback_path.parent)
+                else:
+                    project_root = str(fallback_path)
     else:
         # No files in code_map - determine from include paths
         if args.include and len(args.include) > 0:
@@ -654,16 +673,19 @@ Examples:
                 try:
                     # Try to get relative path from project_root
                     rel_path = inc_path_obj.relative_to(project_root_path)
-                    search_include_folders.append(str(rel_path))
+                    # Only add if it's a valid relative path (not going up)
+                    if not str(rel_path).startswith('..'):
+                        search_include_folders.append(str(rel_path))
                 except ValueError:
-                    # Path is not within project_root, check if it ends with 'src'
+                    # Path is not within project_root, skip it or use 'src' if it ends with 'src'
                     if inc_path_obj.name == 'src':
-                        search_include_folders.append('src')
-                    else:
-                        # Use as-is but this might not work correctly
-                        search_include_folders.append(str(inc_path_obj))
+                        # Check if this path's parent matches project_root
+                        if inc_path_obj.parent.resolve() == project_root_path:
+                            search_include_folders.append('src')
             else:
                 search_include_folders.append(inc_path)
+        # Deduplicate
+        search_include_folders = list(dict.fromkeys(search_include_folders))  # Preserves order
         print(f"[DEBUG main] Using search_include_folders: {search_include_folders}")
         includes = generate_includes(code_map, project_root, search_include_folders, args.exclude)
     else:

@@ -107,19 +107,28 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
             pass
     
     # Step 4: Validate results
-    print(f"[DEBUG find_class_header_file] Matching headers found: {len(matching_headers)}")
-    if len(matching_headers) == 0:
+    # Deduplicate matching headers (same file might be found multiple times from different search paths)
+    unique_matching_headers = []
+    seen_paths = set()
+    for header in matching_headers:
+        header_path = Path(header).resolve()
+        if str(header_path) not in seen_paths:
+            unique_matching_headers.append(header)
+            seen_paths.add(str(header_path))
+    
+    print(f"[DEBUG find_class_header_file] Matching headers found: {len(matching_headers)} (unique: {len(unique_matching_headers)})")
+    if len(unique_matching_headers) == 0:
         print(f"[DEBUG find_class_header_file] ❌ No header files found with class name matching '{class_name}'")
         return None
-    elif len(matching_headers) > 1:
-        print(f"[DEBUG find_class_header_file] ❌ Multiple header files found with matching class name '{class_name}':")
-        for header in matching_headers:
+    elif len(unique_matching_headers) > 1:
+        print(f"[DEBUG find_class_header_file] ❌ Multiple unique header files found with matching class name '{class_name}':")
+        for header in unique_matching_headers:
             print(f"  {header}")
         print("Expected exactly one matching header file.")
         return None
     else:
-        # Exactly one matching header found
-        class_header = matching_headers[0]
+        # Exactly one unique matching header found
+        class_header = unique_matching_headers[0]
         print(f"[DEBUG find_class_header_file] ✅ Found class header: {class_header}")
         return class_header
 
