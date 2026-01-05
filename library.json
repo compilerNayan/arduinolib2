@@ -13,9 +13,9 @@
     "url": "https://github.com/compilerNayan/arduinolib1.git"
   },
   "dependencies": {
-    "PioLibStuff": "https://github.com/compilerNayan/arduinolib1.git#dev",
-    "serverlib": "https://github.com/compilerNayan/arduionolibserver.git#dev",
-    "server-embedded": "https://github.com/compilerNayan/arduinonativeserver.git#dev"
+    "serializationlib": "https://github.com/compilerNayan/arduinolib1.git",
+    "serverlib": "https://github.com/compilerNayan/arduionolibserver.git",
+    "server-embedded": "https://github.com/compilerNayan/arduinonativeserver.git"
   },
   "license": "MIT",
   "homepage": "",
