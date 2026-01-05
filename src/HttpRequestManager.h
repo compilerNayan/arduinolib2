@@ -4,6 +4,7 @@
 #include "IHttpRequestManager.h"
 #include "IHttpRequestQueue.h"
 #include "IHttpRequestProcessor.h"
+#include "IHttpResponseProcessor.h"
 #include <ServerFactory.h>
 
 /// @Component
@@ -14,6 +15,9 @@ class HttpRequestManager final : public IHttpRequestManager {
 
     /// @Autowired
     Private IHttpRequestProcessorPtr requestProcessor;
+
+    /// @Autowired
+    Private IHttpResponseProcessorPtr responseProcessor;
 
     Private IServerPtr server;
 
@@ -50,6 +54,24 @@ class HttpRequestManager final : public IHttpRequestManager {
         Bool processedAny = false;
         while (requestQueue->HasRequests()) {
             if (requestProcessor->ProcessRequest()) {
+                processedAny = true;
+            } else {
+                break;
+            }
+        }
+        
+        return processedAny;
+    }
+    
+    Public Bool ProcessResponse() override {
+        if (responseProcessor == nullptr) {
+            return false;
+        }
+        
+        Bool processedAny = false;
+        // Process responses until queue is empty or processor returns false
+        while (true) {
+            if (responseProcessor->ProcessResponse()) {
                 processedAny = true;
             } else {
                 break;
