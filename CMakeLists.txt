@@ -13,21 +13,21 @@ include(FetchContent)
 FetchContent_Declare(
     serializationlib
     GIT_REPOSITORY https://github.com/compilerNayan/arduinolib1.git
-    GIT_TAG        dev
+    GIT_TAG        main
 )
 
 # Fetch serverlib
 FetchContent_Declare(
     serverlib
     GIT_REPOSITORY https://github.com/compilerNayan/arduionolibserver.git
-    GIT_TAG        dev
+    GIT_TAG        main
 )
 
 # Fetch server-posix
 FetchContent_Declare(
     server-posix
     GIT_REPOSITORY https://github.com/compilerNayan/arduinodesktopserver.git
-    GIT_TAG        dev
+    GIT_TAG        main
 )
 
 FetchContent_MakeAvailable(serializationlib serverlib server-posix)
