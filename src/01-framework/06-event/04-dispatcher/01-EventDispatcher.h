@@ -75,7 +75,7 @@ class EventDispatcher final : public IEventDispatcher {
  * Add details in this map.
  * e.g.
  * getMappings[sanitized_url] = [](CStdString payload) -> StdString {
-    AUTOWIRED
+    /// @Autowired
     InterfaceNamePtr myInterface;
     ParamType inputDto = ParamType::Deserialize(payload);
     Val resultDto = myInterface->methodName(inputDto);

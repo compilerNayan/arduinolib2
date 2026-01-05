@@ -25,6 +25,12 @@ class IHttpRequestManager {
      * @return true if at least one request was processed, false if queue was empty
      */
     Public Virtual Bool ProcessRequest() = 0;
+    
+    /**
+     * @brief Processes all responses from the queue using the response processor
+     * @return true if at least one response was processed, false if queue was empty
+     */
+    Public Virtual Bool ProcessResponse() = 0;
 };
 
 #endif // I_HTTP_REQUEST_MANAGER_H

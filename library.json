@@ -13,16 +13,16 @@
     "url": "https://github.com/compilerNayan/arduinolib1.git"
   },
   "dependencies": {
-    "PioLibStuff": "https://github.com/compilerNayan/arduinolib1.git",
-    "ArduionoLibServer": "https://github.com/compilerNayan/arduionolibserver.git",
-    "ArduinoNativeServer": "https://github.com/compilerNayan/arduinonativeserver.git"
+    "PioLibStuff": "https://github.com/compilerNayan/arduinolib1.git#dev",
+    "serverlib": "https://github.com/compilerNayan/arduionolibserver.git#dev",
+    "server-embedded": "https://github.com/compilerNayan/arduinonativeserver.git#dev"
   },
   "license": "MIT",
   "homepage": "",
   "frameworks": "arduino",
   "platforms": "*",
   "build": {
-    "extraScript": "arduinolib2_scripts/arduinolib2_pre_build.py"
+    "extraScript": "springbootplusplus-web_scripts/springbootplusplus_web_pre_build.py"
   }
 }
 

@@ -4,7 +4,7 @@
 #include "IHttpRequestQueue.h"
 #include <queue>
 
-//@Component
+/// @Component
 class HttpRequestQueue final : public IHttpRequestQueue {
     Private std::queue<IHttpRequestPtr> requestQueue;
 
