@@ -5,7 +5,7 @@
 #include "IHttpRequestQueue.h"
 #include "IHttpRequestProcessor.h"
 #include "IHttpResponseProcessor.h"
-#include <ServerFactory.h>
+#include <ServerProvider.h>
 
 /// @Component
 class HttpRequestManager final : public IHttpRequestManager {
@@ -22,8 +22,7 @@ class HttpRequestManager final : public IHttpRequestManager {
     Private IServerPtr server;
 
     Public HttpRequestManager() 
-        : server(ServerFactory::GetDefaultServer()) {
-            server->Start(8080);
+        : server(ServerProvider::GetDefaultServer()) {
     }
     
     Public ~HttpRequestManager() override = default;

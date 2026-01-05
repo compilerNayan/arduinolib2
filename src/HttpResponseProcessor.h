@@ -3,7 +3,7 @@
 
 #include "IHttpResponseProcessor.h"
 #include "IHttpResponseQueue.h"
-#include <ServerFactory.h>
+#include <ServerProvider.h>
 #include <IHttpResponse.h>
 
 /// @Component
@@ -15,7 +15,7 @@ class HttpResponseProcessor final : public IHttpResponseProcessor {
     Private IServerPtr server;
 
     Public HttpResponseProcessor() 
-        : server(ServerFactory::GetDefaultServer()) {
+        : server(ServerProvider::GetDefaultServer()) {
     }
     
     Public ~HttpResponseProcessor() override = default;
