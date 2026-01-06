@@ -37,17 +37,27 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
     print(f"DEBUG: find_class_header_file - exclude_folders: {exclude_folders}")
     
     # Step 1: Get all C++ source files in the search directory with include/exclude options
-    all_files = find_cpp_files(
+    all_files_raw = find_cpp_files(
         root_dir=search_root,
         include_folders=include_folders,
         exclude_folders=exclude_folders
     )
     
-    print(f"DEBUG: find_class_header_file - Found {len(all_files)} total C++ files")
+    # Deduplicate all_files by resolving all paths to absolute and using a set
+    seen_files = set()
+    all_files = []
+    for file_path in all_files_raw:
+        resolved = str(Path(file_path).resolve())
+        if resolved not in seen_files:
+            seen_files.add(resolved)
+            all_files.append(resolved)
+    
+    print(f"DEBUG: find_class_header_file - Found {len(all_files_raw)} total C++ files (raw), {len(all_files)} after deduplication")
     
     # Step 2: Find files that end with <class-name>.h or <class-name>.hpp (case insensitive)
     potential_headers = []
     class_name_lower = class_name.lower()
+    seen_paths = set()  # Track seen paths to avoid duplicates
     
     print(f"DEBUG: find_class_header_file - Looking for files ending with: {class_name_lower}.h or {class_name_lower}.hpp")
     
@@ -55,17 +65,24 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
         file_name = Path(file_path).name.lower()
         if (file_name.endswith(f"{class_name_lower}.h") or 
             file_name.endswith(f"{class_name_lower}.hpp")):
-            potential_headers.append(file_path)
-            print(f"DEBUG: find_class_header_file - Found potential header: {file_path} (filename: {file_name})")
+            # Resolve to absolute path and normalize to avoid duplicates
+            resolved_path = str(Path(file_path).resolve())
+            if resolved_path not in seen_paths:
+                seen_paths.add(resolved_path)
+                potential_headers.append(resolved_path)
+                print(f"DEBUG: find_class_header_file - Found potential header: {resolved_path} (filename: {file_name})")
+            else:
+                print(f"DEBUG: find_class_header_file - Skipping duplicate: {resolved_path}")
     
     if not potential_headers:
         print(f"DEBUG: find_class_header_file - No header files found ending with {class_name}.h or {class_name}.hpp")
         return None
     
-    print(f"DEBUG: find_class_header_file - Found {len(potential_headers)} potential header file(s)")
+    print(f"DEBUG: find_class_header_file - Found {len(potential_headers)} potential header file(s) (after deduplication)")
     
     # Step 3: Check class names in each potential header
     matching_headers = []
+    seen_matching = set()  # Track seen matching headers to avoid duplicates
     
     for header_file in potential_headers:
         try:
@@ -96,8 +113,13 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
                 
                 # Check if class name matches target class name (case insensitive)
                 if found_class_name.lower() == class_name_lower:
-                    matching_headers.append(header_file)
-                    print(f"DEBUG: find_class_header_file -   ✓ Class name '{found_class_name}' matches target '{class_name}'")
+                    # Deduplicate matching headers
+                    if header_file not in seen_matching:
+                        seen_matching.add(header_file)
+                        matching_headers.append(header_file)
+                        print(f"DEBUG: find_class_header_file -   ✓ Class name '{found_class_name}' matches target '{class_name}'")
+                    else:
+                        print(f"DEBUG: find_class_header_file -   ✓ Class name matches but header already in matching list: {header_file}")
                 else:
                     print(f"DEBUG: find_class_header_file -   ✗ Class name '{found_class_name}' doesn't match target '{class_name}'")
             else:
