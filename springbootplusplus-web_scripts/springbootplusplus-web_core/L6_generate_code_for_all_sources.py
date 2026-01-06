@@ -235,13 +235,6 @@ def generate_code_map(cpp_files: List[str], dry_run: bool = False) -> Dict[str, 
             class_info = L3_get_endpoint_details.find_class_and_interface(file_path)
             interface_name = class_info['interface_name'] if class_info else None
             
-            print(f"DEBUG: generate_code_map - Processing file: {file_path}")
-            if class_info:
-                print(f"DEBUG: generate_code_map - class_name: {class_info.get('class_name')}")
-                print(f"DEBUG: generate_code_map - interface_name: {interface_name}")
-            else:
-                print(f"DEBUG: generate_code_map - No class_info found")
-            
             code_map[file_path] = {
                 'code': generated_code,
                 'interface_name': interface_name
@@ -298,27 +291,14 @@ def generate_includes(code_map: Dict[str, Dict[str, str]], project_root: Optiona
         file_info = code_map[file_path]
         interface_name = file_info.get('interface_name')
         
-        print(f"DEBUG: generate_includes - Processing file: {file_path}")
-        print(f"DEBUG: generate_includes - interface_name: {interface_name}")
-        
         if not interface_name:
             # Fallback: use implementation header if interface name not found
-            print(f"DEBUG: generate_includes - No interface_name found, using implementation header")
             file_path_obj = Path(file_path).resolve()
             include_path = str(file_path_obj).replace('\\', '/')  # Use absolute path
             includes.append(f'#include "{include_path}"')
-            print(f"DEBUG: generate_includes - Added include: {include_path}")
             continue
         
-        # Find interface header file (suppress output by redirecting stdout temporarily)
-        import io
-        import contextlib
-        print(f"DEBUG: generate_includes - Searching for interface header: {interface_name}")
-        print(f"DEBUG: generate_includes - search_root: {project_root}")
-        print(f"DEBUG: generate_includes - include_folders: {include_paths}")
-        print(f"DEBUG: generate_includes - exclude_folders: {exclude_paths}")
-        
-        # Don't suppress stdout for debugging
+        # Find interface header file
         interface_header = L1_find_class_header.find_class_header_file(
             class_name=interface_name,
             search_root=project_root,
@@ -326,21 +306,16 @@ def generate_includes(code_map: Dict[str, Dict[str, str]], project_root: Optiona
             exclude_folders=exclude_paths
         )
         
-        print(f"DEBUG: generate_includes - find_class_header_file returned: {interface_header}")
-        
         if interface_header:
             # Use absolute path for the include
             interface_header_obj = Path(interface_header).resolve()
             include_path = str(interface_header_obj).replace('\\', '/')  # Normalize path separators
             includes.append(f'#include "{include_path}"')
-            print(f"DEBUG: generate_includes - Added interface header include: {include_path}")
         else:
             # Fallback: use implementation header if interface header not found
-            print(f"DEBUG: generate_includes - Interface header not found, using implementation header as fallback")
             file_path_obj = Path(file_path).resolve()
             include_path = str(file_path_obj).replace('\\', '/')  # Use absolute path
             includes.append(f'#include "{include_path}"')
-            print(f"DEBUG: generate_includes - Added fallback include: {include_path}")
     
     return includes
 
@@ -377,7 +352,6 @@ def add_includes_to_event_dispatcher(file_path: str, includes: List[str]) -> boo
                 # Check if this is a controller include (contains "controller" in path or matches pattern)
                 if 'controller' in line.lower() or re.search(r'/\d+-[A-Za-z0-9_]*Controller\.h', line):
                     lines_to_remove.append(i)
-                    print(f"DEBUG: add_includes_to_event_dispatcher - Removing old include: {line.strip()}")
         
         # Remove lines in reverse order to maintain indices
         for i in reversed(lines_to_remove):
