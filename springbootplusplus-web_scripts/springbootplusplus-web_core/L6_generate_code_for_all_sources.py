@@ -368,7 +368,22 @@ def add_includes_to_event_dispatcher(file_path: str, includes: List[str]) -> boo
             # print(f"Error: Cannot find insertion point in {file_path}")
             return False
         
-        # Check if includes already exist
+        # Remove all existing controller includes (they will be replaced with correct ones)
+        # Look for includes that point to controller files
+        import re
+        lines_to_remove = []
+        for i, line in enumerate(lines):
+            if line.strip().startswith('#include'):
+                # Check if this is a controller include (contains "controller" in path or matches pattern)
+                if 'controller' in line.lower() or re.search(r'/\d+-[A-Za-z0-9_]*Controller\.h', line):
+                    lines_to_remove.append(i)
+                    print(f"DEBUG: add_includes_to_event_dispatcher - Removing old include: {line.strip()}")
+        
+        # Remove lines in reverse order to maintain indices
+        for i in reversed(lines_to_remove):
+            del lines[i]
+        
+        # Check if includes already exist (after removal)
         existing_includes = set()
         for i, line in enumerate(lines):
             if line.strip().startswith('#include'):
@@ -380,12 +395,20 @@ def add_includes_to_event_dispatcher(file_path: str, includes: List[str]) -> boo
             if include not in existing_includes:
                 new_includes.append(include + '\n')
         
-        if not new_includes:
+        if not new_includes and not lines_to_remove:
             # print("ℹ️  All includes already exist in EventDispatcher.h")
             return True
         
+        # Find the insertion point (after line 6, but account for removed lines)
+        # Recalculate insert_index after removals
+        insert_index = 6
+        for removed_idx in lines_to_remove:
+            if removed_idx < insert_index:
+                insert_index -= 1
+        
         # Insert new includes after line 6
-        lines[insert_index:insert_index] = new_includes + ['\n']  # Add blank line after includes
+        if new_includes:
+            lines[insert_index:insert_index] = new_includes + ['\n']  # Add blank line after includes
         
         # Write back to file
         with open(file_path, 'w', encoding='utf-8') as f:
