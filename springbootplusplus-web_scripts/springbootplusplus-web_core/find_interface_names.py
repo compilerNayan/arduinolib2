@@ -43,10 +43,17 @@ def find_interface_names(file_path: str) -> List[str]:
     # - class ClassName : virtual public InterfaceName
     inheritance_pattern = r'class\s+[A-Za-z_][A-Za-z0-9_]*\s*(?:final\s+)?:\s*(?:virtual\s+)?(?:public|protected|private)\s+([A-Za-z_][A-Za-z0-9_]*)(?:<[^>]*>)?(?:\s*,\s*(?:virtual\s+)?(?:public|protected|private)\s+([A-Za-z_][A-Za-z0-9_]*)(?:<[^>]*>)?)*'
     
+    print(f"DEBUG: find_interface_names - Searching in file: {file_path}")
+    print(f"DEBUG: find_interface_names - Content length: {len(content)}")
+    
     # Find all matches
     matches = re.finditer(inheritance_pattern, content, re.MULTILINE | re.DOTALL)
+    match_count = 0
     
     for match in matches:
+        match_count += 1
+        print(f"DEBUG: find_interface_names - Match {match_count}: {match.group(0)}")
+        print(f"DEBUG: find_interface_names - Match groups: {match.groups()}")
         # Extract all interface names from the match
         for group in match.groups():
             if group:
@@ -54,7 +61,9 @@ def find_interface_names(file_path: str) -> List[str]:
                 interface_name = group.strip()
                 if interface_name and interface_name not in interface_names:
                     interface_names.append(interface_name)
+                    print(f"DEBUG: find_interface_names - Found interface: {interface_name}")
     
+    print(f"DEBUG: find_interface_names - Total matches: {match_count}, Total interfaces found: {len(interface_names)}")
     return interface_names
 
 
