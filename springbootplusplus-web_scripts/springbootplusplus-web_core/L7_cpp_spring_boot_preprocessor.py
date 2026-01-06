@@ -55,8 +55,6 @@ def run_l6_generate_code(include_paths: list, exclude_paths: list, dispatcher_fi
             cmd.append("--dry-run")
         
         # Run the command
-        print("DEBUG: L7_cpp_spring_boot_preprocessor - Step 1: Generating endpoint mappings...")
-        print(f"DEBUG: L7_cpp_spring_boot_preprocessor - Running command: {' '.join(cmd)}")
         result = subprocess.run(cmd, capture_output=False, text=True, cwd=".")
         
         # Parse results
@@ -112,8 +110,6 @@ def run_l6_di_preprocessor(include_paths: list, exclude_paths: list, dry_run: bo
             cmd.append("--dry-run")
         
         # Run the command
-        print("DEBUG: L7_cpp_spring_boot_preprocessor - Step 2: Processing dependency injection...")
-        print(f"DEBUG: L7_cpp_spring_boot_preprocessor - Running command: {' '.join(cmd)}")
         result = subprocess.run(cmd, capture_output=False, text=True, cwd=".")
         
         # Parse results

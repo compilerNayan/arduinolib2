@@ -65,11 +65,6 @@ def inject_header_include(file_path: str, header_path: str, dry_run: bool = Fals
     Returns:
         Dictionary with results and any errors
     """
-    print(f"DEBUG: add_header_include - inject_header_include called")
-    print(f"DEBUG: add_header_include - file_path: {file_path}")
-    print(f"DEBUG: add_header_include - header_path: {header_path}")
-    print(f"DEBUG: add_header_include - dry_run: {dry_run}")
-    
     results = {
         'success': False,
         'injected_code': '',
@@ -81,18 +76,15 @@ def inject_header_include(file_path: str, header_path: str, dry_run: bool = Fals
         # Step 1: Find the last #endif
         endif_line = find_last_endif(file_path)
         if not endif_line:
-            print(f"DEBUG: add_header_include - ERROR: Could not find #endif in the file")
             results['errors'].append("Could not find #endif in the file")
             return results
         
         line_num, line_content = endif_line
         results['info']['endif_line'] = line_num
-        print(f"DEBUG: add_header_include - Last #endif found at line {line_num}")
         
         # Step 2: Generate the #include statement
         include_statement = generate_include_statement(header_path)
         results['injected_code'] = include_statement
-        print(f"DEBUG: add_header_include - Generated #include statement: {include_statement.strip()}")
         
         # Step 3: Check if include already exists
         try:
@@ -103,15 +95,13 @@ def inject_header_include(file_path: str, header_path: str, dry_run: bool = Fals
             include_statement_stripped = include_statement.strip()
             for existing_line in existing_lines:
                 if existing_line.strip() == include_statement_stripped:
-                    print(f"DEBUG: add_header_include - Include already exists, skipping")
                     results['success'] = True
                     return results
         except Exception as e:
-            print(f"DEBUG: add_header_include - Warning: Could not check for existing include: {e}")
+            pass
         
         # Step 4: Inject the code (or show what would be injected)
         if dry_run:
-            print(f"DEBUG: add_header_include - Would inject before line {line_num}")
             results['success'] = True
         else:
             # Actually inject the code
@@ -126,11 +116,9 @@ def inject_header_include(file_path: str, header_path: str, dry_run: bool = Fals
                 with open(file_path, 'w', encoding='utf-8') as file:
                     file.writelines(lines)
                 
-                print(f"DEBUG: add_header_include - Successfully injected #include statement before line {line_num}")
                 results['success'] = True
                 
             except Exception as e:
-                print(f"DEBUG: add_header_include - ERROR: Failed to inject code: {e}")
                 import traceback
                 traceback.print_exc()
                 results['errors'].append(f"Failed to inject code: {e}")

@@ -31,11 +31,6 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
     Returns:
         Path to the class header file, or None if not found
     """
-    print(f"DEBUG: find_class_header_file - Searching for class: {class_name}")
-    print(f"DEBUG: find_class_header_file - search_root: {search_root}")
-    print(f"DEBUG: find_class_header_file - include_folders: {include_folders}")
-    print(f"DEBUG: find_class_header_file - exclude_folders: {exclude_folders}")
-    
     # Step 1: Get all C++ source files in the search directory with include/exclude options
     all_files_raw = find_cpp_files(
         root_dir=search_root,
@@ -52,14 +47,10 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
             seen_files.add(resolved)
             all_files.append(resolved)
     
-    print(f"DEBUG: find_class_header_file - Found {len(all_files_raw)} total C++ files (raw), {len(all_files)} after deduplication")
-    
     # Step 2: Find files that end with <class-name>.h or <class-name>.hpp (case insensitive)
     potential_headers = []
     class_name_lower = class_name.lower()
     seen_paths = set()  # Track seen paths to avoid duplicates
-    
-    print(f"DEBUG: find_class_header_file - Looking for files ending with: {class_name_lower}.h or {class_name_lower}.hpp")
     
     for file_path in all_files:
         file_name = Path(file_path).name.lower()
@@ -71,15 +62,9 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
             if resolved_path not in seen_paths:
                 seen_paths.add(resolved_path)
                 potential_headers.append(resolved_path)
-                print(f"DEBUG: find_class_header_file - Found potential header: {resolved_path} (filename: {file_name})")
-            else:
-                print(f"DEBUG: find_class_header_file - Skipping duplicate (already seen): {resolved_path}")
     
     if not potential_headers:
-        print(f"DEBUG: find_class_header_file - No header files found ending with {class_name}.h or {class_name}.hpp")
         return None
-    
-    print(f"DEBUG: find_class_header_file - Found {len(potential_headers)} potential header file(s) (after deduplication)")
     
     # Step 3: Check class names in each potential header
     matching_headers = []
@@ -103,13 +88,7 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
             class_pattern = r'(?:template\s*<[^>]*>\s*)?class\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:final\s+)?(?:\s*[:{])'
             matches = re.findall(class_pattern, content)
             
-            print(f"DEBUG: find_class_header_file - Checking {header_file}")
-            print(f"DEBUG: find_class_header_file - Found {len(matches)} class declaration(s) in file")
-            
             if matches:
-                for idx, found_class_name in enumerate(matches):
-                    print(f"DEBUG: find_class_header_file -   Class {idx+1}: '{found_class_name}'")
-                
                 found_class_name = matches[0]  # Take the first class found
                 
                 # Check if class name matches target class name (case insensitive)
@@ -118,36 +97,20 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
                     if header_file not in seen_matching:
                         seen_matching.add(header_file)
                         matching_headers.append(header_file)
-                        print(f"DEBUG: find_class_header_file -   ✓ Class name '{found_class_name}' matches target '{class_name}'")
-                    else:
-                        print(f"DEBUG: find_class_header_file -   ✓ Class name matches but header already in matching list: {header_file}")
-                else:
-                    print(f"DEBUG: find_class_header_file -   ✗ Class name '{found_class_name}' doesn't match target '{class_name}'")
-            else:
-                print(f"DEBUG: find_class_header_file -   No class declarations found in file")
                 
         except Exception as e:
-            print(f"DEBUG: find_class_header_file - Error reading {header_file}: {e}")
             import traceback
             traceback.print_exc()
     
     # Step 4: Validate results
-    print(f"DEBUG: find_class_header_file - Found {len(matching_headers)} matching header(s)")
-    
     if len(matching_headers) == 0:
-        print(f"DEBUG: find_class_header_file - No header files found with class name matching '{class_name}'")
         return None
     elif len(matching_headers) > 1:
-        print(f"DEBUG: find_class_header_file - ERROR: Multiple header files found with matching class name '{class_name}':")
-        for header in matching_headers:
-            print(f"DEBUG: find_class_header_file -   {header}")
-        print(f"DEBUG: find_class_header_file - Expected exactly one matching header file.")
         return None
     else:
         # Exactly one matching header found
         class_header = matching_headers[0]
-        print(f"DEBUG: find_class_header_file - ✓ Found class header: {class_header}")
-        # Also print without DEBUG prefix for backward compatibility with scripts that parse output
+        # Print without DEBUG prefix for backward compatibility with scripts that parse output
         print(f"✓ Found class header: {class_header}")
         return class_header
 

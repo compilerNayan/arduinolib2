@@ -29,19 +29,11 @@ def get_interface_name_from_file(file_path: str) -> Optional[str]:
         Interface name if found, None otherwise
     """
     try:
-        print(f"DEBUG: L2_add_reverse_include - get_interface_name_from_file - file_path: {file_path}")
         interface_names = find_interface_names.find_interface_names(file_path)
-        print(f"DEBUG: L2_add_reverse_include - get_interface_name_from_file - interface_names: {interface_names}")
         if interface_names:
-            interface_name = interface_names[0]  # Take the first interface
-            print(f"DEBUG: L2_add_reverse_include - get_interface_name_from_file - returning: {interface_name}")
-            return interface_name
-        print(f"DEBUG: L2_add_reverse_include - get_interface_name_from_file - No interface names found")
+            return interface_names[0]  # Take the first interface
         return None
     except Exception as e:
-        print(f"DEBUG: L2_add_reverse_include - get_interface_name_from_file - Exception: {e}")
-        import traceback
-        traceback.print_exc()
         return None
 
 
@@ -79,10 +71,6 @@ def find_interface_header_path(interface_name: str, include_paths: List[str], ex
             # Parse the output to find the header file path
             output_lines = result.stdout.strip().split('\n')
             
-            print(f"DEBUG: L2_add_reverse_include - find_interface_header_path - L1_find_class_header output:")
-            for line in output_lines:
-                print(f"DEBUG: L2_add_reverse_include -   {line}")
-            
             # Look for the line that shows "Found class header: <path>" (with or without DEBUG prefix)
             for line in output_lines:
                 stripped = line.strip()
@@ -99,7 +87,6 @@ def find_interface_header_path(interface_name: str, include_paths: List[str], ex
                             # Remove any leading/trailing characters
                             file_path = file_path.strip('✓').strip()
                             if os.path.exists(file_path):
-                                print(f"DEBUG: L2_add_reverse_include - Found interface header: {file_path}")
                                 return file_path
                     
                     # Fallback: find the last colon and take everything after it
@@ -109,7 +96,6 @@ def find_interface_header_path(interface_name: str, include_paths: List[str], ex
                         # Clean up any extra characters
                         file_path = file_path.strip('✓').strip()
                         if os.path.exists(file_path):
-                            print(f"DEBUG: L2_add_reverse_include - Found interface header (fallback): {file_path}")
                             return file_path
             
             # Fallback: look for lines ending with .h or .hpp that look like file paths
@@ -126,16 +112,12 @@ def find_interface_header_path(interface_name: str, include_paths: List[str], ex
                             if (part.endswith('.h') or part.endswith('.hpp')) and '/' in part:
                                 file_path = part
                                 if os.path.exists(file_path):
-                                    print(f"DEBUG: L2_add_reverse_include - Found interface header (fallback): {file_path}")
                                     return file_path
                     else:
                         file_path = stripped
                         if os.path.exists(file_path):
-                            print(f"DEBUG: L2_add_reverse_include - Found interface header (fallback): {file_path}")
                             return file_path
             
-            print(f"DEBUG: L2_add_reverse_include - Could not parse header file path from output")
-            print(f"DEBUG: L2_add_reverse_include - Full output: {result.stdout}")
             return None
         else:
             # print(f"L1_find_class_header failed with return code {result.returncode}")
@@ -179,9 +161,6 @@ def add_header_include(target_file: str, header_to_include: str, dry_run: bool =
         True if successful, False otherwise
     """
     try:
-        print(f"DEBUG: L2_add_reverse_include - add_header_include - target_file: {target_file}")
-        print(f"DEBUG: L2_add_reverse_include - add_header_include - header_to_include: {header_to_include}")
-        
         # Build the command for add_header_include
         script_path = os.path.join(SCRIPT_DIR, 'add_header_include.py')
         cmd = ['python', script_path, target_file, '--header', header_to_include]
@@ -189,34 +168,15 @@ def add_header_include(target_file: str, header_to_include: str, dry_run: bool =
         if dry_run:
             cmd.append('--dry-run')
         
-        print(f"DEBUG: L2_add_reverse_include - add_header_include - Running command: {' '.join(cmd)}")
-        
         # Execute the command
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=os.getcwd())
         
-        print(f"DEBUG: L2_add_reverse_include - add_header_include - Return code: {result.returncode}")
-        if result.stdout:
-            print(f"DEBUG: L2_add_reverse_include - add_header_include - stdout:")
-            for line in result.stdout.split('\n'):
-                if line.strip():
-                    print(f"DEBUG: L2_add_reverse_include -   {line}")
-        if result.stderr:
-            print(f"DEBUG: L2_add_reverse_include - add_header_include - stderr:")
-            for line in result.stderr.split('\n'):
-                if line.strip():
-                    print(f"DEBUG: L2_add_reverse_include -   {line}")
-        
         if result.returncode == 0:
-            print(f"DEBUG: L2_add_reverse_include - add_header_include - Successfully added include")
             return True
         else:
-            print(f"DEBUG: L2_add_reverse_include - add_header_include - Failed with return code {result.returncode}")
             return False
             
     except Exception as e:
-        print(f"DEBUG: L2_add_reverse_include - add_header_include - Exception: {e}")
-        import traceback
-        traceback.print_exc()
         return False
 
 
@@ -243,26 +203,17 @@ def process_file(file_path: str, include_paths: List[str], exclude_paths: List[s
     }
     
     try:
-        print(f"DEBUG: L2_add_reverse_include - process_file - Processing file: {file_path}")
-        
         # Step 1: Get interface name
         interface_name = get_interface_name_from_file(file_path)
-        print(f"DEBUG: L2_add_reverse_include - process_file - interface_name: {interface_name}")
         if not interface_name:
-            print(f"DEBUG: L2_add_reverse_include - process_file - ERROR: No interface name found")
             results['errors'].append("No interface name found in the file")
             return results
         
         results['interface_name'] = interface_name
         
         # Step 2: Find interface header path
-        print(f"DEBUG: L2_add_reverse_include - process_file - Searching for interface header: {interface_name}")
-        print(f"DEBUG: L2_add_reverse_include - process_file - include_paths: {include_paths}")
-        print(f"DEBUG: L2_add_reverse_include - process_file - exclude_paths: {exclude_paths}")
         interface_header_file = find_interface_header_path(interface_name, include_paths, exclude_paths)
-        print(f"DEBUG: L2_add_reverse_include - process_file - interface_header_file: {interface_header_file}")
         if not interface_header_file:
-            print(f"DEBUG: L2_add_reverse_include - process_file - ERROR: Could not find header file for interface")
             results['errors'].append(f"Could not find header file for interface: {interface_name}")
             return results
         
@@ -270,23 +221,17 @@ def process_file(file_path: str, include_paths: List[str], exclude_paths: List[s
         
         # Step 3: Get current file information
         current_file_path = get_current_file_path.get_file_path(file_path)
-        print(f"DEBUG: L2_add_reverse_include - process_file - current_file_path: {current_file_path}")
         if not current_file_path:
-            print(f"DEBUG: L2_add_reverse_include - process_file - ERROR: Could not get current file path")
             results['errors'].append("Could not get current file path")
             return results
         
         results['current_file_info'] = {'absolute_path': current_file_path}
         
         # Step 4: Add header include
-        print(f"DEBUG: L2_add_reverse_include - process_file - Adding include: {current_file_path} to {interface_header_file}")
         success = add_header_include(interface_header_file, current_file_path, dry_run)
-        print(f"DEBUG: L2_add_reverse_include - process_file - add_header_include result: {success}")
         if success:
             results['success'] = True
-            print(f"DEBUG: L2_add_reverse_include - process_file - Successfully processed {file_path}")
         else:
-            print(f"DEBUG: L2_add_reverse_include - process_file - ERROR: Failed to add header include")
             results['errors'].append("Failed to add header include")
         
     except Exception as e:
