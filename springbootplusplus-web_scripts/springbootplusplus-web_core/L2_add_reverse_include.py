@@ -39,7 +39,7 @@ def get_interface_name_from_file(file_path: str) -> Optional[str]:
 
 def find_interface_header_path(interface_name: str, include_paths: List[str], exclude_paths: List[str]) -> Optional[str]:
     """
-    Find the interface header file path using L1_find_class_header script.
+    Find the interface header file path using L1_find_class_header function.
     
     Args:
         interface_name: Name of the interface to search for
@@ -50,82 +50,21 @@ def find_interface_header_path(interface_name: str, include_paths: List[str], ex
         Full path to the interface header file if found, None otherwise
     """
     try:
-        # Build the command for L1_find_class_header
-        script_path = os.path.join(SCRIPT_DIR, 'L1_find_class_header.py')
-        cmd = ['python', script_path, interface_name]
+        # Use the function directly instead of calling as subprocess
+        # Determine search root - use the script directory as default
+        search_root = SCRIPT_DIR
         
-        # Add include paths (all in one --include argument)
-        if include_paths:
-            cmd.extend(['--include'] + include_paths)
+        # Call the function directly
+        header_path = L1_find_class_header.find_class_header_file(
+            class_name=interface_name,
+            search_root=search_root,
+            include_folders=include_paths if include_paths else None,
+            exclude_folders=exclude_paths if exclude_paths else None
+        )
         
-        # Add exclude paths (all in one --exclude argument)
-        if exclude_paths:
-            cmd.extend(['--exclude'] + exclude_paths)
-        
-        # print(f"Running command: {' '.join(cmd)}")
-        
-        # Execute the command
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=os.getcwd())
-        
-        if result.returncode == 0:
-            # Parse the output to find the header file path
-            output_lines = result.stdout.strip().split('\n')
-            
-            # Look for the line that shows "Found class header: <path>" (with or without DEBUG prefix)
-            for line in output_lines:
-                stripped = line.strip()
-                # Check for both formats: "✓ Found class header:" and "DEBUG: ... ✓ Found class header:"
-                if '✓ Found class header:' in stripped or 'Found class header:' in stripped:
-                    # Extract the file path from "✓ Found class header: <path>" or "DEBUG: ... ✓ Found class header: <path>"
-                    # The format is: "DEBUG: find_class_header_file - ✓ Found class header: /path/to/file.h"
-                    # We need to find the last colon that's followed by a path
-                    # Try splitting by "Found class header:" first
-                    if 'Found class header:' in stripped:
-                        parts = stripped.split('Found class header:', 1)
-                        if len(parts) == 2:
-                            file_path = parts[1].strip()
-                            # Remove any leading/trailing characters
-                            file_path = file_path.strip('✓').strip()
-                            if os.path.exists(file_path):
-                                return file_path
-                    
-                    # Fallback: find the last colon and take everything after it
-                    last_colon_idx = stripped.rfind(':')
-                    if last_colon_idx != -1:
-                        file_path = stripped[last_colon_idx + 1:].strip()
-                        # Clean up any extra characters
-                        file_path = file_path.strip('✓').strip()
-                        if os.path.exists(file_path):
-                            return file_path
-            
-            # Fallback: look for lines ending with .h or .hpp that look like file paths
-            for line in output_lines:
-                stripped = line.strip()
-                if (stripped.endswith('.h') or stripped.endswith('.hpp')) and '/' in stripped:
-                    # Extract the file path from the output (might have DEBUG prefix)
-                    # Find the last occurrence of a path-like string
-                    if 'DEBUG:' in stripped:
-                        # Extract path after DEBUG: prefix
-                        parts = stripped.split('DEBUG:')
-                        for part in parts:
-                            part = part.strip()
-                            if (part.endswith('.h') or part.endswith('.hpp')) and '/' in part:
-                                file_path = part
-                                if os.path.exists(file_path):
-                                    return file_path
-                    else:
-                        file_path = stripped
-                        if os.path.exists(file_path):
-                            return file_path
-            
-            return None
-        else:
-            # print(f"L1_find_class_header failed with return code {result.returncode}")
-            # print(f"Error output: {result.stderr}")
-            return None
+        return header_path
             
     except Exception as e:
-        # print(f"Error finding interface header path: {e}")
         return None
 
 
