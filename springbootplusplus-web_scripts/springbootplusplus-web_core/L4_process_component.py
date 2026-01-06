@@ -163,7 +163,7 @@ def run_script_sequence(file_path: str, include_paths: List[str], exclude_paths:
             return results
         
         # Step 5: L2_add_reverse_include
-        # print("\n--- Step 5: Adding reverse include ---")
+        print(f"DEBUG: L4_process_component - Step 5: Adding reverse include for {file_path}")
         script_path = os.path.join(SCRIPT_DIR, 'L2_add_reverse_include.py')
         cmd = ['python', script_path, file_path]
         
@@ -178,20 +178,30 @@ def run_script_sequence(file_path: str, include_paths: List[str], exclude_paths:
         if dry_run:
             cmd.append('--dry-run')
         
-        # print(f"Running: {' '.join(cmd)}")
+        print(f"DEBUG: L4_process_component - Running command: {' '.join(cmd)}")
+        print(f"DEBUG: L4_process_component - include_paths: {include_paths}")
+        print(f"DEBUG: L4_process_component - exclude_paths: {exclude_paths}")
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=os.getcwd())
+        
+        print(f"DEBUG: L4_process_component - L2_add_reverse_include return code: {result.returncode}")
+        if result.stdout:
+            print(f"DEBUG: L4_process_component - L2_add_reverse_include stdout:")
+            for line in result.stdout.split('\n'):
+                if line.strip():
+                    print(f"DEBUG: L4_process_component -   {line}")
+        if result.stderr:
+            print(f"DEBUG: L4_process_component - L2_add_reverse_include stderr:")
+            for line in result.stderr.split('\n'):
+                if line.strip():
+                    print(f"DEBUG: L4_process_component -   {line}")
         
         if result.returncode == 0:
             results['steps_completed'].append('L2_add_reverse_include')
-            # print("✓ Reverse include step completed successfully")
-            if dry_run:
-                # print("Output (dry run):")
-                # print(result.stdout)
-                pass
+            print(f"DEBUG: L4_process_component - ✓ Reverse include step completed successfully")
         else:
             error_msg = f"L2_add_reverse_include failed: {result.stderr}"
             results['errors'].append(error_msg)
-            # print(f"✗ {error_msg}")
+            print(f"DEBUG: L4_process_component - ✗ {error_msg}")
             return results
         
         # Step 6: Mark @Component annotation as processed
