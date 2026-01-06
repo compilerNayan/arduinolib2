@@ -170,10 +170,18 @@ def process_all_files(cpp_files: List[str], include_paths: List[str], exclude_pa
     
     for i, file_path in enumerate(cpp_files, 1):
         # Show file info and start processing in one line
-        # print(f"📁 [{i:2d}/{len(cpp_files):2d}] 🔄 Processing... {file_path}", end=" ")
+        if "DesktopFileManager" in file_path:
+            print(f"DEBUG: L6_cpp_di_preprocessor - Processing DesktopFileManager: {file_path}")
         
         # Process the file
         file_result = run_l5_process_di(file_path, include_paths, exclude_paths, dry_run)
+        
+        if "DesktopFileManager" in file_path:
+            print(f"DEBUG: L6_cpp_di_preprocessor - DesktopFileManager processing result: success={file_result['success']}")
+            if file_result.get('stdout'):
+                print(f"DEBUG: L6_cpp_di_preprocessor - DesktopFileManager stdout: {file_result['stdout'][:500]}")
+            if file_result.get('stderr'):
+                print(f"DEBUG: L6_cpp_di_preprocessor - DesktopFileManager stderr: {file_result['stderr'][:500]}")
         results['file_results'][file_path] = file_result
         
         # Update counters
@@ -283,14 +291,22 @@ Examples:
     # print()
     
     # Find all C++ files
-    # print("🔍 Discovering C++ source files...")
+    print("DEBUG: L6_cpp_di_preprocessor - Discovering C++ source files...")
+    print(f"DEBUG: L6_cpp_di_preprocessor - include_paths: {args.include}")
+    print(f"DEBUG: L6_cpp_di_preprocessor - exclude_paths: {args.exclude}")
     cpp_files = find_cpp_files(args.include, args.exclude)
     
-    if not cpp_files:
-        # print("⚠️  No C++ source files found in the specified paths")
-        sys.exit(0)
+    print(f"DEBUG: L6_cpp_di_preprocessor - Found {len(cpp_files)} C++ source files")
+    # Check if DesktopFileManager is in the list
+    desktop_file_manager_files = [f for f in cpp_files if "DesktopFileManager" in f]
+    if desktop_file_manager_files:
+        print(f"DEBUG: L6_cpp_di_preprocessor - Found DesktopFileManager files: {desktop_file_manager_files}")
+    else:
+        print(f"DEBUG: L6_cpp_di_preprocessor - WARNING: DesktopFileManager not found in file list")
     
-    # print(f"📁 Found {len(cpp_files)} C++ source files")
+    if not cpp_files:
+        print("DEBUG: L6_cpp_di_preprocessor - No C++ source files found in the specified paths")
+        sys.exit(0)
     
     # Process all files
     results = process_all_files(cpp_files, args.include, args.exclude, args.dry_run)
