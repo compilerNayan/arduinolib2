@@ -29,12 +29,19 @@ def get_interface_name_from_file(file_path: str) -> Optional[str]:
         Interface name if found, None otherwise
     """
     try:
+        print(f"DEBUG: L2_add_reverse_include - get_interface_name_from_file - file_path: {file_path}")
         interface_names = find_interface_names.find_interface_names(file_path)
+        print(f"DEBUG: L2_add_reverse_include - get_interface_name_from_file - interface_names: {interface_names}")
         if interface_names:
-            return interface_names[0]  # Take the first interface
+            interface_name = interface_names[0]  # Take the first interface
+            print(f"DEBUG: L2_add_reverse_include - get_interface_name_from_file - returning: {interface_name}")
+            return interface_name
+        print(f"DEBUG: L2_add_reverse_include - get_interface_name_from_file - No interface names found")
         return None
     except Exception as e:
-        # print(f"Error getting interface name from {file_path}: {e}")
+        print(f"DEBUG: L2_add_reverse_include - get_interface_name_from_file - Exception: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 
