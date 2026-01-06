@@ -82,12 +82,27 @@ def find_interface_header_path(interface_name: str, include_paths: List[str], ex
                 # Check for both formats: "✓ Found class header:" and "DEBUG: ... ✓ Found class header:"
                 if '✓ Found class header:' in stripped or 'Found class header:' in stripped:
                     # Extract the file path from "✓ Found class header: <path>" or "DEBUG: ... ✓ Found class header: <path>"
-                    # Find the last colon and take everything after it
+                    # The format is: "DEBUG: find_class_header_file - ✓ Found class header: /path/to/file.h"
+                    # We need to find the last colon that's followed by a path
+                    # Try splitting by "Found class header:" first
+                    if 'Found class header:' in stripped:
+                        parts = stripped.split('Found class header:', 1)
+                        if len(parts) == 2:
+                            file_path = parts[1].strip()
+                            # Remove any leading/trailing characters
+                            file_path = file_path.strip('✓').strip()
+                            if os.path.exists(file_path):
+                                print(f"DEBUG: L2_add_reverse_include - Found interface header: {file_path}")
+                                return file_path
+                    
+                    # Fallback: find the last colon and take everything after it
                     last_colon_idx = stripped.rfind(':')
                     if last_colon_idx != -1:
                         file_path = stripped[last_colon_idx + 1:].strip()
+                        # Clean up any extra characters
+                        file_path = file_path.strip('✓').strip()
                         if os.path.exists(file_path):
-                            print(f"DEBUG: L2_add_reverse_include - Found interface header: {file_path}")
+                            print(f"DEBUG: L2_add_reverse_include - Found interface header (fallback): {file_path}")
                             return file_path
             
             # Fallback: look for lines ending with .h or .hpp that look like file paths
@@ -157,6 +172,9 @@ def add_header_include(target_file: str, header_to_include: str, dry_run: bool =
         True if successful, False otherwise
     """
     try:
+        print(f"DEBUG: L2_add_reverse_include - add_header_include - target_file: {target_file}")
+        print(f"DEBUG: L2_add_reverse_include - add_header_include - header_to_include: {header_to_include}")
+        
         # Build the command for add_header_include
         script_path = os.path.join(SCRIPT_DIR, 'add_header_include.py')
         cmd = ['python', script_path, target_file, '--header', header_to_include]
@@ -164,25 +182,34 @@ def add_header_include(target_file: str, header_to_include: str, dry_run: bool =
         if dry_run:
             cmd.append('--dry-run')
         
-        # print(f"Running command: {' '.join(cmd)}")
+        print(f"DEBUG: L2_add_reverse_include - add_header_include - Running command: {' '.join(cmd)}")
         
         # Execute the command
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=os.getcwd())
         
+        print(f"DEBUG: L2_add_reverse_include - add_header_include - Return code: {result.returncode}")
+        if result.stdout:
+            print(f"DEBUG: L2_add_reverse_include - add_header_include - stdout:")
+            for line in result.stdout.split('\n'):
+                if line.strip():
+                    print(f"DEBUG: L2_add_reverse_include -   {line}")
+        if result.stderr:
+            print(f"DEBUG: L2_add_reverse_include - add_header_include - stderr:")
+            for line in result.stderr.split('\n'):
+                if line.strip():
+                    print(f"DEBUG: L2_add_reverse_include -   {line}")
+        
         if result.returncode == 0:
-            # print(f"Successfully added include to {target_file}")
-            if dry_run:
-                # print("Output (dry run):")
-                # print(result.stdout)
-                pass
+            print(f"DEBUG: L2_add_reverse_include - add_header_include - Successfully added include")
             return True
         else:
-            # print(f"add_header_include failed with return code {result.returncode}")
-            # print(f"Error output: {result.stderr}")
+            print(f"DEBUG: L2_add_reverse_include - add_header_include - Failed with return code {result.returncode}")
             return False
             
     except Exception as e:
-        # print(f"Error adding header include: {e}")
+        print(f"DEBUG: L2_add_reverse_include - add_header_include - Exception: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
