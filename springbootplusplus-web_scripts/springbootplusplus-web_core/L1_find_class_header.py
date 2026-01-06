@@ -66,13 +66,14 @@ def find_class_header_file(class_name: str, search_root: str = ".", include_fold
         if (file_name.endswith(f"{class_name_lower}.h") or 
             file_name.endswith(f"{class_name_lower}.hpp")):
             # Resolve to absolute path and normalize to avoid duplicates
+            # file_path should already be resolved from all_files deduplication, but resolve again to be sure
             resolved_path = str(Path(file_path).resolve())
             if resolved_path not in seen_paths:
                 seen_paths.add(resolved_path)
                 potential_headers.append(resolved_path)
                 print(f"DEBUG: find_class_header_file - Found potential header: {resolved_path} (filename: {file_name})")
             else:
-                print(f"DEBUG: find_class_header_file - Skipping duplicate: {resolved_path}")
+                print(f"DEBUG: find_class_header_file - Skipping duplicate (already seen): {resolved_path}")
     
     if not potential_headers:
         print(f"DEBUG: find_class_header_file - No header files found ending with {class_name}.h or {class_name}.hpp")
