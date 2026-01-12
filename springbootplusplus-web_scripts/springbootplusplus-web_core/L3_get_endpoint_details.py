@@ -6,6 +6,7 @@ inside the class, extracts function details, and combines with base URL to form 
 """
 
 import re
+import sys
 import argparse
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple, Any
@@ -168,19 +169,22 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
     Returns:
         List of dictionaries with endpoint details
     """
+    print(f"[DEBUG] find_mapping_endpoints: file={file_path}, base_url={base_url}, class={class_name}, interface={interface_name}", file=sys.stderr)
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
     except Exception as e:
-        # print(f"Error reading file '{file_path}': {e}")
+        print(f"[DEBUG] Error reading file '{file_path}': {e}", file=sys.stderr)
         return []
     
     # Find class boundaries
     boundaries = find_class_boundaries(file_path)
     if not boundaries:
+        print(f"[DEBUG] No class boundaries found in {file_path}", file=sys.stderr)
         return []
     
     class_start, class_end = boundaries
+    print(f"[DEBUG] Class boundaries: start={class_start}, end={class_end}", file=sys.stderr)
     
     endpoints = []
     
@@ -220,18 +224,21 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
         if mapping_match:
             http_method_annotation = mapping_match.group(1)  # e.g., "GetMapping", "PostMapping", etc.
             mapping_path = mapping_match.group(2)
+            print(f"[DEBUG] Found annotation match: method={http_method_annotation}, path='{mapping_path}' (line {i})", file=sys.stderr)
         else:
             # Fallback: check for legacy mapping macro (for backward compatibility)
             mapping_match = mapping_macro_pattern.search(line)
             if mapping_match:
                 http_method_annotation = mapping_match.group(1)
                 mapping_path = mapping_match.group(2)
+                print(f"[DEBUG] Found macro match: method={http_method_annotation}, path='{mapping_path}' (line {i})", file=sys.stderr)
             else:
                 i += 1
                 continue
         
         # Extract HTTP method from annotation/macro name (GetMapping -> GET, PostMapping -> POST, etc.)
         http_method = http_method_annotation.replace('Mapping', '').upper()
+        print(f"[DEBUG] HTTP method: {http_method}, mapping_path: '{mapping_path}'", file=sys.stderr)
         
         # Construct full endpoint URL
         # Ensure proper URL concatenation: base_url + mapping_path
@@ -239,15 +246,18 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
         base_url_clean = base_url.rstrip('/')
         if not mapping_path:  # Empty string
             endpoint_url = base_url_clean
+            print(f"[DEBUG] Empty mapping_path, using base_url only: '{endpoint_url}'", file=sys.stderr)
         else:
             # mapping_path is not empty
             if not mapping_path.startswith('/'):
                 mapping_path = '/' + mapping_path
             endpoint_url = base_url_clean + mapping_path
+            print(f"[DEBUG] Non-empty mapping_path, concatenated: '{endpoint_url}'", file=sys.stderr)
         
         # Look ahead for function signature (within next few lines)
         function_found = False
         function_details = None
+        print(f"[DEBUG] Looking for function signature after line {i}...", file=sys.stderr)
         
         for j in range(i + 1, min(i + 5, class_end + 1)):
             if j > len(lines):
@@ -277,9 +287,13 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
             # Check if this is a function signature
             func_details = parse_function_signature(next_line)
             if func_details:
+                print(f"[DEBUG] Found function signature at line {j}: {next_line}", file=sys.stderr)
+                print(f"[DEBUG] Function details: name={func_details['function_name']}, return_type={func_details['return_type']}, first_arg={func_details['first_arg_type']}", file=sys.stderr)
                 function_found = True
                 function_details = func_details
                 break
+            else:
+                print(f"[DEBUG] Line {j} is not a function signature: '{next_line[:50]}...'", file=sys.stderr)
         
         if function_found and function_details:
                 endpoint_info = {
@@ -295,7 +309,10 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
                     'mapping_line': i,
                     'function_line': j if function_found else None
                 }
+                print(f"[DEBUG] Adding endpoint: {http_method} {endpoint_url} -> {function_details['function_name']}", file=sys.stderr)
                 endpoints.append(endpoint_info)
+        else:
+            print(f"[DEBUG] WARNING: No function found for {http_method} mapping at line {i}, path='{mapping_path}'", file=sys.stderr)
         
         i += 1
     
