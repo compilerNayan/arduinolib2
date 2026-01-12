@@ -9,15 +9,15 @@
 /// @Component
 class HttpRequestDispatcher : public IHttpRequestDispatcher {
 
-    Private std::unordered_map<StdString, std::function<StdString(CStdString)>> getMappings;
-    Private std::unordered_map<StdString, std::function<StdString(CStdString)>> postMappings;
-    Private std::unordered_map<StdString, std::function<StdString(CStdString)>> putMappings;
-    Private std::unordered_map<StdString, std::function<StdString(CStdString)>> patchMappings;
-    Private std::unordered_map<StdString, std::function<StdString(CStdString)>> deleteMappings;
-    Private std::unordered_map<StdString, std::function<StdString(CStdString)>> optionsMappings;
-    Private std::unordered_map<StdString, std::function<StdString(CStdString)>> headMappings;
-    Private std::unordered_map<StdString, std::function<StdString(CStdString)>> traceMappings;
-    Private std::unordered_map<StdString, std::function<StdString(CStdString)>> connectMappings;
+    Private UnorderedMap<StdString, std::function<StdString(CStdString)>> getMappings;
+    Private UnorderedMap<StdString, std::function<StdString(CStdString)>> postMappings;
+    Private UnorderedMap<StdString, std::function<StdString(CStdString)>> putMappings;
+    Private UnorderedMap<StdString, std::function<StdString(CStdString)>> patchMappings;
+    Private UnorderedMap<StdString, std::function<StdString(CStdString)>> deleteMappings;
+    Private UnorderedMap<StdString, std::function<StdString(CStdString)>> optionsMappings;
+    Private UnorderedMap<StdString, std::function<StdString(CStdString)>> headMappings;
+    Private UnorderedMap<StdString, std::function<StdString(CStdString)>> traceMappings;
+    Private UnorderedMap<StdString, std::function<StdString(CStdString)>> connectMappings;
 
     Public HttpRequestDispatcher() {
         InitializeMappings();
