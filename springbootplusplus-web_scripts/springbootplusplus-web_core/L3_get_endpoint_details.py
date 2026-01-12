@@ -186,11 +186,12 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
     
     # Pattern to match any HTTP mapping annotation: /// @GetMapping("/path"), /// @PostMapping("/path"), etc.
     # Also check for already processed /* @GetMapping("/path") */ pattern
-    mapping_annotation_pattern = re.compile(r'///\s*@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\s*\(\s*["\']([^"\']+)["\']\s*\)')
-    mapping_processed_pattern = re.compile(r'/\*\s*@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/')
+    # Note: [^"\']* allows empty strings (zero or more characters), not [^"\']+ (one or more)
+    mapping_annotation_pattern = re.compile(r'///\s*@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\s*\(\s*["\']([^"\']*)["\']\s*\)')
+    mapping_processed_pattern = re.compile(r'/\*\s*@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\s*\(\s*["\'][^"\']*["\']\s*\)\s*\*/')
     
     # Pattern to match legacy HTTP mapping macros (for backward compatibility)
-    mapping_macro_pattern = re.compile(r'(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\s*\(\s*["\']([^"\']+)["\']\s*\)')
+    mapping_macro_pattern = re.compile(r'(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\s*\(\s*["\']([^"\']*)["\']\s*\)')
     
     # Pattern to match function signature
     function_pattern = r'([A-Za-z_][A-Za-z0-9_<>*&:,\s]*?)\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)'
@@ -234,11 +235,15 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
         
         # Construct full endpoint URL
         # Ensure proper URL concatenation: base_url + mapping_path
-        # Remove trailing slash from base_url if present, mapping_path should start with /
+        # Handle empty mapping_path (maps to base_url only)
         base_url_clean = base_url.rstrip('/')
-        if not mapping_path.startswith('/'):
-            mapping_path = '/' + mapping_path
-        endpoint_url = base_url_clean + mapping_path
+        if not mapping_path:  # Empty string
+            endpoint_url = base_url_clean
+        else:
+            # mapping_path is not empty
+            if not mapping_path.startswith('/'):
+                mapping_path = '/' + mapping_path
+            endpoint_url = base_url_clean + mapping_path
         
         # Look ahead for function signature (within next few lines)
         function_found = False
