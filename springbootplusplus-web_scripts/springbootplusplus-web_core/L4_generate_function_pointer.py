@@ -48,18 +48,31 @@ def generate_function_pointer(
     # Get the mapping variable name based on HTTP method
     mapping_var = get_mapping_variable_name(http_method)
     
+    # Check if return type is void or Void (case-insensitive)
+    is_void = return_type.strip().lower() == "void"
+    
     # Generate the function pointer code
     code = f"{mapping_var}[\"{url}\"] = [](CStdString arg) -> StdString {{\n"
-    code += "    AUTOWIRED\n"
-    code += f"    {interface_name}Ptr controller;\n"
+    code += "//                 AUTOWIRED\n"
+    code += f"    {interface_name}Ptr controller = Implementation<{interface_name}>::type::GetInstance();\n"
     
-    # Handle case where there's no argument (first_arg_type is empty or "none")
-    if first_arg_type and first_arg_type.lower() not in ["", "none", "(none)"]:
-        code += f"    Val returnValue = controller->{function_name}(nayan::serializer::SerializationUtility::Deserialize<{first_arg_type}>(arg));\n"
+    if is_void:
+        # For void return types, don't store return value and return empty string
+        if first_arg_type and first_arg_type.lower() not in ["", "none", "(none)"]:
+            code += f"    controller->{function_name}(nayan::serializer::SerializationUtility::Deserialize<{first_arg_type}>(arg));\n"
+        else:
+            code += f"    controller->{function_name}();\n"
+        code += "    return \"\";\n"
     else:
-        code += f"    Val returnValue = controller->{function_name}();\n"
+        # For non-void return types, store return value and serialize it
+        # Handle case where there's no argument (first_arg_type is empty or "none")
+        if first_arg_type and first_arg_type.lower() not in ["", "none", "(none)"]:
+            code += f"    Val returnValue = controller->{function_name}(nayan::serializer::SerializationUtility::Deserialize<{first_arg_type}>(arg));\n"
+        else:
+            code += f"    Val returnValue = controller->{function_name}();\n"
+        
+        code += "    return nayan::serializer::SerializationUtility::Serialize(returnValue);\n"
     
-    code += "    return nayan::serializer::SerializationUtility::Serialize(returnValue);\n"
     code += "};"
     
     return code
