@@ -221,7 +221,35 @@ class EndpointTrie {
             
             StdString currentSegment = segments[index];
             
-            // Try literal match first
+            // Special handling for empty segment (trailing slash)
+            // If we encounter an empty segment, prefer exact endpoint match over variable match
+            if (currentSegment.empty()) {
+                // First check if current node is an endpoint (exact match)
+                if (node->IsEndpoint()) {
+                    return EndpointMatchResult(node->GetEndpointPattern(), variables);
+                }
+                // If not, try variable match (but only if no exact match found)
+                const Map<StdString, EndpointTrieNode*>& varChildren = node->GetVariableChildren();
+                for (const auto& pair : varChildren) {
+                    StdString varName = pair.first;
+                    EndpointTrieNode* varChild = pair.second;
+                    
+                    // Store the variable value (empty string for trailing slash)
+                    variables[varName] = currentSegment;
+                    
+                    // Continue search with next segment
+                    EndpointMatchResult result = SearchRecursive(varChild, segments, index + 1, variables);
+                    if (result.found) {
+                        return result;
+                    }
+                    
+                    // Backtrack: remove the variable we just tried
+                    variables.erase(varName);
+                }
+                return EndpointMatchResult();  // No match
+            }
+            
+            // For non-empty segments, try literal match first
             EndpointTrieNode* literalChild = node->GetLiteralChild(currentSegment);
             if (literalChild != nullptr) {
                 EndpointMatchResult result = SearchRecursive(literalChild, segments, index + 1, variables);
