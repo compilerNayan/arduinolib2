@@ -307,7 +307,7 @@ def _parse_single_parameter(param_str: str) -> Optional[Dict[str, str]]:
     Parse a single parameter string with annotation.
     
     Args:
-        param_str: Parameter string (e.g., "/* @RequestBody */ SomeInputDto inputDto")
+        param_str: Parameter string (e.g., "/* @RequestBody */ SomeInputDto inputDto" or "/* @RequestBody */ HelloRequestDto /* request */")
         
     Returns:
         Dictionary with 'type', 'subType', 'class_name', 'param_name', or None if parsing fails
@@ -333,6 +333,11 @@ def _parse_single_parameter(param_str: str) -> Optional[Dict[str, str]]:
     if not param_type:
         param_type = "RequestBody"
     
+    # Remove inline comments (e.g., "/* request */" or "// request")
+    # Pattern to match C-style comments /* ... */ and C++ style comments // ...
+    comment_pattern = re.compile(r'/\*.*?\*/|//.*?$', re.MULTILINE)
+    param_str = comment_pattern.sub('', param_str).strip()
+    
     # Clean up trailing commas
     param_str = param_str.rstrip(',').strip()
     
@@ -345,6 +350,7 @@ def _parse_single_parameter(param_str: str) -> Optional[Dict[str, str]]:
     # - Const types: "const int x"
     # - Template types: "std::vector<int> x" or "Vector<SomeType> x"
     # - Complex types: "SomeInputDto x"
+    # - Types with comments but no param name: "HelloRequestDto /* request */" -> just extract type
     # The parameter name is the last identifier (word that's not part of a template/type)
     
     # Find the last identifier that's not part of angle brackets
@@ -364,19 +370,45 @@ def _parse_single_parameter(param_str: str) -> Optional[Dict[str, str]]:
             break
     
     if last_space_pos == -1:
-        # No space found, might be a single word (unlikely for a parameter, but handle it)
-        return None
-    
-    # Split at the last space
-    class_name = param_str[:last_space_pos].strip()
-    param_name = param_str[last_space_pos + 1:].strip()
+        # No space found - might be just a type name without parameter name
+        # This can happen with commented parameters like "HelloRequestDto /* request */"
+        # In this case, use the type name as both class_name and generate a dummy param_name
+        class_name = param_str.strip()
+        if not class_name:
+            return None
+        # Generate a parameter name from the type (remove namespace, take last part)
+        param_name_parts = class_name.split('::')
+        last_part = param_name_parts[-1].strip()
+        # Remove template parameters if any
+        if '<' in last_part:
+            last_part = last_part[:last_part.index('<')].strip()
+        # Convert to camelCase for parameter name (e.g., "HelloRequestDto" -> "helloRequestDto")
+        if last_part:
+            param_name = last_part[0].lower() + last_part[1:] if len(last_part) > 1 else last_part.lower()
+        else:
+            param_name = "param"
+    else:
+        # Split at the last space
+        class_name = param_str[:last_space_pos].strip()
+        param_name = param_str[last_space_pos + 1:].strip()
     
     # Clean up
     class_name = class_name.rstrip(',').strip()
     param_name = param_name.rstrip(',').strip()
     
-    if not class_name or not param_name:
+    if not class_name:
         return None
+    
+    # If param_name is empty, generate one from class_name
+    if not param_name:
+        param_name_parts = class_name.split('::')
+        last_part = param_name_parts[-1].strip()
+        if '<' in last_part:
+            last_part = last_part[:last_part.index('<')].strip()
+        if last_part:
+            param_name = last_part[0].lower() + last_part[1:] if len(last_part) > 1 else last_part.lower()
+        else:
+            param_name = "param"
     
     return {
         'type': param_type,
