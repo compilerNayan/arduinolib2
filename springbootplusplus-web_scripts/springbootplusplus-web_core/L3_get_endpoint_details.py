@@ -155,6 +155,237 @@ def parse_function_signature(line: str) -> Optional[Dict[str, str]]:
     }
 
 
+def parse_function_signature_advanced(line: str) -> Optional[Dict[str, Any]]:
+    """
+    Parse a function signature with Spring Boot-like annotations to extract return type, 
+    function name, and all parameters with their annotations.
+    
+    Supports annotations like:
+    - /* @RequestBody */ SomeInputDto inputDto
+    - /* @PathVariable("xyz") */ StdString someXyz
+    - /* @PathVariable("abc") */ const int abc
+    
+    Args:
+        line: Function signature line (e.g., "Void SomeFun(/* @RequestBody */ SomeInputDto inputDto, /* @PathVariable("xyz") */ StdString someXyz)")
+        
+    Returns:
+        Dictionary with 'return_type', 'function_name', and 'parameters' (list of parameter dicts),
+        or None if parsing fails.
+        Each parameter dict contains:
+        - 'type': "RequestBody" or "PathVariable"
+        - 'subType': Path variable name (e.g., "xyz") or empty string for RequestBody
+        - 'class_name': Parameter type (e.g., "SomeInputDto", "StdString", "const int")
+        - 'param_name': Parameter name (e.g., "inputDto", "someXyz")
+    """
+    # Pattern to match function signature
+    # Matches: ReturnType functionName(...)
+    # We need to find the opening parenthesis and then match everything until the matching closing parenthesis
+    # This handles cases where there are parentheses inside annotations like @PathVariable("xyz")
+    
+    stripped_line = line.strip()
+    
+    # Find the function name pattern first
+    function_name_pattern = r'([A-Za-z_][A-Za-z0-9_<>*&:,\s]*?)\s+([A-Za-z_][A-Za-z0-9_]*)\s*\('
+    name_match = re.search(function_name_pattern, stripped_line)
+    if not name_match:
+        return None
+    
+    return_type = name_match.group(1).strip()
+    function_name = name_match.group(2).strip()
+    
+    # Find the position of the opening parenthesis
+    open_paren_pos = name_match.end() - 1  # Position of the '('
+    
+    # Now find the matching closing parenthesis, accounting for nested parentheses in annotations
+    paren_depth = 0
+    in_string = False
+    string_char = None
+    i = open_paren_pos
+    
+    while i < len(stripped_line):
+        char = stripped_line[i]
+        
+        # Track string boundaries (for strings in annotations like "xyz")
+        if char in ['"', "'"] and (i == 0 or stripped_line[i-1] != '\\'):
+            if not in_string:
+                in_string = True
+                string_char = char
+            elif char == string_char:
+                in_string = False
+                string_char = None
+        
+        # Track parentheses depth (only when not in string)
+        if not in_string:
+            if char == '(':
+                paren_depth += 1
+            elif char == ')':
+                paren_depth -= 1
+                if paren_depth == 0:
+                    # Found matching closing parenthesis
+                    args_str = stripped_line[open_paren_pos + 1:i].strip()
+                    break
+        i += 1
+    else:
+        # No matching closing parenthesis found
+        return None
+    
+    parameters = []
+    
+    if args_str:
+        # Split arguments by comma, but be careful with nested structures and annotations
+        # We'll parse character by character to handle nested structures
+        current_param = ""
+        angle_bracket_depth = 0  # For template types like std::vector<int>
+        paren_depth = 0  # For nested parentheses
+        in_annotation = False  # Track if we're inside /* ... */ annotation
+        
+        i = 0
+        while i < len(args_str):
+            char = args_str[i]
+            
+            # Check for annotation boundaries (2-character sequences)
+            if i < len(args_str) - 1:
+                two_chars = args_str[i:i+2]
+                
+                # Check for start of annotation /* 
+                if two_chars == '/*' and not in_annotation:
+                    in_annotation = True
+                    current_param += two_chars
+                    i += 2
+                    continue
+                # Check for end of annotation */
+                elif two_chars == '*/' and in_annotation:
+                    in_annotation = False
+                    current_param += two_chars
+                    i += 2
+                    continue
+            
+            # Track angle bracket depth (for template types like std::vector<int>)
+            if char == '<':
+                angle_bracket_depth += 1
+                current_param += char
+            elif char == '>':
+                angle_bracket_depth -= 1
+                current_param += char
+            # Track parentheses depth (for nested function calls or complex expressions)
+            elif char == '(':
+                paren_depth += 1
+                current_param += char
+            elif char == ')':
+                paren_depth -= 1
+                current_param += char
+            elif char == ',' and angle_bracket_depth == 0 and paren_depth == 0 and not in_annotation:
+                # Found a parameter separator (comma outside of templates, parentheses, and annotations)
+                param_str = current_param.strip()
+                if param_str:
+                    # Parse this parameter
+                    param_info = _parse_single_parameter(param_str)
+                    if param_info:
+                        parameters.append(param_info)
+                current_param = ""
+            else:
+                current_param += char
+            
+            i += 1
+        
+        # Don't forget the last parameter
+        if current_param.strip():
+            param_str = current_param.strip()
+            param_info = _parse_single_parameter(param_str)
+            if param_info:
+                parameters.append(param_info)
+    
+    return {
+        'return_type': return_type,
+        'function_name': function_name,
+        'parameters': parameters
+    }
+
+
+def _parse_single_parameter(param_str: str) -> Optional[Dict[str, str]]:
+    """
+    Parse a single parameter string with annotation.
+    
+    Args:
+        param_str: Parameter string (e.g., "/* @RequestBody */ SomeInputDto inputDto")
+        
+    Returns:
+        Dictionary with 'type', 'subType', 'class_name', 'param_name', or None if parsing fails
+    """
+    # Pattern to match annotation: /* @RequestBody */ or /* @PathVariable("xyz") */
+    annotation_pattern = re.compile(r'/\*\s*@(RequestBody|PathVariable)\s*(?:\(\s*["\']([^"\']+)["\']\s*\))?\s*\*/')
+    
+    # Find annotation
+    annotation_match = annotation_pattern.search(param_str)
+    
+    param_type = None
+    sub_type = ""
+    
+    if annotation_match:
+        param_type = annotation_match.group(1)  # "RequestBody" or "PathVariable"
+        if annotation_match.group(2):
+            sub_type = annotation_match.group(2)  # Path variable name (e.g., "xyz")
+        
+        # Remove annotation from param_str
+        param_str = annotation_pattern.sub('', param_str).strip()
+    
+    # If no annotation found, treat as RequestBody (backward compatibility)
+    if not param_type:
+        param_type = "RequestBody"
+    
+    # Clean up trailing commas
+    param_str = param_str.rstrip(',').strip()
+    
+    if not param_str:
+        return None
+    
+    # Pattern to match parameter: TypeName paramName
+    # Handles:
+    # - Simple types: "int x"
+    # - Const types: "const int x"
+    # - Template types: "std::vector<int> x" or "Vector<SomeType> x"
+    # - Complex types: "SomeInputDto x"
+    # The parameter name is the last identifier (word that's not part of a template/type)
+    
+    # Find the last identifier that's not part of angle brackets
+    # We'll work backwards from the end
+    angle_bracket_depth = 0
+    last_space_pos = -1
+    
+    # Find the position of the last space that's outside of angle brackets
+    for i in range(len(param_str) - 1, -1, -1):
+        char = param_str[i]
+        if char == '>':
+            angle_bracket_depth += 1
+        elif char == '<':
+            angle_bracket_depth -= 1
+        elif char == ' ' and angle_bracket_depth == 0:
+            last_space_pos = i
+            break
+    
+    if last_space_pos == -1:
+        # No space found, might be a single word (unlikely for a parameter, but handle it)
+        return None
+    
+    # Split at the last space
+    class_name = param_str[:last_space_pos].strip()
+    param_name = param_str[last_space_pos + 1:].strip()
+    
+    # Clean up
+    class_name = class_name.rstrip(',').strip()
+    param_name = param_name.rstrip(',').strip()
+    
+    if not class_name or not param_name:
+        return None
+    
+    return {
+        'type': param_type,
+        'subType': sub_type,
+        'class_name': class_name,
+        'param_name': param_name
+    }
+
+
 def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, interface_name: str) -> List[Dict[str, Any]]:
     """
     Find all HTTP mapping endpoints (GetMapping, PostMapping, PutMapping, DeleteMapping, PatchMapping) 
@@ -255,47 +486,116 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
             print(f"[DEBUG] Non-empty mapping_path, concatenated: '{endpoint_url}'", file=sys.stderr)
         
         # Look ahead for function signature (within next few lines)
+        # Function signatures can span multiple lines, so we need to collect lines until we find a complete signature
         function_found = False
         function_details = None
         print(f"[DEBUG] Looking for function signature after line {i}...", file=sys.stderr)
         
-        for j in range(i + 1, min(i + 5, class_end + 1)):
+        # Collect lines for multi-line function signature
+        function_lines = []
+        function_start_line = None
+        paren_depth = 0
+        found_opening_paren = False
+        
+        for j in range(i + 1, min(i + 20, class_end + 1)):  # Increased range to handle multi-line signatures
             if j > len(lines):
                 break
             
-            next_line = lines[j - 1].strip()
-            
-            # Skip already processed annotations
-            if mapping_processed_pattern.search(next_line):
-                continue
+            next_line = lines[j - 1]  # Don't strip yet - we need to preserve structure
             
             # Skip already processed annotations
             if mapping_processed_pattern.search(next_line):
                 continue
             
             # Skip comments (but not annotations)
-            if next_line.startswith('/*'):
-                continue
+            if next_line.strip().startswith('/*') and not mapping_annotation_pattern.search(next_line):
+                # Check if it's a closing comment that might be part of parameter annotation
+                if '*/' in next_line:
+                    # Might be part of parameter annotation, include it
+                    pass
+                else:
+                    continue
             # Skip other single-line comments that aren't annotations
-            if next_line.startswith('//') and not mapping_annotation_pattern.search(next_line):
+            if next_line.strip().startswith('//') and not mapping_annotation_pattern.search(next_line):
                 continue
             
-            # Skip empty lines
-            if not next_line:
+            # Check if this line might be part of a function signature
+            # Look for return type pattern or opening parenthesis
+            stripped_next = next_line.strip()
+            
+            # If we haven't started collecting, look for return type pattern
+            if not function_lines:
+                # Pattern to match return type and function name: ReturnType functionName(
+                function_start_pattern = r'([A-Za-z_][A-Za-z0-9_<>*&:,\s]*?)\s+([A-Za-z_][A-Za-z0-9_]*)\s*\('
+                if re.search(function_start_pattern, stripped_next):
+                    function_start_line = j
+                    function_lines.append(next_line.rstrip('\n'))
+                    found_opening_paren = True
+                    paren_depth = stripped_next.count('(') - stripped_next.count(')')
+                    # If parentheses are balanced on this line, we have a single-line function
+                    if paren_depth == 0:
+                        # Single-line function signature
+                        function_signature = ' '.join(function_lines)
+                        func_details = parse_function_signature_advanced(function_signature)
+                        if func_details:
+                            print(f"[DEBUG] Found single-line function signature at line {j}: {stripped_next[:80]}...", file=sys.stderr)
+                            function_found = True
+                            function_details = func_details
+                            break
+                    continue
+            
+            # If we're collecting function lines, add this line
+            if function_lines:
+                function_lines.append(next_line.rstrip('\n'))
+                # Update parenthesis depth
+                paren_depth += stripped_next.count('(') - stripped_next.count(')')
+                
+                # If parentheses are balanced, we've found the complete function signature
+                if paren_depth == 0:
+                    # Join all lines to form complete function signature
+                    function_signature = ' '.join(function_lines)
+                    func_details = parse_function_signature_advanced(function_signature)
+                    if func_details:
+                        function_end_line = j
+                        print(f"[DEBUG] Found multi-line function signature starting at line {function_start_line}, ending at line {function_end_line}", file=sys.stderr)
+                        print(f"[DEBUG] Function signature: {function_signature[:100]}...", file=sys.stderr)
+                        print(f"[DEBUG] Function details: name={func_details['function_name']}, return_type={func_details['return_type']}, params={len(func_details.get('parameters', []))}", file=sys.stderr)
+                        function_found = True
+                        function_details = func_details
+                        break
+                    else:
+                        # Failed to parse, reset and continue
+                        function_lines = []
+                        function_start_line = None
+                        paren_depth = 0
+                        found_opening_paren = False
                 continue
             
-            # Check if this is a function signature
-            func_details = parse_function_signature(next_line)
-            if func_details:
-                print(f"[DEBUG] Found function signature at line {j}: {next_line}", file=sys.stderr)
-                print(f"[DEBUG] Function details: name={func_details['function_name']}, return_type={func_details['return_type']}, first_arg={func_details['first_arg_type']}", file=sys.stderr)
-                function_found = True
-                function_details = func_details
+            # If we haven't found a function start and this line doesn't look like one, skip it
+            # But allow a few empty lines between annotation and function
+            if not stripped_next:
+                continue
+            
+            # If we've gone too far without finding a function, stop looking
+            if j > i + 10 and not function_lines:
                 break
-            else:
-                print(f"[DEBUG] Line {j} is not a function signature: '{next_line[:50]}...'", file=sys.stderr)
         
         if function_found and function_details:
+                # Handle both old format (first_arg_type) and new format (parameters)
+                first_arg_type = ""
+                if 'first_arg_type' in function_details:
+                    # Old format
+                    first_arg_type = function_details['first_arg_type']
+                elif 'parameters' in function_details and function_details['parameters']:
+                    # New format - get first RequestBody parameter, or first parameter if no RequestBody
+                    for param in function_details['parameters']:
+                        if param.get('type') == 'RequestBody':
+                            first_arg_type = param.get('class_name', '')
+                            break
+                    if not first_arg_type and function_details['parameters']:
+                        # No RequestBody found, use first parameter
+                        first_arg_type = function_details['parameters'][0].get('class_name', '')
+                
                 endpoint_info = {
                     'endpoint_url': endpoint_url,
                     'http_method': http_method,
@@ -303,11 +603,12 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
                     'mapping_path': mapping_path,
                     'function_name': function_details['function_name'],
                     'return_type': function_details['return_type'],
-                    'first_arg_type': function_details['first_arg_type'],
+                    'first_arg_type': first_arg_type,
+                    'parameters': function_details.get('parameters', []),  # Include full parameters list
                     'class_name': class_name,
                     'interface_name': interface_name,
                     'mapping_line': i,
-                    'function_line': j if function_found else None
+                    'function_line': function_start_line if function_start_line else None
                 }
                 print(f"[DEBUG] Adding endpoint: {http_method} {endpoint_url} -> {function_details['function_name']}", file=sys.stderr)
                 endpoints.append(endpoint_info)
@@ -445,6 +746,8 @@ __all__ = [
     'find_class_and_interface',
     'find_class_boundaries',
     'parse_function_signature',
+    'parse_function_signature_advanced',
+    '_parse_single_parameter',
     'find_mapping_endpoints',
     'get_endpoint_details',
     'display_endpoint_details',
