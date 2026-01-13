@@ -7,7 +7,7 @@ function pointer template based on the HTTP method (GET, POST, PUT, DELETE, PATC
 
 import argparse
 import sys
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Any
 
 
 def get_mapping_variable_name(http_method: str) -> str:
@@ -94,6 +94,103 @@ def generate_function_pointer(
     return code
 
 
+def generate_function_pointer_advanced(formatted_endpoint: Dict[str, Any]) -> str:
+    """
+    Generate function pointer code for an HTTP mapping endpoint using advanced parameter parsing.
+    
+    This function generates code that handles:
+    - RequestBody parameters (deserialized from payload)
+    - PathVariable parameters (extracted from variables map using ConvertToType)
+    - Void and non-void return types
+    
+    Args:
+        formatted_endpoint: Dictionary with the structure from format_endpoint_with_advanced_signature():
+            {
+                'controller_interface_name': str,  # e.g., "IMyController"
+                'complete_url': str,               # e.g., "/myUrlTee/somePost2ee"
+                'endpoint_type': str,              # "POST", "PUT", "GET", "DELETE", "PATCH"
+                'return_type': str,                # e.g., "Void", "MyReturnDto", "int"
+                'function_name': str,              # e.g., "SomeFun", "CreateUser"
+                'parameters': List[Dict]           # List of parameter dictionaries
+            }
+    
+    Returns:
+        Generated function pointer code as string
+    """
+    # Extract endpoint information
+    controller_interface = formatted_endpoint.get('controller_interface_name', '')
+    complete_url = formatted_endpoint.get('complete_url', '')
+    endpoint_type = formatted_endpoint.get('endpoint_type', '').upper()  # Ensure uppercase
+    return_type = formatted_endpoint.get('return_type', '')
+    function_name = formatted_endpoint.get('function_name', '')
+    parameters = formatted_endpoint.get('parameters', [])
+    
+    # Get the mapping variable name based on HTTP method
+    mapping_var = get_mapping_variable_name(endpoint_type)
+    
+    # Clean return type: remove common C++ keywords
+    cleaned_return_type = return_type.strip()
+    keywords_to_remove = ['public', 'private', 'protected', 'virtual', 'static', 'const', 'override']
+    words = cleaned_return_type.split()
+    actual_type_words = [w for w in words if w.lower() not in keywords_to_remove]
+    cleaned_return_type = ' '.join(actual_type_words).strip()
+    
+    # Check if return type is void or Void (case-insensitive)
+    is_void = cleaned_return_type.lower() == "void"
+    
+    # Generate the function pointer code
+    code = f"{mapping_var}[\"{complete_url}\"] = [](CStdString payload, Map<StdString, StdString> variables) -> StdString {{\n"
+    code += "//                 AUTOWIRED\n"
+    code += f"    {controller_interface}Ptr controller = Implementation<{controller_interface}>::type::GetInstance();\n"
+    
+    # Build function call arguments
+    function_args = []
+    
+    for param in parameters:
+        param_type = param.get('type', '')
+        param_class_name = param.get('class_name', '')
+        param_sub_type = param.get('subType', '')  # Path variable name for PathVariable
+        
+        if param_type == 'RequestBody':
+            # Deserialize from payload
+            function_args.append(f"nayan::serializer::SerializationUtility::Deserialize<{param_class_name}>(payload)")
+        elif param_type == 'PathVariable':
+            # Extract from variables map and convert to type
+            # Strip 'const' and other qualifiers for ConvertToType template parameter
+            # ConvertToType needs the base type, not const-qualified
+            type_for_conversion = param_class_name.strip()
+            # Remove 'const' keyword if present
+            if type_for_conversion.startswith('const '):
+                type_for_conversion = type_for_conversion[6:].strip()
+            # Use ConvertToType to convert the string value to the appropriate type
+            function_args.append(f"ConvertToType<{type_for_conversion}>(variables[\"{param_sub_type}\"])")
+        else:
+            # Fallback: treat as RequestBody
+            function_args.append(f"nayan::serializer::SerializationUtility::Deserialize<{param_class_name}>(payload)")
+    
+    # Generate function call
+    if is_void:
+        # For void return types, don't store return value and return empty string
+        if function_args:
+            args_str = ", ".join(function_args)
+            code += f"    controller->{function_name}({args_str});\n"
+        else:
+            code += f"    controller->{function_name}();\n"
+        code += "    return \"\";\n"
+    else:
+        # For non-void return types, store return value and serialize it
+        if function_args:
+            args_str = ", ".join(function_args)
+            code += f"    Val returnValue = controller->{function_name}({args_str});\n"
+        else:
+            code += f"    Val returnValue = controller->{function_name}();\n"
+        code += "    return nayan::serializer::SerializationUtility::Serialize(returnValue);\n"
+    
+    code += "};"
+    
+    return code
+
+
 def main():
     """Main function to handle command line arguments and generate function pointer code."""
     parser = argparse.ArgumentParser(
@@ -170,6 +267,7 @@ def main():
 __all__ = [
     'get_mapping_variable_name',
     'generate_function_pointer',
+    'generate_function_pointer_advanced',
     'main'
 ]
 
