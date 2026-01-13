@@ -123,7 +123,7 @@ class EndpointTrieNode {
  * - /api/user/123/get -> matches /api/user/{userId}/get with variables {"userId": "123"}
  */
 class EndpointTrie {
-    Private:
+    Private
         EndpointTrieNode* root;
         
         /**
@@ -228,7 +228,7 @@ class EndpointTrie {
             return EndpointMatchResult();  // No match
         }
 
-    Public:
+    Public
         EndpointTrie() {
             root = new EndpointTrieNode();
         }
