@@ -225,18 +225,22 @@ class EndpointTrie {
             // If we encounter an empty segment, prefer exact endpoint match over variable match
             // This handles the case where /xyz/ should match /xyz instead of /xyz/{ssid}
             if (currentSegment.empty()) {
-                // First check if current node is an endpoint (exact match)
-                // This ensures /xyz/ matches /xyz when both /xyz and /xyz/{ssid} exist
-                if (node->IsEndpoint()) {
-                    return EndpointMatchResult(node->GetEndpointPattern(), variables);
-                }
-                // If current node is not an endpoint, check if we have more segments
-                // If we're at the last segment (empty), and no exact match, return no match
-                // This ensures /api/user/123/ doesn't match /api/user/{userId} if pattern has no trailing slash
+                // If we're at the last segment (trailing slash at end of path)
                 if (index + 1 >= segments.size()) {
-                    return EndpointMatchResult();  // No match - empty segment at end with no exact endpoint
+                    // Only match if current node is an endpoint AND we haven't consumed any variables
+                    // This ensures:
+                    // - /xyz/ matches /xyz (exact literal match, no variables consumed)
+                    // - /api/user/123/ does NOT match /api/user/{userId} (variable was consumed)
+                    if (node->IsEndpoint() && variables.empty()) {
+                        return EndpointMatchResult(node->GetEndpointPattern(), variables);
+                    }
+                    // If we consumed variables or node is not an endpoint, no match
+                    // This ensures paths with trailing slash don't match patterns without trailing slash
+                    // when variables were consumed
+                    return EndpointMatchResult();  // No match - trailing slash doesn't match pattern
                 }
-                // If there are more segments, try variable match
+                // If there are more segments after the empty one, try variable match
+                // (This handles cases like /api/{var}//something, though uncommon)
                 const Map<StdString, EndpointTrieNode*>& varChildren = node->GetVariableChildren();
                 for (const auto& pair : varChildren) {
                     StdString varName = pair.first;
