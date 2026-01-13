@@ -129,6 +129,8 @@ class EndpointTrie {
         /**
          * Split a path into segments
          * "/api/user/create" -> ["api", "user", "create"]
+         * "/api/user/123/" -> ["api", "user", "123", ""] (empty segment for trailing slash)
+         * "/api//user" -> ["api", "user"] (empty segments from // are filtered out)
          */
         Vector<StdString> SplitPath(const StdString& path) const {
             Vector<StdString> segments;
@@ -142,17 +144,39 @@ class EndpointTrie {
                 current = current.substr(1);
             }
             
+            // Check if there's a trailing slash (we'll preserve it as an empty segment)
+            Bool hasTrailingSlash = !current.empty() && current[current.length() - 1] == '/';
+            
+            // Remove trailing slash temporarily for splitting
+            if (hasTrailingSlash) {
+                current = current.substr(0, current.length() - 1);
+            }
+            
             // Split by '/'
             size_t start = 0;
             while (start < current.length()) {
                 size_t pos = current.find('/', start);
                 if (pos == StdString::npos) {
-                    segments.push_back(current.substr(start));
+                    StdString segment = current.substr(start);
+                    // Only add non-empty segments (filters out empty segments from // in middle)
+                    if (!segment.empty()) {
+                        segments.push_back(segment);
+                    }
                     break;
                 } else {
-                    segments.push_back(current.substr(start, pos - start));
+                    StdString segment = current.substr(start, pos - start);
+                    // Only add non-empty segments (handles multiple slashes like "//")
+                    if (!segment.empty()) {
+                        segments.push_back(segment);
+                    }
                     start = pos + 1;
                 }
+            }
+            
+            // Add empty segment at the end if there was a trailing slash
+            // This distinguishes "/api/user/123" from "/api/user/123/"
+            if (hasTrailingSlash) {
+                segments.push_back("");
             }
             
             return segments;
