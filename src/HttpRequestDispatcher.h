@@ -38,28 +38,39 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
         CStdString url = request->GetPath();
         CStdString payload = request->GetBody();
         EndpointMatchResult result = endpointTrie.Search(url);
+        if(result.found == false) {
+            return StdString();
+        }
         Val variables = result.variables;
-        switch (request->GetMethod()) {
-            case HttpMethod::GET:
-                return getMappings[url](payload, variables);
-            case HttpMethod::POST:
-                return postMappings[url](payload, variables);
-            case HttpMethod::PUT:
-                return putMappings[url](payload, variables);
-            case HttpMethod::PATCH:
-                return patchMappings[url](payload, variables);
-            case HttpMethod::DELETE:
-                return deleteMappings[url](payload, variables);
-            case HttpMethod::OPTIONS:
-                return optionsMappings[url](payload, variables);
-            case HttpMethod::HEAD:
-                return headMappings[url](payload, variables);
-            case HttpMethod::TRACE:
-                return traceMappings[url](payload, variables);
-            case HttpMethod::CONNECT:
-                return connectMappings[url](payload, variables);
-        } 
-        return StdString();
+        Val patternUrl = result.pattern;
+
+        try {
+            switch (request->GetMethod()) {
+                case HttpMethod::GET:
+                    return getMappings[patternUrl](payload, variables);
+                case HttpMethod::POST:
+                    return postMappings[patternUrl](payload, variables);
+                case HttpMethod::PUT:
+                    return putMappings[patternUrl](payload, variables);
+                case HttpMethod::PATCH:
+                    return patchMappings[patternUrl](payload, variables);
+                case HttpMethod::DELETE:
+                    return deleteMappings[patternUrl](payload, variables);
+                case HttpMethod::OPTIONS:
+                    return optionsMappings[patternUrl](payload, variables);
+                case HttpMethod::HEAD:
+                    return headMappings[patternUrl](payload, variables);
+                case HttpMethod::TRACE:
+                    return traceMappings[patternUrl](payload, variables);
+                case HttpMethod::CONNECT:
+                    return connectMappings[patternUrl](payload, variables);
+            } 
+            return StdString();
+    
+        } catch (const std::exception& e) {
+            return StdString("{\"error\":\"Internal Server Error\"}");
+        }
+
     }
 
     Private Void InitializeMappings() {
