@@ -1,0 +1,291 @@
+#ifndef ENDPOINT_TRIE_H
+#define ENDPOINT_TRIE_H
+
+#include <StandardDefines.h>
+#include <map>
+#include <vector>
+
+/**
+ * Result structure returned when matching an endpoint
+ */
+struct EndpointMatchResult {
+    StdString pattern;  // The matched endpoint pattern (e.g., "/api/user/{userId}/get")
+    Map<StdString, StdString> variables;  // Map of variable names to values (e.g., {"userId": "123"})
+    Bool found;  // Whether a match was found
+    
+    EndpointMatchResult() : found(false) {}
+    EndpointMatchResult(const StdString& pat, const Map<StdString, StdString>& vars) 
+        : pattern(pat), variables(vars), found(true) {}
+};
+
+/**
+ * Trie node for storing endpoint patterns
+ */
+class EndpointTrieNode {
+    Private
+        // Children for literal path segments (e.g., "user", "api")
+        Map<StdString, EndpointTrieNode*> literalChildren;
+        
+        // Child for variable path segments (e.g., "{userId}")
+        // Stores the variable name and the child node
+        Map<StdString, EndpointTrieNode*> variableChildren;  // key: variable name, value: child node
+        
+        // Endpoint pattern stored at this node (if this is a leaf)
+        StdString endpointPattern;
+        
+        // Whether this node represents a complete endpoint
+        Bool isEndpoint;
+        
+        // Count of literal children (for IsEmpty check)
+        Size literalChildrenCount;
+
+    Public
+        EndpointTrieNode() : isEndpoint(false), literalChildrenCount(0) {}
+        
+        ~EndpointTrieNode() {
+            // Clean up literal children
+            for (auto& pair : literalChildren) {
+                delete pair.second;
+            }
+            // Clean up variable children
+            for (auto& pair : variableChildren) {
+                delete pair.second;
+            }
+        }
+        
+        // Get or create a literal child node
+        EndpointTrieNode* GetOrCreateLiteralChild(const StdString& segment) {
+            if (literalChildren.find(segment) == literalChildren.end()) {
+                literalChildren[segment] = new EndpointTrieNode();
+                literalChildrenCount++;
+            }
+            return literalChildren[segment];
+        }
+        
+        // Get or create a variable child node
+        EndpointTrieNode* GetOrCreateVariableChild(const StdString& variableName) {
+            if (variableChildren.find(variableName) == variableChildren.end()) {
+                variableChildren[variableName] = new EndpointTrieNode();
+            }
+            return variableChildren[variableName];
+        }
+        
+        // Get literal child if exists
+        EndpointTrieNode* GetLiteralChild(const StdString& segment) const {
+            auto it = literalChildren.find(segment);
+            if (it != literalChildren.end()) {
+                return it->second;
+            }
+            return nullptr;
+        }
+        
+        // Get all variable children (for matching)
+        const Map<StdString, EndpointTrieNode*>& GetVariableChildren() const {
+            return variableChildren;
+        }
+        
+        // Set endpoint pattern at this node
+        Void SetEndpointPattern(const StdString& pattern) {
+            endpointPattern = pattern;
+            isEndpoint = true;
+        }
+        
+        // Get endpoint pattern
+        StdString GetEndpointPattern() const {
+            return endpointPattern;
+        }
+        
+        // Check if this is an endpoint node
+        Bool IsEndpoint() const {
+            return isEndpoint;
+        }
+        
+        // Get count of literal children
+        Size GetLiteralChildrenCount() const {
+            return literalChildrenCount;
+        }
+        
+        // Check if node has any children
+        Bool HasChildren() const {
+            return literalChildrenCount > 0 || !variableChildren.empty();
+        }
+};
+
+/**
+ * Trie data structure for storing and matching HTTP endpoint patterns with path variables
+ * 
+ * Supports patterns like:
+ * - /api/user/create
+ * - /api/user/{userId}/get
+ * - /hello/{mno}/{pqr}/{def}
+ * 
+ * Can match actual paths like:
+ * - /api/user/123/get -> matches /api/user/{userId}/get with variables {"userId": "123"}
+ */
+class EndpointTrie {
+    Private:
+        EndpointTrieNode* root;
+        
+        /**
+         * Split a path into segments
+         * "/api/user/create" -> ["api", "user", "create"]
+         */
+        Vector<StdString> SplitPath(const StdString& path) const {
+            Vector<StdString> segments;
+            if (path.empty() || path == "/") {
+                return segments;
+            }
+            
+            StdString current = path;
+            // Remove leading slash
+            if (current[0] == '/') {
+                current = current.substr(1);
+            }
+            
+            // Split by '/'
+            size_t start = 0;
+            while (start < current.length()) {
+                size_t pos = current.find('/', start);
+                if (pos == StdString::npos) {
+                    segments.push_back(current.substr(start));
+                    break;
+                } else {
+                    segments.push_back(current.substr(start, pos - start));
+                    start = pos + 1;
+                }
+            }
+            
+            return segments;
+        }
+        
+        /**
+         * Check if a segment is a variable (starts with '{' and ends with '}')
+         */
+        Bool IsVariableSegment(const StdString& segment) const {
+            return segment.length() >= 2 && 
+                   segment[0] == '{' && 
+                   segment[segment.length() - 1] == '}';
+        }
+        
+        /**
+         * Extract variable name from segment
+         * "{userId}" -> "userId"
+         */
+        StdString ExtractVariableName(const StdString& segment) const {
+            if (IsVariableSegment(segment)) {
+                return segment.substr(1, segment.length() - 2);
+            }
+            return "";
+        }
+        
+        /**
+         * Recursive search helper
+         */
+        EndpointMatchResult SearchRecursive(
+            EndpointTrieNode* node,
+            const Vector<StdString>& segments,
+            size_t index,
+            Map<StdString, StdString>& variables
+        ) const {
+            // If we've processed all segments
+            if (index >= segments.size()) {
+                if (node->IsEndpoint()) {
+                    return EndpointMatchResult(node->GetEndpointPattern(), variables);
+                }
+                return EndpointMatchResult();  // No match
+            }
+            
+            StdString currentSegment = segments[index];
+            
+            // Try literal match first
+            EndpointTrieNode* literalChild = node->GetLiteralChild(currentSegment);
+            if (literalChild != nullptr) {
+                EndpointMatchResult result = SearchRecursive(literalChild, segments, index + 1, variables);
+                if (result.found) {
+                    return result;
+                }
+            }
+            
+            // Try variable match (try all variable children)
+            const Map<StdString, EndpointTrieNode*>& varChildren = node->GetVariableChildren();
+            for (const auto& pair : varChildren) {
+                StdString varName = pair.first;
+                EndpointTrieNode* varChild = pair.second;
+                
+                // Store the variable value
+                variables[varName] = currentSegment;
+                
+                // Continue search
+                EndpointMatchResult result = SearchRecursive(varChild, segments, index + 1, variables);
+                if (result.found) {
+                    return result;
+                }
+                
+                // Backtrack: remove the variable we just tried
+                variables.erase(varName);
+            }
+            
+            return EndpointMatchResult();  // No match
+        }
+
+    Public:
+        EndpointTrie() {
+            root = new EndpointTrieNode();
+        }
+        
+        ~EndpointTrie() {
+            delete root;
+        }
+        
+        /**
+         * Insert an endpoint pattern into the trie
+         * 
+         * @param pattern The endpoint pattern (e.g., "/api/user/{userId}/get")
+         */
+        Void Insert(const StdString& pattern) {
+            Vector<StdString> segments = SplitPath(pattern);
+            EndpointTrieNode* current = root;
+            
+            for (const StdString& segment : segments) {
+                if (IsVariableSegment(segment)) {
+                    StdString varName = ExtractVariableName(segment);
+                    current = current->GetOrCreateVariableChild(varName);
+                } else {
+                    current = current->GetOrCreateLiteralChild(segment);
+                }
+            }
+            
+            // Mark as endpoint
+            current->SetEndpointPattern(pattern);
+        }
+        
+        /**
+         * Search for a matching endpoint pattern
+         * 
+         * @param path The actual path to match (e.g., "/api/user/123/get")
+         * @return EndpointMatchResult containing the matched pattern and variable values
+         */
+        EndpointMatchResult Search(const StdString& path) const {
+            Vector<StdString> segments = SplitPath(path);
+            Map<StdString, StdString> variables;
+            return SearchRecursive(root, segments, 0, variables);
+        }
+        
+        /**
+         * Check if the trie is empty
+         */
+        Bool IsEmpty() const {
+            return !root->IsEndpoint() && !root->HasChildren();
+        }
+        
+        /**
+         * Clear all endpoints from the trie
+         */
+        Void Clear() {
+            delete root;
+            root = new EndpointTrieNode();
+        }
+};
+
+#endif // ENDPOINT_TRIE_H
+
