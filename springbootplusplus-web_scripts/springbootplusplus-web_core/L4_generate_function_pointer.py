@@ -6,7 +6,6 @@ function pointer template based on the HTTP method (GET, POST, PUT, DELETE, PATC
 """
 
 import argparse
-import sys
 from typing import Dict, Optional, List, Any
 
 
@@ -61,11 +60,6 @@ def generate_function_pointer(
     
     # Check if return type is void or Void (case-insensitive)
     is_void = cleaned_return_type.lower() == "void"
-    
-    # Debug logging
-    print(f"[DEBUG] Original return_type: '{return_type}'", file=sys.stderr)
-    print(f"[DEBUG] Cleaned return_type: '{cleaned_return_type}'", file=sys.stderr)
-    print(f"[DEBUG] is_void: {is_void}", file=sys.stderr)
     
     # Generate the function pointer code
     code = f"{mapping_var}[\"{url}\"] = [](CStdString arg) -> StdString {{\n"
