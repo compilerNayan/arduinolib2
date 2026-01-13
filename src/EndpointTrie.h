@@ -223,12 +223,20 @@ class EndpointTrie {
             
             // Special handling for empty segment (trailing slash)
             // If we encounter an empty segment, prefer exact endpoint match over variable match
+            // This handles the case where /xyz/ should match /xyz instead of /xyz/{ssid}
             if (currentSegment.empty()) {
                 // First check if current node is an endpoint (exact match)
+                // This ensures /xyz/ matches /xyz when both /xyz and /xyz/{ssid} exist
                 if (node->IsEndpoint()) {
                     return EndpointMatchResult(node->GetEndpointPattern(), variables);
                 }
-                // If not, try variable match (but only if no exact match found)
+                // If current node is not an endpoint, check if we have more segments
+                // If we're at the last segment (empty), and no exact match, return no match
+                // This ensures /api/user/123/ doesn't match /api/user/{userId} if pattern has no trailing slash
+                if (index + 1 >= segments.size()) {
+                    return EndpointMatchResult();  // No match - empty segment at end with no exact endpoint
+                }
+                // If there are more segments, try variable match
                 const Map<StdString, EndpointTrieNode*>& varChildren = node->GetVariableChildren();
                 for (const auto& pair : varChildren) {
                     StdString varName = pair.first;
