@@ -129,21 +129,19 @@ def process_all_files(file_paths: List[str]) -> Dict[str, List[Dict[str, Any]]]:
 def generate_code_for_endpoint(endpoint: Dict[str, Any]) -> str:
     """
     Generate function pointer code for a single endpoint.
+    Uses the advanced function signature parsing to handle RequestBody and PathVariable parameters.
     
     Args:
-        endpoint: Endpoint dictionary with all details
+        endpoint: Endpoint dictionary with all details (from find_mapping_endpoints or get_endpoint_details)
         
     Returns:
         Generated code string
     """
-    return L4_generate_function_pointer.generate_function_pointer(
-        url=endpoint['endpoint_url'],
-        http_method=endpoint['http_method'],
-        function_name=endpoint['function_name'],
-        return_type=endpoint['return_type'],
-        first_arg_type=endpoint['first_arg_type'] if endpoint['first_arg_type'] else "",
-        interface_name=endpoint['interface_name']
-    )
+    # Format the endpoint to the advanced structure
+    formatted_endpoint = L3_get_endpoint_details.format_endpoint_with_advanced_signature(endpoint)
+    
+    # Generate code using the advanced function
+    return L4_generate_function_pointer.generate_function_pointer_advanced(formatted_endpoint)
 
 
 def generate_code_for_file(file_path: str) -> Optional[str]:
