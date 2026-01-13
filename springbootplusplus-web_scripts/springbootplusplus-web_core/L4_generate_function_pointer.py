@@ -138,8 +138,36 @@ def generate_function_pointer_advanced(formatted_endpoint: Dict[str, Any]) -> st
     # Check if return type is void or Void (case-insensitive)
     is_void = cleaned_return_type.lower() == "void"
     
+    # Check which parameters are used
+    has_request_body = False
+    has_path_variable = False
+    
+    for param in parameters:
+        param_type = param.get('type', '')
+        if param_type == 'RequestBody':
+            has_request_body = True
+        elif param_type == 'PathVariable':
+            has_path_variable = True
+        else:
+            # Fallback: treat as RequestBody
+            has_request_body = True
+    
+    # Generate lambda signature with commented unused parameters
+    if has_request_body and has_path_variable:
+        # Both are used
+        lambda_signature = "[](CStdString payload, Map<StdString, StdString> variables) -> StdString"
+    elif has_request_body and not has_path_variable:
+        # Only payload is used
+        lambda_signature = "[](CStdString payload, Map<StdString, StdString> /*variables*/) -> StdString"
+    elif not has_request_body and has_path_variable:
+        # Only variables is used
+        lambda_signature = "[](CStdString /*payload*/, Map<StdString, StdString> variables) -> StdString"
+    else:
+        # Neither is used (no parameters)
+        lambda_signature = "[](CStdString /*payload*/, Map<StdString, StdString> /*variables*/) -> StdString"
+    
     # Generate the function pointer code
-    code = f"{mapping_var}[\"{complete_url}\"] = [](CStdString payload, Map<StdString, StdString> variables) -> StdString {{\n"
+    code = f"{mapping_var}[\"{complete_url}\"] = {lambda_signature} {{\n"
     code += "//                 AUTOWIRED\n"
     code += f"    {controller_interface}Ptr controller = Implementation<{controller_interface}>::type::GetInstance();\n"
     
