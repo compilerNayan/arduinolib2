@@ -741,6 +741,84 @@ def main():
     return result
 
 
+def format_endpoint_with_advanced_signature(endpoint: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Format endpoint information with advanced function signature parsing.
+    Transforms endpoint dictionary to include controller interface, complete URL, 
+    endpoint type, and full parameter details.
+    
+    Args:
+        endpoint: Endpoint dictionary from find_mapping_endpoints() or get_endpoint_details()
+        
+    Returns:
+        Dictionary with the following structure:
+        {
+            'controller_interface_name': str,  # e.g., "IMyController"
+            'complete_url': str,               # e.g., "/myUrlTee/somePost2ee"
+            'endpoint_type': str,              # "POST", "PUT", "GET", "DELETE", "PATCH"
+            'return_type': str,                # e.g., "Void", "MyReturnDto", "int"
+            'function_name': str,              # e.g., "SomeFun", "CreateUser"
+            'parameters': List[Dict]           # List of parameter dictionaries (maintains order)
+        }
+    """
+    # Extract or use existing parameters list
+    parameters = endpoint.get('parameters', [])
+    
+    # If parameters list is empty but we have function details, try to parse from function signature
+    if not parameters and 'function_signature' in endpoint:
+        # This would require the full function signature string
+        # For now, we'll rely on the parameters already being parsed
+        pass
+    
+    return {
+        'controller_interface_name': endpoint.get('interface_name', ''),
+        'complete_url': endpoint.get('endpoint_url', ''),
+        'endpoint_type': endpoint.get('http_method', ''),  # Already in uppercase (GET, POST, etc.)
+        'return_type': endpoint.get('return_type', ''),
+        'function_name': endpoint.get('function_name', ''),
+        'parameters': parameters
+    }
+
+
+def get_endpoint_with_advanced_signature(
+    file_path: str, 
+    base_url: str
+) -> List[Dict[str, Any]]:
+    """
+    Get all endpoint details with advanced function signature parsing.
+    This is a convenience wrapper that combines get_endpoint_details() with 
+    format_endpoint_with_advanced_signature().
+    
+    Args:
+        file_path: Path to the C++ controller file
+        base_url: Base URL to concatenate with mapping paths
+        
+    Returns:
+        List of formatted endpoint dictionaries with the structure:
+        {
+            'controller_interface_name': str,
+            'complete_url': str,
+            'endpoint_type': str,
+            'return_type': str,
+            'function_name': str,
+            'parameters': List[Dict]
+        }
+    """
+    # Get endpoint details (this already uses parse_function_signature_advanced internally)
+    endpoint_details = get_endpoint_details(file_path, base_url)
+    
+    if not endpoint_details['success']:
+        return []
+    
+    # Format each endpoint
+    formatted_endpoints = []
+    for endpoint in endpoint_details['endpoints']:
+        formatted = format_endpoint_with_advanced_signature(endpoint)
+        formatted_endpoints.append(formatted)
+    
+    return formatted_endpoints
+
+
 # Export functions for other scripts to import
 __all__ = [
     'find_class_and_interface',
@@ -750,6 +828,8 @@ __all__ = [
     '_parse_single_parameter',
     'find_mapping_endpoints',
     'get_endpoint_details',
+    'format_endpoint_with_advanced_signature',
+    'get_endpoint_with_advanced_signature',
     'display_endpoint_details',
     'main'
 ]
