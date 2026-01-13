@@ -191,7 +191,8 @@ def generate_function_pointer_advanced(formatted_endpoint: Dict[str, Any]) -> st
             if type_for_conversion.startswith('const '):
                 type_for_conversion = type_for_conversion[6:].strip()
             # Use ConvertToType to convert the string value to the appropriate type
-            function_args.append(f"ConvertToType<{type_for_conversion}>(variables[\"{param_sub_type}\"])")
+            # Qualify with class name since it's a member function template
+            function_args.append(f"HttpRequestDispatcher::ConvertToType<{type_for_conversion}>(variables[\"{param_sub_type}\"])")
         else:
             # Fallback: treat as RequestBody
             function_args.append(f"nayan::serializer::SerializationUtility::Deserialize<{param_class_name}>(payload)")
