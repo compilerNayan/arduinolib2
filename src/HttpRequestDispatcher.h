@@ -163,14 +163,9 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
                 }
             }
         }
-        // Fallback: try to use stringstream for other types
+        // Fallback: for non-primitive, non-string types, use SerializationUtility::Deserialize
         else {
-            std::istringstream iss(str);
-            Type value;
-            if (!(iss >> value)) {
-                throw std::invalid_argument("Cannot convert string to type: " + StdString(str));
-            }
-            return value;
+            return nayan::serializer::SerializationUtility::Deserialize<Type>(str);
         }
     }
 
