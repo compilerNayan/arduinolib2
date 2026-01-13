@@ -10,6 +10,7 @@
 #include <type_traits>
 #include <algorithm>
 #include <cctype>
+#include <iomanip>
 
 #include "IHttpRequestDispatcher.h"
 
@@ -106,6 +107,49 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
         for (const auto& pair : connectMappings) {
             endpointTrie.Insert(pair.first);
         }
+    }
+
+    /**
+     * URL decode helper function
+     * Decodes percent-encoded strings (e.g., %20 -> space, %21 -> !)
+     * 
+     * @param str The URL-encoded string to decode
+     * @return The decoded string
+     */
+    Private Static StdString UrlDecode(CStdString str) {
+        StdString result;
+        result.reserve(str.length()); // Reserve space for efficiency
+        
+        for (size_t i = 0; i < str.length(); ++i) {
+            if (str[i] == '%' && i + 2 < str.length()) {
+                // Check if we have a valid percent-encoded sequence (%XX)
+                char c1 = str[i + 1];
+                char c2 = str[i + 2];
+                
+                // Check if both characters are hexadecimal digits
+                if (std::isxdigit(c1) && std::isxdigit(c2)) {
+                    // Convert hex digits to integer
+                    int value;
+                    std::istringstream hexStream(StdString(1, c1) + StdString(1, c2));
+                    hexStream >> std::hex >> value;
+                    
+                    // Add the decoded character
+                    result += static_cast<char>(value);
+                    i += 2; // Skip the next two characters (already processed)
+                } else {
+                    // Invalid percent encoding, keep the % as-is
+                    result += str[i];
+                }
+            } else if (str[i] == '+') {
+                // + is often used to represent space in URLs (though more common in query strings)
+                result += ' ';
+            } else {
+                // Regular character, add as-is
+                result += str[i];
+            }
+        }
+        
+        return result;
     }   
     /**
      * Template function to convert a string to a given type.
@@ -120,12 +164,13 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
      */
     Public template<typename Type>
     Static Type ConvertToType(CStdString str) {
-        // Handle string types - return as-is
+        // Handle string types - URL decode first, then return
         if constexpr (std::is_same_v<Type, StdString> || 
                       std::is_same_v<Type, CStdString> ||
                       std::is_same_v<Type, std::string> ||
                       std::is_same_v<Type, const std::string>) {
-            return StdString(str);
+            // URL decode the string (e.g., %20 -> space, My%20Name -> My Name)
+            return UrlDecode(str);
         }
         // Handle boolean types (bool, Bool, CBool)
         else if constexpr (std::is_same_v<Type, bool> || 
