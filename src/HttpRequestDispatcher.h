@@ -30,6 +30,7 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
 
     Public HttpRequestDispatcher() {
         InitializeMappings();
+        InsertMappingsToTrie();
     }
 
     Public ~HttpRequestDispatcher() = default;
@@ -77,6 +78,35 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
 
     }
 
+    Private Void InsertMappingsToTrie() {
+        for (const auto& pair : getMappings) {
+            endpointTrie.Insert(pair.first);
+        }
+        for (const auto& pair : postMappings) {
+            endpointTrie.Insert(pair.first);
+        }
+        for (const auto& pair : putMappings) {
+            endpointTrie.Insert(pair.first);
+        }
+        for (const auto& pair : patchMappings) {
+            endpointTrie.Insert(pair.first);
+        }
+        for (const auto& pair : deleteMappings) {
+            endpointTrie.Insert(pair.first);
+        }
+        for (const auto& pair : optionsMappings) {
+            endpointTrie.Insert(pair.first);
+        }
+        for (const auto& pair : headMappings) {
+            endpointTrie.Insert(pair.first);
+        }
+        for (const auto& pair : traceMappings) {
+            endpointTrie.Insert(pair.first);
+        }
+        for (const auto& pair : connectMappings) {
+            endpointTrie.Insert(pair.first);
+        }
+    }   
     /**
      * Template function to convert a string to a given type.
      * 
