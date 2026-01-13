@@ -78,7 +78,7 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
      * @return The converted value of type Type
      */
     template<typename Type>
-    Type ConvertToType(CStdString str) {
+    Static Type ConvertToType(CStdString str) {
         // Handle string types - return as-is
         if constexpr (std::is_same_v<Type, StdString> || 
                       std::is_same_v<Type, CStdString> ||
