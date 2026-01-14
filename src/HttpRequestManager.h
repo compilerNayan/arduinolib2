@@ -79,6 +79,14 @@ class HttpRequestManager final : public IHttpRequestManager {
         
         return processedAny;
     }
+    
+    Public Bool StartServer(CUInt port = DEFAULT_SERVER_PORT) override {
+        if (server == nullptr) {
+            return false;
+        }
+        
+        return server->Start(port);
+    }
 };
 
 #endif // HTTP_REQUEST_MANAGER_H

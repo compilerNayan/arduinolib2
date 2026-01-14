@@ -3,6 +3,7 @@
 
 #include <StandardDefines.h>
 #include <IHttpRequest.h>
+#include <IServer.h>
 
 // Forward declarations
 DefineStandardPointers(IHttpRequestManager)
@@ -31,6 +32,13 @@ class IHttpRequestManager {
      * @return true if at least one response was processed, false if queue was empty
      */
     Public Virtual Bool ProcessResponse() = 0;
+    
+    /**
+     * @brief Starts the server
+     * @param port Port number to listen on (default: DEFAULT_SERVER_PORT)
+     * @return true if server started successfully, false otherwise
+     */
+    Public Virtual Bool StartServer(CUInt port = DEFAULT_SERVER_PORT) = 0;
 };
 
 #endif // I_HTTP_REQUEST_MANAGER_H
