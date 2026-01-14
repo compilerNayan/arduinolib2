@@ -32,11 +32,10 @@ def find_scope_macros(file_path: str) -> List[Dict[str, str]]:
         # print(f"Error reading file '{file_path}': {e}")
         return []
     
-    # Pattern to match @Scope annotation with parameter
-    # Pattern: /// @Scope("SINGLETON") or /// @Scope("PROTOTYPE")
-    # Also check for already processed /* @Scope("...") */ pattern
-    scope_annotation_pattern = re.compile(r'///\s*@Scope\s*\(\s*["\'](PROTOTYPE|SINGLETON)["\']\s*\)')
-    scope_processed_pattern = re.compile(r'/\*\s*@Scope\s*\(\s*["\'](PROTOTYPE|SINGLETON)["\']\s*\)\s*\*/')
+    # Pattern to match @Scope annotation with parameter (search for /* @Scope("...") */ or /*@Scope("...")*/)
+    # Also check for already processed /*--@Scope("...")--*/ pattern
+    scope_annotation_pattern = re.compile(r'/\*\s*@Scope\s*\(\s*["\'](PROTOTYPE|SINGLETON)["\']\s*\)\s*\*/')
+    scope_processed_pattern = re.compile(r'/\*--\s*@Scope\s*\(\s*["\'](PROTOTYPE|SINGLETON)["\']\s*\)\s*--\*/')
     
     # Pattern to match class declarations
     class_pattern = r'class\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:[:{])'
@@ -48,11 +47,12 @@ def find_scope_macros(file_path: str) -> List[Dict[str, str]]:
         if scope_processed_pattern.search(stripped_line):
             continue
         
-        # Skip comments (but not the annotation itself which is in a comment)
-        if stripped_line.startswith('/*'):
+        # Skip other comments that aren't @Scope annotations
+        # But allow /* @Scope("...") */ annotations to be processed
+        if stripped_line.startswith('/*') and not scope_annotation_pattern.search(stripped_line):
             continue
-        # Skip other single-line comments that aren't the annotation
-        if stripped_line.startswith('//') and not scope_annotation_pattern.search(stripped_line):
+        # Skip single-line comments
+        if stripped_line.startswith('//'):
             continue
             
         # Check if line contains valid @Scope annotation
@@ -73,11 +73,12 @@ def find_scope_macros(file_path: str) -> List[Dict[str, str]]:
                     next_line = lines[i - 1].strip()
                     context_lines.append(next_line)
                     
-                    # Skip comments (but not annotations)
-                    if next_line.startswith('/*'):
+                    # Skip other comments that aren't annotations
+                    # But allow /* @Component */, /* @Scope */, /* @Autowired */ annotations to be processed
+                    if next_line.startswith('/*') and not re.search(r'/\*\s*@(Component|Scope|Autowired)\s*\*/', next_line):
                         continue
-                    # Skip other single-line comments that aren't annotations
-                    if next_line.startswith('//') and not re.search(r'///\s*@(Component|Scope|Autowired)\b', next_line):
+                    # Skip single-line comments
+                    if next_line.startswith('//'):
                         continue
                     
                     # Check for class declaration
@@ -420,7 +421,7 @@ def main():
 def mark_scope_annotation_processed(file_path: str) -> bool:
     """
     Mark @Scope annotation as processed in a C++ file.
-    Replaces /// @Scope("...") with /* @Scope("...") */.
+    Replaces /* @Scope("...") */ with /*--@Scope("...")--*/.
     
     Args:
         file_path: Path to the C++ file to modify
@@ -432,8 +433,8 @@ def mark_scope_annotation_processed(file_path: str) -> bool:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
         
-        scope_annotation_pattern = re.compile(r'///\s*@Scope\s*\(\s*["\'](PROTOTYPE|SINGLETON)["\']\s*\)')
-        scope_processed_pattern = re.compile(r'/\*\s*@Scope\s*\(\s*["\'](PROTOTYPE|SINGLETON)["\']\s*\)\s*\*/')
+        scope_annotation_pattern = re.compile(r'/\*\s*@Scope\s*\(\s*["\'](PROTOTYPE|SINGLETON)["\']\s*\)\s*\*/')
+        scope_processed_pattern = re.compile(r'/\*--\s*@Scope\s*\(\s*["\'](PROTOTYPE|SINGLETON)["\']\s*\)\s*--\*/')
         
         modified = False
         modified_lines = []
@@ -454,7 +455,7 @@ def mark_scope_annotation_processed(file_path: str) -> bool:
                 # Preserve the full annotation with parameter
                 full_annotation = scope_match.group(0)
                 scope_value = scope_match.group(1)
-                processed_line = f"{indent_str}/* @Scope(\"{scope_value}\") */\n"
+                processed_line = f"{indent_str}/*--@Scope(\"{scope_value}\")--*/\n"
                 modified_lines.append(processed_line)
                 modified = True
                 continue

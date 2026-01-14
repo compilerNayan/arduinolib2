@@ -34,10 +34,10 @@ def find_rest_controller_macros(file_path: str) -> List[Dict[str, str]]:
         # print(f"Error reading file '{file_path}': {e}")
         return []
     
-    # Pattern to match @RestController annotation
-    # Matches: /// @RestController
-    rest_controller_annotation_pattern = re.compile(r'///\s*@RestController\b')
-    rest_controller_processed_pattern = re.compile(r'/\*\s*@RestController\s*\*/')
+    # Pattern to match @RestController annotation (search for /* @RestController */ or /*@RestController*/)
+    # Also check for already processed /*--@RestController--*/ pattern
+    rest_controller_annotation_pattern = re.compile(r'/\*\s*@RestController\s*\*/')
+    rest_controller_processed_pattern = re.compile(r'/\*--\s*@RestController\s*--\*/')
     
     # Pattern to match legacy RestController macro (case sensitive)
     # Matches: RestController (standalone)
@@ -60,8 +60,12 @@ def find_rest_controller_macros(file_path: str) -> List[Dict[str, str]]:
         
         # If not annotation, check for legacy RestController macro
         if not is_annotation:
-            # Skip commented lines (but not annotations)
-            if stripped_line.startswith('//') or stripped_line.startswith('/*') or stripped_line.startswith('*'):
+            # Skip other comments that aren't @RestController annotations
+            # But allow /* @RestController */ annotations to be processed
+            if stripped_line.startswith('/*') and not rest_controller_annotation_pattern.search(stripped_line):
+                continue
+            # Skip single-line comments
+            if stripped_line.startswith('//') or stripped_line.startswith('*'):
                 continue
                 
             # Skip lines that are part of other text (not standalone RestController)
@@ -74,7 +78,7 @@ def find_rest_controller_macros(file_path: str) -> List[Dict[str, str]]:
                 continue
         
         # Found either annotation or macro
-        macro_text = "/// @RestController" if is_annotation else "RestController"
+        macro_text = "/* @RestController */" if is_annotation else "RestController"
         
         # Look ahead for class declaration (within next few lines)
         # Allow other annotations/macros to appear between RestController and class

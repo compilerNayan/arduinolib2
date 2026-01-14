@@ -5,7 +5,7 @@ L6 Generate Code for All Sources Script
 This script:
 1. Finds all C++ source files (using logic from L6_cpp_di_preprocessor.py)
 2. Generates endpoint code for each file using L5_generate_code_for_file.py
-3. Marks REST-related annotations as processed (/// @RestController, /// @RequestMapping, etc.) in processed files
+3. Marks REST-related annotations as processed (/* @RestController */, /* @RequestMapping("...") */, etc.) in processed files
 4. Stores valid results in a map
 5. Adds #include statements to EventDispatcher.h
 6. Updates InitializeMappings() function with all generated code
@@ -80,8 +80,8 @@ def find_cpp_files(include_paths: List[str], exclude_paths: List[str]) -> List[s
 
 def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
     """
-    Mark all REST-related annotations as processed (/// @RestController, /// @RequestMapping, etc.) in a C++ file.
-    Converts /// @Annotation to /* @Annotation */ and comments out legacy macros.
+    Mark all REST-related annotations as processed (/* @RestController */, /* @RequestMapping("...") */, etc.) in a C++ file.
+    Converts /* @Annotation */ to /*--@Annotation--*/ and comments out legacy macros.
     
     Args:
         file_path: Path to the C++ file to modify
@@ -94,18 +94,18 @@ def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
         
-        # Patterns for @RestController annotation
-        rest_controller_annotation_pattern = re.compile(r'///\s*@RestController\b')
-        rest_controller_processed_pattern = re.compile(r'/\*\s*@RestController\s*\*/')
+        # Patterns for @RestController annotation (search for /* @RestController */ or /*@RestController*/)
+        rest_controller_annotation_pattern = re.compile(r'/\*\s*@RestController\s*\*/')
+        rest_controller_processed_pattern = re.compile(r'/\*--\s*@RestController\s*--\*/')
         
-        # Patterns for REST mapping annotations
+        # Patterns for REST mapping annotations (search for /* @Annotation("...") */ or /*@Annotation("...")*/)
         rest_mapping_annotations = {
-            'RequestMapping': (re.compile(r'///\s*@RequestMapping\s*\(\s*["\']([^"\']+)["\']\s*\)'), re.compile(r'/\*\s*@RequestMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/')),
-            'GetMapping': (re.compile(r'///\s*@GetMapping\s*\(\s*["\']([^"\']+)["\']\s*\)'), re.compile(r'/\*\s*@GetMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/')),
-            'PostMapping': (re.compile(r'///\s*@PostMapping\s*\(\s*["\']([^"\']+)["\']\s*\)'), re.compile(r'/\*\s*@PostMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/')),
-            'PutMapping': (re.compile(r'///\s*@PutMapping\s*\(\s*["\']([^"\']+)["\']\s*\)'), re.compile(r'/\*\s*@PutMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/')),
-            'DeleteMapping': (re.compile(r'///\s*@DeleteMapping\s*\(\s*["\']([^"\']+)["\']\s*\)'), re.compile(r'/\*\s*@DeleteMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/')),
-            'PatchMapping': (re.compile(r'///\s*@PatchMapping\s*\(\s*["\']([^"\']+)["\']\s*\)'), re.compile(r'/\*\s*@PatchMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/'))
+            'RequestMapping': (re.compile(r'/\*\s*@RequestMapping\s*\(\s*["\']([^"\']+)["\']\s*\)\s*\*/'), re.compile(r'/\*--\s*@RequestMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*--\*/')),
+            'GetMapping': (re.compile(r'/\*\s*@GetMapping\s*\(\s*["\']([^"\']+)["\']\s*\)\s*\*/'), re.compile(r'/\*--\s*@GetMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*--\*/')),
+            'PostMapping': (re.compile(r'/\*\s*@PostMapping\s*\(\s*["\']([^"\']+)["\']\s*\)\s*\*/'), re.compile(r'/\*--\s*@PostMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*--\*/')),
+            'PutMapping': (re.compile(r'/\*\s*@PutMapping\s*\(\s*["\']([^"\']+)["\']\s*\)\s*\*/'), re.compile(r'/\*--\s*@PutMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*--\*/')),
+            'DeleteMapping': (re.compile(r'/\*\s*@DeleteMapping\s*\(\s*["\']([^"\']+)["\']\s*\)\s*\*/'), re.compile(r'/\*--\s*@DeleteMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*--\*/')),
+            'PatchMapping': (re.compile(r'/\*\s*@PatchMapping\s*\(\s*["\']([^"\']+)["\']\s*\)\s*\*/'), re.compile(r'/\*--\s*@PatchMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*--\*/'))
         }
         
         # Legacy REST-related macros (for backward compatibility, will be commented out)
@@ -130,7 +130,7 @@ def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
             if rest_controller_match:
                 indent = len(line) - len(line.lstrip())
                 indent_str = line[:indent]
-                processed_line = f"{indent_str}/* @RestController */\n"
+                processed_line = f"{indent_str}/*--@RestController--*/\n"
                 if not dry_run:
                     modified_lines.append(processed_line)
                 else:
@@ -150,8 +150,10 @@ def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
                 if annotation_match:
                     indent = len(line) - len(line.lstrip())
                     indent_str = line[:indent]
-                    full_annotation_content = annotation_match.group(0).strip()  # Get the full matched annotation string
-                    processed_line = f"{indent_str}/* {full_annotation_content.lstrip('/// ')} */\n"  # Remove '/// ' prefix
+                    # Extract the annotation name and path value
+                    annotation_name = annotation_name  # e.g., "GetMapping"
+                    path_value = annotation_match.group(1)  # Extract path from group 1
+                    processed_line = f"{indent_str}/*--@{annotation_name}(\"{path_value}\")--*/\n"
                     if not dry_run:
                         modified_lines.append(processed_line)
                     else:
@@ -163,11 +165,13 @@ def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
             if annotation_processed:
                 continue
             
-            # Skip already commented lines (but not annotations)
-            if stripped_line.startswith('/*'):
+            # Skip other comments that aren't REST annotations
+            # But allow /* @RestController */, /* @RequestMapping("...") */, etc. to be processed
+            if stripped_line.startswith('/*') and not (rest_controller_annotation_pattern.search(stripped_line) or any(ann[0].search(stripped_line) for ann in rest_mapping_annotations.values())):
                 modified_lines.append(line)
                 continue
-            if stripped_line.startswith('//') and not re.search(r'///\s*@(RestController|RequestMapping|GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\b', stripped_line):
+            # Skip single-line comments
+            if stripped_line.startswith('//'):
                 modified_lines.append(line)
                 continue
             

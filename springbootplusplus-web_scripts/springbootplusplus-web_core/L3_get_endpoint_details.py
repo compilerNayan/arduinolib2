@@ -83,10 +83,10 @@ def find_class_boundaries(file_path: str) -> Optional[Tuple[int, int]]:
     for line_num, line in enumerate(lines, 1):
         stripped_line = line.strip()
         
-        # Allow annotations (/// @...) to be present before the class, but skip other comments
-        if stripped_line.startswith('/*'):
+        # Allow annotations (/* @... */) to be present before the class, but skip other comments
+        if stripped_line.startswith('/*') and not re.search(r'/\*\s*@\w+', stripped_line):
             continue
-        if stripped_line.startswith('//') and not re.search(r'///\s*@\w+\b', stripped_line):
+        if stripped_line.startswith('//'):
             continue
         
         # Check if this is the class declaration line
@@ -446,11 +446,11 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
     
     endpoints = []
     
-    # Pattern to match any HTTP mapping annotation: /// @GetMapping("/path"), /// @PostMapping("/path"), etc.
-    # Also check for already processed /* @GetMapping("/path") */ pattern
+    # Pattern to match any HTTP mapping annotation (search for /* @GetMapping("/path") */ or /*@GetMapping("/path")*/)
+    # Also check for already processed /*--@GetMapping("/path")--*/ pattern
     # Note: [^"\']* allows empty strings (zero or more characters), not [^"\']+ (one or more)
-    mapping_annotation_pattern = re.compile(r'///\s*@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\s*\(\s*["\']([^"\']*)["\']\s*\)')
-    mapping_processed_pattern = re.compile(r'/\*\s*@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\s*\(\s*["\'][^"\']*["\']\s*\)\s*\*/')
+    mapping_annotation_pattern = re.compile(r'/\*\s*@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\s*\(\s*["\']([^"\']*)["\']\s*\)\s*\*/')
+    mapping_processed_pattern = re.compile(r'/\*--\s*@(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\s*\(\s*["\'][^"\']*["\']\s*\)\s*--\*/')
     
     # Pattern to match legacy HTTP mapping macros (for backward compatibility)
     mapping_macro_pattern = re.compile(r'(GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)\s*\(\s*["\']([^"\']*)["\']\s*\)')
@@ -468,16 +468,17 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
             i += 1
             continue
         
-        # Skip comments (but not annotations)
-        if line.startswith('/*'):
+        # Skip other comments that aren't HTTP mapping annotations
+        # But allow /* @GetMapping("...") */ annotations to be processed
+        if line.startswith('/*') and not mapping_annotation_pattern.search(line):
             i += 1
             continue
-        # Skip other single-line comments that aren't annotations
-        if line.startswith('//') and not mapping_annotation_pattern.search(line):
+        # Skip single-line comments
+        if line.startswith('//'):
             i += 1
             continue
         
-        # Check for HTTP mapping annotation first (/// @GetMapping("/path"))
+        # Check for HTTP mapping annotation first (/* @GetMapping("/path") */)
         mapping_match = mapping_annotation_pattern.search(line)
         if mapping_match:
             http_method_annotation = mapping_match.group(1)  # e.g., "GetMapping", "PostMapping", etc.
@@ -528,7 +529,8 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
             if mapping_processed_pattern.search(next_line):
                 continue
             
-            # Skip comments (but not annotations)
+            # Skip other comments that aren't HTTP mapping annotations
+            # But allow /* @GetMapping("...") */ annotations to be processed
             if next_line.strip().startswith('/*') and not mapping_annotation_pattern.search(next_line):
                 # Check if it's a closing comment that might be part of parameter annotation
                 if '*/' in next_line:
@@ -536,8 +538,8 @@ def find_mapping_endpoints(file_path: str, base_url: str, class_name: str, inter
                     pass
                 else:
                     continue
-            # Skip other single-line comments that aren't annotations
-            if next_line.strip().startswith('//') and not mapping_annotation_pattern.search(next_line):
+            # Skip single-line comments
+            if next_line.strip().startswith('//'):
                 continue
             
             # Check if this line might be part of a function signature

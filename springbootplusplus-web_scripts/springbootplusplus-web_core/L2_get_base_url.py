@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script to extract the base URL from @RequestMapping annotation above class declarations.
-Finds @RequestMapping annotation above a class and extracts the value from /// @RequestMapping("/xyz").
+Finds @RequestMapping annotation above a class and extracts the value from /* @RequestMapping("/xyz") */.
 Returns "/xyz" as the base URL string, or "/" if not present.
 """
 
@@ -31,10 +31,10 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
         # print(f"Error reading file '{file_path}': {e}")
         return None
     
-    # Pattern to match @RequestMapping annotation with value
-    # Matches: /// @RequestMapping("/xyz"), /// @RequestMapping('/xyz')
-    request_mapping_annotation_pattern = re.compile(r'///\s*@RequestMapping\s*\(\s*["\']([^"\']+)["\']')
-    request_mapping_processed_pattern = re.compile(r'/\*\s*@RequestMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*\*/')
+    # Pattern to match @RequestMapping annotation with value (search for /* @RequestMapping("/xyz") */ or /*@RequestMapping("/xyz")*/)
+    # Also check for already processed /*--@RequestMapping("...")--*/ pattern
+    request_mapping_annotation_pattern = re.compile(r'/\*\s*@RequestMapping\s*\(\s*["\']([^"\']+)["\']\s*\)\s*\*/')
+    request_mapping_processed_pattern = re.compile(r'/\*--\s*@RequestMapping\s*\(\s*["\'][^"\']+["\']\s*\)\s*--\*/')
     
     # Pattern to match legacy RequestMapping macro (for backward compatibility)
     request_mapping_macro_pattern = re.compile(r'RequestMapping\s*\(\s*["\']([^"\']+)["\']')
@@ -47,10 +47,10 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
     for line_num, line in enumerate(lines, 1):
         stripped_line = line.strip()
         
-        # Allow annotations (/// @...) to be present before the class, but skip other comments
-        if stripped_line.startswith('/*'):
+        # Allow annotations (/* @... */) to be present before the class, but skip other comments
+        if stripped_line.startswith('/*') and not re.search(r'/\*\s*@\w+', stripped_line):
             continue
-        if stripped_line.startswith('//') and not re.search(r'///\s*@\w+\b', stripped_line):
+        if stripped_line.startswith('//'):
             continue
         
         # Check for class declaration
@@ -80,11 +80,12 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
             if request_mapping_processed_pattern.search(line):
                 continue
             
-            # Skip comments (but not annotations)
-            if line.startswith('/*'):
+            # Skip other comments that aren't @RequestMapping annotations
+            # But allow /* @RequestMapping("...") */ annotations to be processed
+            if line.startswith('/*') and not request_mapping_annotation_pattern.search(line):
                 continue
-            # Skip other single-line comments that aren't annotations
-            if line.startswith('//') and not request_mapping_annotation_pattern.search(line):
+            # Skip single-line comments
+            if line.startswith('//'):
                 continue
             
             # Skip empty lines
@@ -113,7 +114,7 @@ def find_request_mapping_macro(file_path: str) -> Optional[Dict[str, Any]]:
             
             # Stop looking if we hit something that's not an annotation/macro (like a class declaration)
             # Allow common annotations/macros to continue searching backwards
-            if not (re.search(r'///\s*@(RestController|RequestMapping|GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping|Component|Autowired|Scope)\b', line) or
+            if not (re.search(r'/\*\s*@(RestController|RequestMapping|GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping|Component|Autowired|Scope)\s*\*/', line) or
                    line.startswith(('RestController', 'RequestMapping', 'GetMapping', 
                                     'PostMapping', 'PutMapping', 'DeleteMapping', 'PatchMapping',
                                     'COMPONENT', 'SCOPE', 'VALIDATE')) or 
