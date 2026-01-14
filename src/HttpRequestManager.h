@@ -87,6 +87,12 @@ class HttpRequestManager final : public IHttpRequestManager {
         
         return server->Start(port);
     }
+    
+    Public Void StopServer() override {
+        if (server != nullptr) {
+            server->Stop();
+        }
+    }
 };
 
 #endif // HTTP_REQUEST_MANAGER_H

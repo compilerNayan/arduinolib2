@@ -39,6 +39,11 @@ class IHttpRequestManager {
      * @return true if server started successfully, false otherwise
      */
     Public Virtual Bool StartServer(CUInt port = DEFAULT_SERVER_PORT) = 0;
+    
+    /**
+     * @brief Stops the server
+     */
+    Public Virtual Void StopServer() = 0;
 };
 
 #endif // I_HTTP_REQUEST_MANAGER_H
