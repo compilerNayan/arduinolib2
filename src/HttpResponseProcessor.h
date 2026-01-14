@@ -6,7 +6,7 @@
 #include <ServerProvider.h>
 #include <IHttpResponse.h>
 
-/// @Component
+/* @Component */
 class HttpResponseProcessor final : public IHttpResponseProcessor {
 
     /* @Autowired */

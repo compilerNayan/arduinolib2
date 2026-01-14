@@ -2,6 +2,11 @@
 """
 Script to check if C++ files contain the @Component annotation above class declarations that inherit from interfaces.
 Validates that class inherits from interface and has @Component annotation.
+
+This script:
+1. Finds @Component annotations (/* @Component */ or /*@Component*/) that are not processed
+2. Validates that classes inherit from interfaces
+3. Marks the @Component annotation as processed (/*--@Component--*/)
 """
 
 import re
@@ -40,11 +45,10 @@ def find_component_macros(file_path: str) -> List[Dict[str, str]]:
         # print(f"Error reading file '{file_path}': {e}")
         return []
     
-    # Pattern to match @Component annotation
-    # Pattern: /// @Component or ///@Component (ignoring whitespace)
-    # Also check for already processed /* @Component */ pattern
-    component_annotation_pattern = re.compile(r'///\s*@Component\b')
-    component_processed_pattern = re.compile(r'/\*\s*@Component\s*\*/')
+    # Pattern to match @Component annotation (search for /* @Component */ or /*@Component*/)
+    # Also check for already processed /*--@Component--*/ pattern
+    component_annotation_pattern = re.compile(r'/\*\s*@Component\s*\*/')
+    component_processed_pattern = re.compile(r'/\*--\s*@Component\s*--\*/')
     
     # Pattern to match class declarations
     class_pattern = r'class\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:[:{])'
@@ -56,11 +60,12 @@ def find_component_macros(file_path: str) -> List[Dict[str, str]]:
         if component_processed_pattern.search(stripped_line):
             continue
         
-        # Skip comments (but not the annotation itself which is in a comment)
-        if stripped_line.startswith('/*'):
+        # Skip other comments that aren't @Component annotations
+        # But allow /* @Component */ annotations to be processed
+        if stripped_line.startswith('/*') and not component_annotation_pattern.search(stripped_line):
             continue
-        # Skip other single-line comments that aren't the annotation
-        if stripped_line.startswith('//') and not component_annotation_pattern.search(stripped_line):
+        # Skip single-line comments
+        if stripped_line.startswith('//'):
             continue
             
         # Check if line contains valid @Component annotation
@@ -80,11 +85,12 @@ def find_component_macros(file_path: str) -> List[Dict[str, str]]:
                     next_line = lines[i - 1].strip()
                     context_lines.append(next_line)
                     
-                    # Skip comments (but not annotations)
-                    if next_line.startswith('/*'):
+                    # Skip other comments that aren't annotations
+                    # But allow /* @Component */, /* @Scope */, /* @Autowired */ annotations to be processed
+                    if next_line.startswith('/*') and not re.search(r'/\*\s*@(Component|Scope|Autowired)\s*\*/', next_line):
                         continue
-                    # Skip other single-line comments that aren't annotations
-                    if next_line.startswith('//') and not re.search(r'///\s*@(Component|Scope|Autowired)\b', next_line):
+                    # Skip single-line comments
+                    if next_line.startswith('//'):
                         continue
                     
                     # Check for class declaration
@@ -99,7 +105,7 @@ def find_component_macros(file_path: str) -> List[Dict[str, str]]:
                         continue
                     # Allow annotations and common macros to continue searching
                     is_annotation_or_macro = (
-                        re.search(r'///\s*@(Component|Scope|Autowired)\b', next_line) or
+                        re.search(r'/\*\s*@(Component|Scope|Autowired)\s*\*/', next_line) or
                         next_line.startswith(('COMPONENT', 'SCOPE', 'VALIDATE', 'AUTOWIRED'))
                     )
                     if not is_annotation_or_macro:
@@ -163,8 +169,8 @@ def check_component_macro_exists(file_path: str) -> bool:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
         
-        component_annotation_pattern = re.compile(r'///\s*@Component\b')
-        component_processed_pattern = re.compile(r'/\*\s*@Component\s*\*/')
+        component_annotation_pattern = re.compile(r'/\*\s*@Component\s*\*/')
+        component_processed_pattern = re.compile(r'/\*--\s*@Component\s*--\*/')
         
         # Check each line for @Component annotation or legacy COMPONENT macro
         for line in lines:
@@ -174,10 +180,12 @@ def check_component_macro_exists(file_path: str) -> bool:
             if component_processed_pattern.search(stripped_line):
                 continue
             
-            # Skip comments (but not annotations)
-            if stripped_line.startswith('/*'):
+            # Skip other comments that aren't @Component annotations
+            # But allow /* @Component */ annotations to be processed
+            if stripped_line.startswith('/*') and not component_annotation_pattern.search(stripped_line):
                 continue
-            if stripped_line.startswith('//') and not component_annotation_pattern.search(stripped_line):
+            # Skip single-line comments
+            if stripped_line.startswith('//'):
                 continue
                 
             # Check if line contains @Component annotation
@@ -281,7 +289,7 @@ def validate_cpp_file(file_path: str) -> bool:
 def comment_component_macro(file_path: str) -> bool:
     """
     Mark @Component annotation as processed in a C++ file.
-    Replaces /// @Component with /* @Component */.
+    Replaces /* @Component */ with /*--@Component--*/.
     
     Args:
         file_path: Path to the C++ file to modify
@@ -293,8 +301,8 @@ def comment_component_macro(file_path: str) -> bool:
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
         
-        component_annotation_pattern = re.compile(r'///\s*@Component\b')
-        component_processed_pattern = re.compile(r'/\*\s*@Component\s*\*/')
+        component_annotation_pattern = re.compile(r'/\*\s*@Component\s*\*/')
+        component_processed_pattern = re.compile(r'/\*--\s*@Component\s*--\*/')
         
         modified = False
         modified_lines = []
@@ -312,7 +320,7 @@ def comment_component_macro(file_path: str) -> bool:
             if component_match:
                 indent = len(line) - len(line.lstrip())
                 indent_str = line[:indent]
-                processed_line = f"{indent_str}/* @Component */\n"
+                processed_line = f"{indent_str}/*--@Component--*/\n"
                 modified_lines.append(processed_line)
                 modified = True
                 continue

@@ -7,7 +7,7 @@
 #include "IHttpResponseProcessor.h"
 #include <ServerProvider.h>
 
-/// @Component
+/* @Component */
 class HttpRequestManager final : public IHttpRequestManager {
 
     /* @Autowired */

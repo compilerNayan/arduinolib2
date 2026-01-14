@@ -7,7 +7,7 @@
 #include "IHttpResponseQueue.h"
 #include <IHttpResponse.h>
 
-/// @Component
+/* @Component */
 class HttpRequestProcessor final : public IHttpRequestProcessor {
 
     /* @Autowired */
