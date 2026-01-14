@@ -21,17 +21,31 @@ class HttpRequestManager final : public IHttpRequestManager {
 
     Private IServerPtr server;
 
-    Public HttpRequestManager() 
-        : server(ServerProvider::GetDefaultServer()) {
+    Public HttpRequestManager() {
+#ifdef ARDUINO
+        Serial.println("[HttpRequestManager] Constructor called");
+        Serial.print("[HttpRequestManager] Checking registered server count: ");
+        Serial.println(ServerProvider::GetRegisteredCount());
+#else
+        std::cout << "[HttpRequestManager] Constructor called" << std::endl;
+        std::cout << "[HttpRequestManager] Checking registered server count: " << ServerProvider::GetRegisteredCount() << std::endl;
+#endif
+        
+        server = ServerProvider::GetDefaultServer();
+        
 #ifdef ARDUINO
         if (server == nullptr) {
-            Serial.println("[HttpRequestManager] WARNING: GetDefaultServer() returned nullptr!");
+            Serial.println("[HttpRequestManager] ERROR: GetDefaultServer() returned nullptr!");
+            Serial.println("[HttpRequestManager] This means no servers were registered.");
+            Serial.println("[HttpRequestManager] Check ServerProviderInit.h - it should register servers.");
         } else {
             Serial.println("[HttpRequestManager] GetDefaultServer() returned valid server instance");
         }
 #else
         if (server == nullptr) {
-            std::cout << "[HttpRequestManager] WARNING: GetDefaultServer() returned nullptr!" << std::endl;
+            std::cout << "[HttpRequestManager] ERROR: GetDefaultServer() returned nullptr!" << std::endl;
+            std::cout << "[HttpRequestManager] This means no servers were registered." << std::endl;
+            std::cout << "[HttpRequestManager] Check ServerProviderInit.h - it should register servers." << std::endl;
         } else {
             std::cout << "[HttpRequestManager] GetDefaultServer() returned valid server instance" << std::endl;
         }
