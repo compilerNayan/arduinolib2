@@ -10,13 +10,13 @@
 /// @Component
 class HttpRequestProcessor final : public IHttpRequestProcessor {
 
-    /// @Autowired
+    /* @Autowired */
     Private IHttpRequestQueuePtr requestQueue;
 
-    /// @Autowired
+    /* @Autowired */
     Private IHttpRequestDispatcherPtr dispatcher;
 
-    /// @Autowired
+    /* @Autowired */
     Private IHttpResponseQueuePtr responseQueue;
 
     Public HttpRequestProcessor() = default;

@@ -9,7 +9,7 @@
 /// @Component
 class HttpResponseProcessor final : public IHttpResponseProcessor {
 
-    /// @Autowired
+    /* @Autowired */
     Private IHttpResponseQueuePtr responseQueue;
 
     Private IServerPtr server;

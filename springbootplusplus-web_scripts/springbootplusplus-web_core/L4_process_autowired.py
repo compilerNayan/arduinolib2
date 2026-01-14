@@ -4,10 +4,10 @@ Script to process @Autowired annotations in C++ files.
 
 This script:
 1. Gets the class name from the file
-2. Finds @Autowired annotations (not processed)
+2. Finds @Autowired annotations (/* @Autowired */ or /*@Autowired*/) that are not processed
 3. Parses @Autowired statements to extract variable type, object name, and base type
 4. Replaces the variable declaration with GetInstance() call
-5. Marks the @Autowired annotation as processed
+5. Marks the @Autowired annotation as processed (/*--@Autowired--*/)
 """
 
 import re
@@ -36,9 +36,9 @@ def find_autowired_macros(file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
         
-        # Pattern for @Autowired annotation
-        autowired_annotation_pattern = re.compile(r'///\s*@Autowired\b')
-        autowired_processed_pattern = re.compile(r'/\*\s*@Autowired\s*\*/')
+        # Pattern for @Autowired annotation (search for /* @Autowired */ or /*@Autowired*/)
+        autowired_annotation_pattern = re.compile(r'/\*\s*@Autowired\s*\*/')
+        autowired_processed_pattern = re.compile(r'/\*--\s*@Autowired\s*--\*/')
             
         for line_num, line in enumerate(lines, 1):
             stripped_line = line.strip()
@@ -51,11 +51,12 @@ def find_autowired_macros(file_path):
             if autowired_processed_pattern.search(stripped_line):
                 continue
                 
-            # Skip comments (but not annotations)
-            if stripped_line.startswith('/*'):
+            # Skip other comments that aren't @Autowired annotations
+            # But allow /* @Autowired */ annotations to be processed
+            if stripped_line.startswith('/*') and not autowired_annotation_pattern.search(stripped_line):
                 continue
-            # Skip other single-line comments that aren't annotations
-            if stripped_line.startswith('//') and not autowired_annotation_pattern.search(stripped_line):
+            # Skip single-line comments
+            if stripped_line.startswith('//'):
                 continue
                 
             # Find @Autowired annotation
@@ -117,9 +118,9 @@ def find_autowired_constructor(file_path, class_name):
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = file.readlines()
         
-        # Pattern for @Autowired annotation
-        autowired_annotation_pattern = re.compile(r'///\s*@Autowired\b')
-        autowired_processed_pattern = re.compile(r'/\*\s*@Autowired\s*\*/')
+        # Pattern for @Autowired annotation (search for /* @Autowired */ or /*@Autowired*/)
+        autowired_annotation_pattern = re.compile(r'/\*\s*@Autowired\s*\*/')
+        autowired_processed_pattern = re.compile(r'/\*--\s*@Autowired\s*--\*/')
             
         for line_num, line in enumerate(lines, 1):
             stripped_line = line.strip()
@@ -132,11 +133,12 @@ def find_autowired_constructor(file_path, class_name):
             if autowired_processed_pattern.search(stripped_line):
                 continue
                 
-            # Skip comments (but not annotations)
-            if stripped_line.startswith('/*'):
+            # Skip other comments that aren't @Autowired annotations
+            # But allow /* @Autowired */ annotations to be processed
+            if stripped_line.startswith('/*') and not autowired_annotation_pattern.search(stripped_line):
                 continue
-            # Skip other single-line comments that aren't annotations
-            if stripped_line.startswith('//') and not autowired_annotation_pattern.search(stripped_line):
+            # Skip single-line comments
+            if stripped_line.startswith('//'):
                 continue
                 
             # Find @Autowired annotation
@@ -627,12 +629,12 @@ def apply_all_autowired_changes(file_path, all_macros):
             stripped_original = original_line.strip()
             
             # Check if it's an annotation or legacy macro
-            autowired_annotation_pattern = re.compile(r'///\s*@Autowired\b')
+            autowired_annotation_pattern = re.compile(r'/\*\s*@Autowired\s*\*/')
             if autowired_annotation_pattern.search(stripped_original):
-                # Mark annotation as processed: /// @Autowired → /* @Autowired */
+                # Mark annotation as processed: /* @Autowired */ → /*--@Autowired--*/
                 indent = len(original_line) - len(original_line.lstrip())
                 indent_str = original_line[:indent]
-                lines[autowired_line] = f"{indent_str}/* @Autowired */\n"
+                lines[autowired_line] = f"{indent_str}/*--@Autowired--*/\n"
             else:
                 # Legacy macro: comment it out
                 lines[autowired_line] = f"// {original_line.rstrip()}\n"

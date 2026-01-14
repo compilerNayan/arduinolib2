@@ -10,13 +10,13 @@
 /// @Component
 class HttpRequestManager final : public IHttpRequestManager {
 
-    /// @Autowired
+    /* @Autowired */
     Private IHttpRequestQueuePtr requestQueue;
 
-    /// @Autowired
+    /* @Autowired */
     Private IHttpRequestProcessorPtr requestProcessor;
 
-    /// @Autowired
+    /* @Autowired */
     Private IHttpResponseProcessorPtr responseProcessor;
 
     Private IServerPtr server;
