@@ -42,19 +42,8 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
     Private EndpointTrie endpointTrie;
 
     Public HttpRequestDispatcher() {
-        std_println("[HttpRequestDispatcher] Constructor called");
         InitializeMappings();
-        std_println("[HttpRequestDispatcher] Mappings initialized");
         InsertMappingsToTrie();
-        std_println("[HttpRequestDispatcher] Trie populated");
-        
-        // Log registered endpoints for debugging
-        std_print("[HttpRequestDispatcher] GET mappings count: ");
-        std_println(std::to_string(getMappings.size()).c_str());
-        for (const auto& pair : getMappings) {
-            std_print("[HttpRequestDispatcher]   GET: ");
-            std_println(pair.first.c_str());
-        }
     }
 
     Public ~HttpRequestDispatcher() = default;
@@ -63,206 +52,110 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
         CStdString url = request->GetPath();
         CStdString payload = request->GetBody();
         
-        std_print("[HttpRequestDispatcher] DispatchRequest called for URL: ");
-        std_println(url.c_str());
-        
         EndpointMatchResult result = endpointTrie.Search(url);
         if(result.found == false) {
-            std_print("[HttpRequestDispatcher] ERROR: No pattern matched for URL: ");
-            std_println(url.c_str());
-            return nullptr;
+            // Return 404 Not Found
+            StdString errorJson = "{\"error\":\"Not Found\",\"message\":\"No pattern matched for URL: " + url + "\"}";
+            ResponseEntity<StdString> errorResponse = ResponseEntity<StdString>::NotFound(errorJson);
+            IHttpResponsePtr response = ResponseEntityConverter::ToHttpResponse<StdString>(errorResponse);
+            StdString requestId = StdString(request->GetRequestId());
+            if (!requestId.empty()) {
+                response->SetRequestId(requestId);
+            }
+            return response;
         }
-        
-        std_print("[HttpRequestDispatcher] Pattern matched: ");
-        std_println(result.pattern.c_str());
         
         Val variables = result.variables;
         Val patternUrl = result.pattern;
         
         // Get request ID from the request
         StdString requestId = StdString(request->GetRequestId());
-        
-        std_print("[HttpRequestDispatcher] Request method: ");
-        std_println(std::to_string(static_cast<int>(request->GetMethod())).c_str());
 
         try {
             IHttpResponsePtr response = nullptr;
             
-            std_print("[HttpRequestDispatcher] Looking up mapping for pattern: ");
-            std_println(patternUrl.c_str());
-            
             switch (request->GetMethod()) {
                 case HttpMethod::GET:
                     if (getMappings.find(patternUrl) == getMappings.end()) {
-                        std_print("[HttpRequestDispatcher] ERROR: GET mapping not found for pattern: ");
-                        std_println(patternUrl.c_str());
                         return nullptr;
                     }
-                    std_println("[HttpRequestDispatcher] Calling GET mapping handler...");
                     response = getMappings[patternUrl](payload, variables);
-                    std_println("[HttpRequestDispatcher] GET mapping handler returned");
                     break;
                 case HttpMethod::POST:
                     if (postMappings.find(patternUrl) == postMappings.end()) {
-                        std_print("[HttpRequestDispatcher] ERROR: POST mapping not found for pattern: ");
-                        std_println(patternUrl.c_str());
                         return nullptr;
                     }
-                    std_println("[HttpRequestDispatcher] Calling POST mapping handler...");
                     response = postMappings[patternUrl](payload, variables);
-                    std_println("[HttpRequestDispatcher] POST mapping handler returned");
                     break;
                 case HttpMethod::PUT:
                     if (putMappings.find(patternUrl) == putMappings.end()) {
-                        std_print("[HttpRequestDispatcher] ERROR: PUT mapping not found for pattern: ");
-                        std_println(patternUrl.c_str());
                         return nullptr;
                     }
-                    std_println("[HttpRequestDispatcher] Calling PUT mapping handler...");
                     response = putMappings[patternUrl](payload, variables);
-                    std_println("[HttpRequestDispatcher] PUT mapping handler returned");
                     break;
                 case HttpMethod::PATCH:
                     if (patchMappings.find(patternUrl) == patchMappings.end()) {
-                        std_print("[HttpRequestDispatcher] ERROR: PATCH mapping not found for pattern: ");
-                        std_println(patternUrl.c_str());
                         return nullptr;
                     }
-                    std_println("[HttpRequestDispatcher] Calling PATCH mapping handler...");
                     response = patchMappings[patternUrl](payload, variables);
-                    std_println("[HttpRequestDispatcher] PATCH mapping handler returned");
                     break;
                 case HttpMethod::DELETE:
                     if (deleteMappings.find(patternUrl) == deleteMappings.end()) {
-                        std_print("[HttpRequestDispatcher] ERROR: DELETE mapping not found for pattern: ");
-                        std_println(patternUrl.c_str());
                         return nullptr;
                     }
-                    std_println("[HttpRequestDispatcher] Calling DELETE mapping handler...");
                     response = deleteMappings[patternUrl](payload, variables);
-                    std_println("[HttpRequestDispatcher] DELETE mapping handler returned");
                     break;
                 case HttpMethod::OPTIONS:
                     if (optionsMappings.find(patternUrl) == optionsMappings.end()) {
-                        std_print("[HttpRequestDispatcher] ERROR: OPTIONS mapping not found for pattern: ");
-                        std_println(patternUrl.c_str());
                         return nullptr;
                     }
-                    std_println("[HttpRequestDispatcher] Calling OPTIONS mapping handler...");
                     response = optionsMappings[patternUrl](payload, variables);
-                    std_println("[HttpRequestDispatcher] OPTIONS mapping handler returned");
                     break;
                 case HttpMethod::HEAD:
                     if (headMappings.find(patternUrl) == headMappings.end()) {
-                        std_print("[HttpRequestDispatcher] ERROR: HEAD mapping not found for pattern: ");
-                        std_println(patternUrl.c_str());
                         return nullptr;
                     }
-                    std_println("[HttpRequestDispatcher] Calling HEAD mapping handler...");
                     response = headMappings[patternUrl](payload, variables);
-                    std_println("[HttpRequestDispatcher] HEAD mapping handler returned");
                     break;
                 case HttpMethod::TRACE:
                     if (traceMappings.find(patternUrl) == traceMappings.end()) {
-                        std_print("[HttpRequestDispatcher] ERROR: TRACE mapping not found for pattern: ");
-                        std_println(patternUrl.c_str());
                         return nullptr;
                     }
-                    std_println("[HttpRequestDispatcher] Calling TRACE mapping handler...");
                     response = traceMappings[patternUrl](payload, variables);
-                    std_println("[HttpRequestDispatcher] TRACE mapping handler returned");
                     break;
                 case HttpMethod::CONNECT:
                     if (connectMappings.find(patternUrl) == connectMappings.end()) {
-                        std_print("[HttpRequestDispatcher] ERROR: CONNECT mapping not found for pattern: ");
-                        std_println(patternUrl.c_str());
                         return nullptr;
                     }
-                    std_println("[HttpRequestDispatcher] Calling CONNECT mapping handler...");
                     response = connectMappings[patternUrl](payload, variables);
-                    std_println("[HttpRequestDispatcher] CONNECT mapping handler returned");
                     break;
-            }
-            
-            std_print("[HttpRequestDispatcher] Response created: ");
-            if (response != nullptr) {
-                std_println("YES");
-            } else {
-                std_println("NO");
             }
             
             // If response was created without request ID, set it now
             if (response != nullptr && !requestId.empty() && response->GetRequestId().empty()) {
                 response->SetRequestId(requestId);
-                std_println("[HttpRequestDispatcher] Request ID set on response");
             }
             
-            std_println("[HttpRequestDispatcher] Returning response successfully");
             return response;
     
         } catch (const std::exception& e) {
-            std_print("[HttpRequestDispatcher] EXCEPTION CAUGHT (std::exception): ");
-            std_println(e.what());
-            
             // Create proper error response using ResponseEntity (Spring Boot style)
-            // Build error message JSON
             StdString errorMessage = StdString(e.what());
             StdString errorJson = "{\"error\":\"Internal Server Error\",\"message\":\"" + errorMessage + "\"}";
-            
-            std_print("[HttpRequestDispatcher] Creating error response with JSON: ");
-            std_println(errorJson.c_str());
-            
-            // Create ResponseEntity with 500 Internal Server Error status
             ResponseEntity<StdString> errorResponse = ResponseEntity<StdString>::InternalServerError(errorJson);
-            
-            // Convert to IHttpResponsePtr
             IHttpResponsePtr response = ResponseEntityConverter::ToHttpResponse<StdString>(errorResponse);
-            
-            std_print("[HttpRequestDispatcher] Error response created: ");
-            if (response != nullptr) {
-                std_println("YES");
-            } else {
-                std_println("NO");
-            }
-            
-            // Set request ID if available
             if (response != nullptr && !requestId.empty()) {
                 response->SetRequestId(requestId);
-                std_println("[HttpRequestDispatcher] Request ID set on error response");
             }
-            
-            std_println("[HttpRequestDispatcher] Returning error response");
             return response;
         } catch (...) {
-            std_println("[HttpRequestDispatcher] EXCEPTION CAUGHT (catch-all): Unknown exception type");
-            
             // Handle any other exception type (not derived from std::exception)
-            // This catches exceptions like int, const char*, custom types, etc.
             StdString errorJson = "{\"error\":\"Internal Server Error\",\"message\":\"Unknown exception occurred\"}";
-            
-            std_print("[HttpRequestDispatcher] Creating error response with JSON: ");
-            std_println(errorJson.c_str());
-            
-            // Create ResponseEntity with 500 Internal Server Error status
             ResponseEntity<StdString> errorResponse = ResponseEntity<StdString>::InternalServerError(errorJson);
-            
-            // Convert to IHttpResponsePtr
             IHttpResponsePtr response = ResponseEntityConverter::ToHttpResponse<StdString>(errorResponse);
-            
-            std_print("[HttpRequestDispatcher] Error response created: ");
-            if (response != nullptr) {
-                std_println("YES");
-            } else {
-                std_println("NO");
-            }
-            
-            // Set request ID if available
             if (response != nullptr && !requestId.empty()) {
                 response->SetRequestId(requestId);
-                std_println("[HttpRequestDispatcher] Request ID set on error response");
             }
-            
-            std_println("[HttpRequestDispatcher] Returning error response");
             return response;
         }
 
@@ -273,10 +166,7 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
     }
 
     Private Void InsertMappingsToTrie() {
-        std_println("[HttpRequestDispatcher] InsertMappingsToTrie() called");
         for (const auto& pair : getMappings) {
-            std_print("[HttpRequestDispatcher] Inserting GET endpoint to trie: ");
-            std_println(pair.first.c_str());
             endpointTrie.Insert(pair.first);
         }
         for (const auto& pair : postMappings) {
@@ -303,7 +193,6 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
         for (const auto& pair : connectMappings) {
             endpointTrie.Insert(pair.first);
         }
-        std_println("[HttpRequestDispatcher] All endpoints inserted to trie");
     }
 
     /**
