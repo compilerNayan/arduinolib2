@@ -3,6 +3,7 @@
 
 #include <StandardDefines.h>
 #include <IHttpRequest.h>
+#include <IHttpResponse.h>
 
 DefineStandardPointers(IHttpRequestDispatcher)
 class IHttpRequestDispatcher {

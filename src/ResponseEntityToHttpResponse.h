@@ -17,6 +17,35 @@
 namespace ResponseEntityConverter {
 
     /**
+     * Type trait to check if a type is a primitive type.
+     * Matches the logic from SerializationUtility::is_primitive_type
+     */
+    template<typename T>
+    struct is_primitive_type {
+        static constexpr bool value = 
+            std::is_same_v<T, int> || std::is_same_v<T, unsigned int> ||
+            std::is_same_v<T, long> || std::is_same_v<T, unsigned long> ||
+            std::is_same_v<T, short> || std::is_same_v<T, unsigned short> ||
+            std::is_same_v<T, char> || std::is_same_v<T, unsigned char> ||
+            std::is_same_v<T, bool> || std::is_same_v<T, float> ||
+            std::is_same_v<T, double> || std::is_same_v<T, size_t> ||
+            // StandardDefines types
+            std::is_same_v<T, Int> || std::is_same_v<T, CInt> ||
+            std::is_same_v<T, UInt> || std::is_same_v<T, CUInt> ||
+            std::is_same_v<T, Long> || std::is_same_v<T, CLong> ||
+            std::is_same_v<T, ULong> || std::is_same_v<T, CULong> ||
+            std::is_same_v<T, UInt8> ||
+            std::is_same_v<T, Char> || std::is_same_v<T, CChar> ||
+            std::is_same_v<T, UChar> || std::is_same_v<T, CUChar> ||
+            std::is_same_v<T, Bool> || std::is_same_v<T, CBool> ||
+            std::is_same_v<T, Size> || std::is_same_v<T, CSize> ||
+            std::is_same_v<T, StdString> || std::is_same_v<T, CStdString>;
+    };
+    
+    template<typename T>
+    inline constexpr bool is_primitive_type_v = is_primitive_type<T>::value;
+
+    /**
      * Convert ResponseEntity<T> to IHttpResponse (without request ID)
      * Handles primitive types, strings, and complex types
      * Request ID can be set later using SetRequestId() method
@@ -42,7 +71,7 @@ namespace ResponseEntityConverter {
         using namespace nayan::serializer;
         
         // Check if T is primitive type (includes strings from StandardDefines)
-        if constexpr (SerializationUtility::is_primitive_type_v<T>) {
+        if constexpr (is_primitive_type_v<T>) {
             // Primitive type or string (StdString, CStdString) - convert directly to string
             bodyStr = SerializationUtility::Serialize<T>(entity.GetBody());
         } else if constexpr (std::is_same_v<T, std::string> ||
@@ -88,7 +117,7 @@ namespace ResponseEntityConverter {
         using namespace nayan::serializer;
         
         // Check if T is primitive type (includes strings from StandardDefines)
-        if constexpr (SerializationUtility::is_primitive_type_v<T>) {
+        if constexpr (is_primitive_type_v<T>) {
             // Primitive type or string (StdString, CStdString) - convert directly to string
             bodyStr = SerializationUtility::Serialize<T>(entity.GetBody());
         } else if constexpr (std::is_same_v<T, std::string> ||
@@ -165,7 +194,7 @@ namespace ResponseEntityConverter {
         StdString bodyStr;
         
         // Check if T is primitive type (includes strings from StandardDefines)
-        if constexpr (SerializationUtility::is_primitive_type_v<T>) {
+        if constexpr (is_primitive_type_v<T>) {
             // Primitive type or string (StdString, CStdString) - convert directly to string
             bodyStr = SerializationUtility::Serialize<T>(body);
         } else if constexpr (std::is_same_v<T, std::string>) {
@@ -207,7 +236,7 @@ namespace ResponseEntityConverter {
         StdString bodyStr;
         
         // Check if T is primitive type (includes strings from StandardDefines)
-        if constexpr (SerializationUtility::is_primitive_type_v<T>) {
+        if constexpr (is_primitive_type_v<T>) {
             // Primitive type or string (StdString, CStdString) - convert directly to string
             bodyStr = SerializationUtility::Serialize<T>(body);
         } else if constexpr (std::is_same_v<T, std::string>) {
