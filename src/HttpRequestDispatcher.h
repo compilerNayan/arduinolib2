@@ -185,7 +185,11 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
             }
             
             std_print("[HttpRequestDispatcher] Response created: ");
-            std_println(response != nullptr ? "YES" : "NO");
+            if (response != nullptr) {
+                std_println("YES");
+            } else {
+                std_println("NO");
+            }
             
             // If response was created without request ID, set it now
             if (response != nullptr && !requestId.empty() && response->GetRequestId().empty()) {
@@ -215,7 +219,11 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
             IHttpResponsePtr response = ResponseEntityConverter::ToHttpResponse<StdString>(errorResponse);
             
             std_print("[HttpRequestDispatcher] Error response created: ");
-            std_println(response != nullptr ? "YES" : "NO");
+            if (response != nullptr) {
+                std_println("YES");
+            } else {
+                std_println("NO");
+            }
             
             // Set request ID if available
             if (response != nullptr && !requestId.empty()) {
@@ -242,7 +250,11 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
             IHttpResponsePtr response = ResponseEntityConverter::ToHttpResponse<StdString>(errorResponse);
             
             std_print("[HttpRequestDispatcher] Error response created: ");
-            std_println(response != nullptr ? "YES" : "NO");
+            if (response != nullptr) {
+                std_println("YES");
+            } else {
+                std_println("NO");
+            }
             
             // Set request ID if available
             if (response != nullptr && !requestId.empty()) {
