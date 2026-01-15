@@ -81,7 +81,8 @@ def find_cpp_files(include_paths: List[str], exclude_paths: List[str]) -> List[s
 def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
     """
     Mark all REST-related annotations as processed (/* @RestController */, /* @RequestMapping("...") */, etc.) in a C++ file.
-    Converts /* @Annotation */ to /*--@Annotation--*/ and comments out legacy macros.
+    Converts /* @RestController */ to /* @Component */, and other /* @Annotation */ to /*--@Annotation--*/.
+    Comments out legacy macros.
     
     Args:
         file_path: Path to the C++ file to modify
@@ -97,6 +98,9 @@ def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
         # Patterns for @RestController annotation (search for /* @RestController */ or /*@RestController*/)
         rest_controller_annotation_pattern = re.compile(r'/\*\s*@RestController\s*\*/')
         rest_controller_processed_pattern = re.compile(r'/\*--\s*@RestController\s*--\*/')
+        # Pattern to check if @Component already exists (to avoid duplicate)
+        component_annotation_pattern = re.compile(r'/\*\s*@Component\s*\*/')
+        component_processed_pattern = re.compile(r'/\*--\s*@Component\s*--\*/')
         
         # Patterns for REST mapping annotations (search for /* @Annotation("...") */ or /*@Annotation("...")*/)
         rest_mapping_annotations = {
@@ -121,7 +125,7 @@ def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
             original_line = line
             stripped_line = line.strip()
             
-            # Process @RestController annotation
+            # Process @RestController annotation - replace with @Component
             if rest_controller_processed_pattern.search(stripped_line):
                 modified_lines.append(line)
                 continue
@@ -130,7 +134,8 @@ def comment_rest_macros(file_path: str, dry_run: bool = False) -> bool:
             if rest_controller_match:
                 indent = len(line) - len(line.lstrip())
                 indent_str = line[:indent]
-                processed_line = f"{indent_str}/*--@RestController--*/\n"
+                # Replace /* @RestController */ with /* @Component */
+                processed_line = f"{indent_str}/* @Component */\n"
                 if not dry_run:
                     modified_lines.append(processed_line)
                 else:
