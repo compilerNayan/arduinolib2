@@ -37,23 +37,8 @@ class HttpRequestProcessor final : public IHttpRequestProcessor {
             return false;
         }
         
-        // Dispatch request to get response body
-        StdString responseBody = dispatcher->DispatchRequest(request);
-        
-        // Get request ID from the request
-        StdString requestId = StdString(request->GetRequestId());
-        if (requestId.empty()) {
-            return false;
-        }
-        
-        // Create HTTP response with request ID and response body
-        IHttpResponsePtr response = IHttpResponse::GetResponse(requestId, responseBody);
-        if (response == nullptr) {
-            return false;
-        }
-        
         // Enqueue response into response queue
-        responseQueue->EnqueueResponse(response);
+        responseQueue->EnqueueResponse(dispatcher->DispatchRequest(request));
         
         return true;
     }

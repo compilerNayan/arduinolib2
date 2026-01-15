@@ -9,7 +9,7 @@ class IHttpRequestDispatcher {
 
     Public Virtual ~IHttpRequestDispatcher() = default;
 
-    Public Virtual StdString DispatchRequest(IHttpRequestPtr request) = 0;
+    Public Virtual IHttpResponsePtr DispatchRequest(IHttpRequestPtr request) = 0;
 
 };
 

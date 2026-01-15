@@ -13,19 +13,20 @@
 #include <iomanip>
 
 #include "IHttpRequestDispatcher.h"
+#include <IHttpResponse.h>
 
 /* @Component */
 class HttpRequestDispatcher : public IHttpRequestDispatcher {
 
-    Private UnorderedMap<StdString, std::function<StdString(CStdString, Map<StdString, StdString>)>> getMappings;
-    Private UnorderedMap<StdString, std::function<StdString(CStdString, Map<StdString, StdString>)>> postMappings;
-    Private UnorderedMap<StdString, std::function<StdString(CStdString, Map<StdString, StdString>)>> putMappings;
-    Private UnorderedMap<StdString, std::function<StdString(CStdString, Map<StdString, StdString>)>> patchMappings;
-    Private UnorderedMap<StdString, std::function<StdString(CStdString, Map<StdString, StdString>)>> deleteMappings;
-    Private UnorderedMap<StdString, std::function<StdString(CStdString, Map<StdString, StdString>)>> optionsMappings;
-    Private UnorderedMap<StdString, std::function<StdString(CStdString, Map<StdString, StdString>)>> headMappings;
-    Private UnorderedMap<StdString, std::function<StdString(CStdString, Map<StdString, StdString>)>> traceMappings;
-    Private UnorderedMap<StdString, std::function<StdString(CStdString, Map<StdString, StdString>)>> connectMappings;
+    Private UnorderedMap<StdString, std::function<IHttpResponsePtr(CStdString, Map<StdString, StdString>)>> getMappings;
+    Private UnorderedMap<StdString, std::function<IHttpResponsePtr(CStdString, Map<StdString, StdString>)>> postMappings;
+    Private UnorderedMap<StdString, std::function<IHttpResponsePtr(CStdString, Map<StdString, StdString>)>> putMappings;
+    Private UnorderedMap<StdString, std::function<IHttpResponsePtr(CStdString, Map<StdString, StdString>)>> patchMappings;
+    Private UnorderedMap<StdString, std::function<IHttpResponsePtr(CStdString, Map<StdString, StdString>)>> deleteMappings;
+    Private UnorderedMap<StdString, std::function<IHttpResponsePtr(CStdString, Map<StdString, StdString>)>> optionsMappings;
+    Private UnorderedMap<StdString, std::function<IHttpResponsePtr(CStdString, Map<StdString, StdString>)>> headMappings;
+    Private UnorderedMap<StdString, std::function<IHttpResponsePtr(CStdString, Map<StdString, StdString>)>> traceMappings;
+    Private UnorderedMap<StdString, std::function<IHttpResponsePtr(CStdString, Map<StdString, StdString>)>> connectMappings;
 
     Private EndpointTrie endpointTrie;
 
@@ -36,41 +37,65 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
 
     Public ~HttpRequestDispatcher() = default;
 
-    Public StdString DispatchRequest(IHttpRequestPtr request) override {
+    Public IHttpResponsePtr DispatchRequest(IHttpRequestPtr request) override {
         CStdString url = request->GetPath();
         CStdString payload = request->GetBody();
         EndpointMatchResult result = endpointTrie.Search(url);
         if(result.found == false) {
-            return StdString();
+            return nullptr;
         }
         Val variables = result.variables;
         Val patternUrl = result.pattern;
+        
+        // Get request ID from the request
+        StdString requestId = StdString(request->GetRequestId());
 
         try {
+            IHttpResponsePtr response = nullptr;
             switch (request->GetMethod()) {
                 case HttpMethod::GET:
-                    return getMappings[patternUrl](payload, variables);
+                    response = getMappings[patternUrl](payload, variables);
+                    break;
                 case HttpMethod::POST:
-                    return postMappings[patternUrl](payload, variables);
+                    response = postMappings[patternUrl](payload, variables);
+                    break;
                 case HttpMethod::PUT:
-                    return putMappings[patternUrl](payload, variables);
+                    response = putMappings[patternUrl](payload, variables);
+                    break;
                 case HttpMethod::PATCH:
-                    return patchMappings[patternUrl](payload, variables);
+                    response = patchMappings[patternUrl](payload, variables);
+                    break;
                 case HttpMethod::DELETE:
-                    return deleteMappings[patternUrl](payload, variables);
+                    response = deleteMappings[patternUrl](payload, variables);
+                    break;
                 case HttpMethod::OPTIONS:
-                    return optionsMappings[patternUrl](payload, variables);
+                    response = optionsMappings[patternUrl](payload, variables);
+                    break;
                 case HttpMethod::HEAD:
-                    return headMappings[patternUrl](payload, variables);
+                    response = headMappings[patternUrl](payload, variables);
+                    break;
                 case HttpMethod::TRACE:
-                    return traceMappings[patternUrl](payload, variables);
+                    response = traceMappings[patternUrl](payload, variables);
+                    break;
                 case HttpMethod::CONNECT:
-                    return connectMappings[patternUrl](payload, variables);
-            } 
-            return StdString();
+                    response = connectMappings[patternUrl](payload, variables);
+                    break;
+            }
+            
+            // If response was created without request ID, set it now
+            if (response != nullptr && !requestId.empty() && response->GetRequestId().empty()) {
+                response->SetRequestId(requestId);
+            }
+            
+            return response;
     
         } catch (const std::exception& e) {
-            return StdString("{\"error\":\"Internal Server Error\"}");
+            // Create error response
+            StdString errorBody = "{\"error\":\"Internal Server Error\"}";
+            if (!requestId.empty()) {
+                return IHttpResponse::GetResponse(requestId, errorBody);
+            }
+            return nullptr;
         }
 
     }
