@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-Script to check if C++ files contain the @Component annotation above class declarations that inherit from interfaces.
-Validates that class inherits from interface and has @Component annotation.
+Script to check if C++ files contain the @Component or @Service annotation above class declarations that inherit from interfaces.
+Validates that class inherits from interface and has @Component or @Service annotation.
+@Service is treated as an alias for @Component.
 
 This script:
-1. Finds @Component annotations (/* @Component */ or /*@Component*/) that are not processed
+1. Finds @Component or @Service annotations (/* @Component */, /* @Service */, or /*@Component*/, /*@Service*/) that are not processed
 2. Validates that classes inherit from interfaces
-3. Marks the @Component annotation as processed (/*--@Component--*/)
+3. Marks the @Component annotation as processed (/*--@Component--*/) and @Service as processed (/*--@Service--*/)
 """
 
 import re
@@ -25,7 +26,8 @@ except ImportError:
 
 def find_component_macros(file_path: str) -> List[Dict[str, str]]:
     """
-    Find all @Component annotations in a C++ file and their context.
+    Find all @Component or @Service annotations in a C++ file and their context.
+    @Service is treated as an alias for @Component.
     
     Args:
         file_path: Path to the C++ file (.cpp, .h, or .hpp)
@@ -50,6 +52,11 @@ def find_component_macros(file_path: str) -> List[Dict[str, str]]:
     component_annotation_pattern = re.compile(r'/\*\s*@Component\s*\*/')
     component_processed_pattern = re.compile(r'/\*--\s*@Component\s*--\*/')
     
+    # Pattern to match @Service annotation (alias for @Component)
+    # Also check for already processed /*--@Service--*/ pattern
+    service_annotation_pattern = re.compile(r'/\*\s*@Service\s*\*/')
+    service_processed_pattern = re.compile(r'/\*--\s*@Service\s*--\*/')
+    
     # Pattern to match class declarations
     class_pattern = r'class\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:[:{])'
     
@@ -57,21 +64,22 @@ def find_component_macros(file_path: str) -> List[Dict[str, str]]:
         stripped_line = line.strip()
         
         # Skip already processed annotations
-        if component_processed_pattern.search(stripped_line):
+        if component_processed_pattern.search(stripped_line) or service_processed_pattern.search(stripped_line):
             continue
         
-        # Skip other comments that aren't @Component annotations
-        # But allow /* @Component */ annotations to be processed
-        if stripped_line.startswith('/*') and not component_annotation_pattern.search(stripped_line):
+        # Skip other comments that aren't @Component or @Service annotations
+        # But allow /* @Component */ or /* @Service */ annotations to be processed
+        if stripped_line.startswith('/*') and not component_annotation_pattern.search(stripped_line) and not service_annotation_pattern.search(stripped_line):
             continue
         # Skip single-line comments
         if stripped_line.startswith('//'):
             continue
             
-        # Check if line contains valid @Component annotation
+        # Check if line contains valid @Component or @Service annotation
         component_match = component_annotation_pattern.search(stripped_line)
-        if component_match:
-            annotation_text = component_match.group(0)
+        service_match = service_annotation_pattern.search(stripped_line)
+        if component_match or service_match:
+            annotation_text = component_match.group(0) if component_match else service_match.group(0)
             
             # Look ahead for class declaration (within next few lines)
             # Allow other annotations/macros to appear between @Component and class
@@ -86,8 +94,8 @@ def find_component_macros(file_path: str) -> List[Dict[str, str]]:
                     context_lines.append(next_line)
                     
                     # Skip other comments that aren't annotations
-                    # But allow /* @Component */, /* @Scope */, /* @Autowired */ annotations to be processed
-                    if next_line.startswith('/*') and not re.search(r'/\*\s*@(Component|Scope|Autowired)\s*\*/', next_line):
+                    # But allow /* @Component */, /* @Service */, /* @Scope */, /* @Autowired */ annotations to be processed
+                    if next_line.startswith('/*') and not re.search(r'/\*\s*@(Component|Service|Scope|Autowired)\s*\*/', next_line):
                         continue
                     # Skip single-line comments
                     if next_line.startswith('//'):
@@ -105,7 +113,7 @@ def find_component_macros(file_path: str) -> List[Dict[str, str]]:
                         continue
                     # Allow annotations and common macros to continue searching
                     is_annotation_or_macro = (
-                        re.search(r'/\*\s*@(Component|Scope|Autowired)\s*\*/', next_line) or
+                        re.search(r'/\*\s*@(Component|Service|Scope|Autowired)\s*\*/', next_line) or
                         next_line.startswith(('COMPONENT', 'SCOPE', 'VALIDATE', 'AUTOWIRED'))
                     )
                     if not is_annotation_or_macro:
@@ -156,14 +164,15 @@ def find_component_macros(file_path: str) -> List[Dict[str, str]]:
 
 def check_component_macro_exists(file_path: str) -> bool:
     """
-    Simple check if @Component annotation or COMPONENT macro exists in the file.
+    Simple check if @Component or @Service annotation or COMPONENT macro exists in the file.
     Supports both new annotation format and legacy macro format for backward compatibility.
+    @Service is treated as an alias for @Component.
     
     Args:
         file_path: Path to the C++ file
         
     Returns:
-        True if active @Component annotation or COMPONENT macro is found, False otherwise
+        True if active @Component or @Service annotation or COMPONENT macro is found, False otherwise
     """
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
@@ -171,25 +180,27 @@ def check_component_macro_exists(file_path: str) -> bool:
         
         component_annotation_pattern = re.compile(r'/\*\s*@Component\s*\*/')
         component_processed_pattern = re.compile(r'/\*--\s*@Component\s*--\*/')
+        service_annotation_pattern = re.compile(r'/\*\s*@Service\s*\*/')
+        service_processed_pattern = re.compile(r'/\*--\s*@Service\s*--\*/')
         
-        # Check each line for @Component annotation or legacy COMPONENT macro
+        # Check each line for @Component or @Service annotation or legacy COMPONENT macro
         for line in lines:
             stripped_line = line.strip()
             
             # Skip already processed annotations
-            if component_processed_pattern.search(stripped_line):
+            if component_processed_pattern.search(stripped_line) or service_processed_pattern.search(stripped_line):
                 continue
             
-            # Skip other comments that aren't @Component annotations
-            # But allow /* @Component */ annotations to be processed
-            if stripped_line.startswith('/*') and not component_annotation_pattern.search(stripped_line):
+            # Skip other comments that aren't @Component or @Service annotations
+            # But allow /* @Component */ or /* @Service */ annotations to be processed
+            if stripped_line.startswith('/*') and not component_annotation_pattern.search(stripped_line) and not service_annotation_pattern.search(stripped_line):
                 continue
             # Skip single-line comments
             if stripped_line.startswith('//'):
                 continue
                 
-            # Check if line contains @Component annotation
-            if component_annotation_pattern.search(stripped_line):
+            # Check if line contains @Component or @Service annotation
+            if component_annotation_pattern.search(stripped_line) or service_annotation_pattern.search(stripped_line):
                 return True
             
             # Check for legacy COMPONENT macro (for backward compatibility)
@@ -288,8 +299,8 @@ def validate_cpp_file(file_path: str) -> bool:
 
 def comment_component_macro(file_path: str) -> bool:
     """
-    Mark @Component annotation as processed in a C++ file.
-    Replaces /* @Component */ with /*--@Component--*/.
+    Mark @Component or @Service annotation as processed in a C++ file.
+    Replaces /* @Component */ with /*--@Component--*/ and /* @Service */ with /*--@Service--*/.
     
     Args:
         file_path: Path to the C++ file to modify
@@ -303,6 +314,8 @@ def comment_component_macro(file_path: str) -> bool:
         
         component_annotation_pattern = re.compile(r'/\*\s*@Component\s*\*/')
         component_processed_pattern = re.compile(r'/\*--\s*@Component\s*--\*/')
+        service_annotation_pattern = re.compile(r'/\*\s*@Service\s*\*/')
+        service_processed_pattern = re.compile(r'/\*--\s*@Service\s*--\*/')
         
         modified = False
         modified_lines = []
@@ -311,7 +324,7 @@ def comment_component_macro(file_path: str) -> bool:
             stripped_line = line.strip()
             
             # Skip already processed annotations
-            if component_processed_pattern.search(stripped_line):
+            if component_processed_pattern.search(stripped_line) or service_processed_pattern.search(stripped_line):
                 modified_lines.append(line)
                 continue
             
@@ -321,6 +334,16 @@ def comment_component_macro(file_path: str) -> bool:
                 indent = len(line) - len(line.lstrip())
                 indent_str = line[:indent]
                 processed_line = f"{indent_str}/*--@Component--*/\n"
+                modified_lines.append(processed_line)
+                modified = True
+                continue
+            
+            # Check if line contains @Service annotation
+            service_match = service_annotation_pattern.search(stripped_line)
+            if service_match:
+                indent = len(line) - len(line.lstrip())
+                indent_str = line[:indent]
+                processed_line = f"{indent_str}/*--@Service--*/\n"
                 modified_lines.append(processed_line)
                 modified = True
                 continue

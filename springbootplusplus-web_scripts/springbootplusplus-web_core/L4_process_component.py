@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Script to process component files by running a sequence of scripts when @Component annotation is found.
+Script to process component files by running a sequence of scripts when @Component or @Service annotation is found.
 Orchestrates multiple L1, L2, and L3 scripts to fully process a component file.
+@Service is treated as an alias for @Component.
 """
 
 import os
@@ -18,13 +19,14 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def check_component_macro(file_path: str) -> bool:
     """
-    Check if a file has the @Component annotation using L1_check_component_macro script.
+    Check if a file has the @Component or @Service annotation using L1_check_component_macro script.
+    @Service is treated as an alias for @Component.
     
     Args:
         file_path: Path to the C++ file to check
         
     Returns:
-        True if @Component annotation is found, False otherwise
+        True if @Component or @Service annotation is found, False otherwise
     """
     try:
         # Check if the file has COMPONENT macro
