@@ -62,26 +62,27 @@ def generate_function_pointer(
     is_void = cleaned_return_type.lower() == "void"
     
     # Generate the function pointer code
-    code = f"{mapping_var}[\"{url}\"] = [](CStdString arg) -> StdString {{\n"
+    # Return type is now IHttpResponsePtr instead of StdString
+    code = f"{mapping_var}[\"{url}\"] = [](CStdString arg) -> IHttpResponsePtr {{\n"
     code += "//                 AUTOWIRED\n"
     code += f"    {interface_name}Ptr controller = Implementation<{interface_name}>::type::GetInstance();\n"
     
     if is_void:
-        # For void return types, don't store return value and return empty string
+        # For void return types, call controller method and return CreateOkResponse() (no body)
         if first_arg_type and first_arg_type.lower() not in ["", "none", "(none)"]:
             code += f"    controller->{function_name}(nayan::serializer::SerializationUtility::Deserialize<{first_arg_type}>(arg));\n"
         else:
             code += f"    controller->{function_name}();\n"
-        code += "    return \"\";\n"
+        code += "    return ResponseEntityConverter::CreateOkResponse();\n"
     else:
-        # For non-void return types, store return value and serialize it
+        # For non-void return types, store return value and use CreateOkResponse<T>(returnValue)
         # Handle case where there's no argument (first_arg_type is empty or "none")
         if first_arg_type and first_arg_type.lower() not in ["", "none", "(none)"]:
-            code += f"    Val returnValue = controller->{function_name}(nayan::serializer::SerializationUtility::Deserialize<{first_arg_type}>(arg));\n"
+            code += f"    {cleaned_return_type} returnValue = controller->{function_name}(nayan::serializer::SerializationUtility::Deserialize<{first_arg_type}>(arg));\n"
         else:
-            code += f"    Val returnValue = controller->{function_name}();\n"
+            code += f"    {cleaned_return_type} returnValue = controller->{function_name}();\n"
         
-        code += "    return nayan::serializer::SerializationUtility::Serialize(returnValue);\n"
+        code += f"    return ResponseEntityConverter::CreateOkResponse<{cleaned_return_type}>(returnValue);\n"
     
     code += "};"
     
@@ -147,18 +148,19 @@ def generate_function_pointer_advanced(formatted_endpoint: Dict[str, Any]) -> st
             has_request_body = True
     
     # Generate lambda signature with commented unused parameters
+    # Return type is now IHttpResponsePtr instead of StdString
     if has_request_body and has_path_variable:
         # Both are used
-        lambda_signature = "[](CStdString payload, Map<StdString, StdString> variables) -> StdString"
+        lambda_signature = "[](CStdString payload, Map<StdString, StdString> variables) -> IHttpResponsePtr"
     elif has_request_body and not has_path_variable:
         # Only payload is used
-        lambda_signature = "[](CStdString payload, Map<StdString, StdString> /*variables*/) -> StdString"
+        lambda_signature = "[](CStdString payload, Map<StdString, StdString> /*variables*/) -> IHttpResponsePtr"
     elif not has_request_body and has_path_variable:
         # Only variables is used
-        lambda_signature = "[](CStdString /*payload*/, Map<StdString, StdString> variables) -> StdString"
+        lambda_signature = "[](CStdString /*payload*/, Map<StdString, StdString> variables) -> IHttpResponsePtr"
     else:
         # Neither is used (no parameters)
-        lambda_signature = "[](CStdString /*payload*/, Map<StdString, StdString> /*variables*/) -> StdString"
+        lambda_signature = "[](CStdString /*payload*/, Map<StdString, StdString> /*variables*/) -> IHttpResponsePtr"
     
     # Generate the function pointer code
     code = f"{mapping_var}[\"{complete_url}\"] = {lambda_signature} {{\n"
@@ -193,21 +195,21 @@ def generate_function_pointer_advanced(formatted_endpoint: Dict[str, Any]) -> st
     
     # Generate function call
     if is_void:
-        # For void return types, don't store return value and return empty string
+        # For void return types, call controller method and return CreateOkResponse() (no body)
         if function_args:
             args_str = ", ".join(function_args)
             code += f"    controller->{function_name}({args_str});\n"
         else:
             code += f"    controller->{function_name}();\n"
-        code += "    return \"\";\n"
+        code += "    return ResponseEntityConverter::CreateOkResponse();\n"
     else:
-        # For non-void return types, store return value and serialize it
+        # For non-void return types, store return value and use CreateOkResponse<T>(returnValue)
         if function_args:
             args_str = ", ".join(function_args)
-            code += f"    Val returnValue = controller->{function_name}({args_str});\n"
+            code += f"    {cleaned_return_type} returnValue = controller->{function_name}({args_str});\n"
         else:
-            code += f"    Val returnValue = controller->{function_name}();\n"
-        code += "    return nayan::serializer::SerializationUtility::Serialize(returnValue);\n"
+            code += f"    {cleaned_return_type} returnValue = controller->{function_name}();\n"
+        code += f"    return ResponseEntityConverter::CreateOkResponse<{cleaned_return_type}>(returnValue);\n"
     
     code += "};"
     

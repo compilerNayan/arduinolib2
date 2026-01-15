@@ -576,7 +576,9 @@ Examples:
     
     # Get project root (parent of script directory)
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(script_dir)
+    project_root = os.path.dirname(script_dir)  # This gives springbootplusplus-web_scripts
+    # Go up one more level to get to arduinolib2
+    arduinolib2_root = os.path.dirname(project_root)  # This gives arduinolib2
     
     # Generate includes (for interface headers)
     includes = generate_includes(code_map, project_root, args.include, args.exclude)
@@ -592,6 +594,29 @@ Examples:
     else:
         # print(f"⚠️  Warning: SerializeUtility.h not found at '{serialize_utility_path}', serialize() function may not be available")
         pass
+    
+    # Add ResponseEntityToHttpResponse.h include (required for CreateOkResponse utility functions)
+    # Try multiple possible paths relative to different root directories
+    response_entity_converter_paths = [
+        os.path.join(arduinolib2_root, "src/ResponseEntityToHttpResponse.h"),  # arduinolib2/src/ResponseEntityToHttpResponse.h
+        os.path.join(project_root, "../arduinolib2/src/ResponseEntityToHttpResponse.h"),  # Fallback relative path
+        os.path.join(project_root, "src/ResponseEntityToHttpResponse.h"),  # Alternative location
+    ]
+    
+    response_entity_converter_include = None
+    for converter_path in response_entity_converter_paths:
+        converter_path_obj = Path(converter_path).resolve()
+        if converter_path_obj.exists():
+            include_path = str(converter_path_obj).replace('\\', '/')
+            response_entity_converter_include = f'#include "{include_path}"'
+            break
+    
+    if response_entity_converter_include:
+        # Add it after SerializeUtility but before controller includes
+        if includes:
+            includes.insert(1, response_entity_converter_include)
+        else:
+            includes.insert(0, response_entity_converter_include)
     
     # Add includes to EventDispatcher.h
     dispatcher_file = args.dispatcher_file

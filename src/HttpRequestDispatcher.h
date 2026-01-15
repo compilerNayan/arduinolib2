@@ -14,6 +14,7 @@
 
 #include "IHttpRequestDispatcher.h"
 #include <IHttpResponse.h>
+#include "ResponseEntityToHttpResponse.h"
 
 /* @Component */
 class HttpRequestDispatcher : public IHttpRequestDispatcher {
