@@ -91,12 +91,40 @@ class HttpRequestDispatcher : public IHttpRequestDispatcher {
             return response;
     
         } catch (const std::exception& e) {
-            // Create error response
-            StdString errorBody = "{\"error\":\"Internal Server Error\"}";
-            if (!requestId.empty()) {
-                return IHttpResponse::GetResponse(requestId, errorBody);
+            // Create proper error response using ResponseEntity (Spring Boot style)
+            // Build error message JSON
+            StdString errorMessage = StdString(e.what());
+            StdString errorJson = "{\"error\":\"Internal Server Error\",\"message\":\"" + errorMessage + "\"}";
+            
+            // Create ResponseEntity with 500 Internal Server Error status
+            ResponseEntity<StdString> errorResponse = ResponseEntity<StdString>::InternalServerError(errorJson);
+            
+            // Convert to IHttpResponsePtr
+            IHttpResponsePtr response = ResponseEntityConverter::ToHttpResponse<StdString>(errorResponse);
+            
+            // Set request ID if available
+            if (response != nullptr && !requestId.empty()) {
+                response->SetRequestId(requestId);
             }
-            return nullptr;
+            
+            return response;
+        } catch (...) {
+            // Handle any other exception type (not derived from std::exception)
+            // This catches exceptions like int, const char*, custom types, etc.
+            StdString errorJson = "{\"error\":\"Internal Server Error\",\"message\":\"Unknown exception occurred\"}";
+            
+            // Create ResponseEntity with 500 Internal Server Error status
+            ResponseEntity<StdString> errorResponse = ResponseEntity<StdString>::InternalServerError(errorJson);
+            
+            // Convert to IHttpResponsePtr
+            IHttpResponsePtr response = ResponseEntityConverter::ToHttpResponse<StdString>(errorResponse);
+            
+            // Set request ID if available
+            if (response != nullptr && !requestId.empty()) {
+                response->SetRequestId(requestId);
+            }
+            
+            return response;
         }
 
     }
