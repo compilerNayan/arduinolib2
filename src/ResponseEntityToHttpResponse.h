@@ -67,22 +67,27 @@ namespace ResponseEntityConverter {
         // Convert body to string
         StdString bodyStr;
         
-        // Convert body to string based on type
-        using namespace nayan::serializer;
-        
-        // Check if T is primitive type (includes strings from StandardDefines)
-        if constexpr (is_primitive_type_v<T>) {
-            // Primitive type or string (StdString, CStdString) - convert directly to string
-            bodyStr = SerializationUtility::Serialize<T>(entity.GetBody());
-        } else if constexpr (std::is_same_v<T, std::string> ||
-                             std::is_same_v<T, const char*> ||
-                             std::is_same_v<T, char*>) {
-            // Standard string types - use as-is
-            const T& body = entity.GetBody();
-            bodyStr = StdString(body);
+        // Special handling for Void - no body
+        if constexpr (std::is_same_v<T, Void>) {
+            bodyStr = "";
         } else {
-            // Complex type - call Serialize() method via SerializationUtility
-            bodyStr = SerializationUtility::Serialize<T>(entity.GetBody());
+            // Convert body to string based on type
+            using namespace nayan::serializer;
+            
+            // Check if T is primitive type (includes strings from StandardDefines)
+            if constexpr (is_primitive_type_v<T>) {
+                // Primitive type or string (StdString, CStdString) - convert directly to string
+                bodyStr = SerializationUtility::Serialize<T>(entity.GetBody());
+            } else if constexpr (std::is_same_v<T, std::string> ||
+                                 std::is_same_v<T, const char*> ||
+                                 std::is_same_v<T, char*>) {
+                // Standard string types - use as-is
+                const T& body = entity.GetBody();
+                bodyStr = StdString(body);
+            } else {
+                // Complex type - call Serialize() method via SerializationUtility
+                bodyStr = SerializationUtility::Serialize<T>(entity.GetBody());
+            }
         }
         
         // Create SimpleHttpResponse with status, headers, and body (empty requestId)
@@ -113,22 +118,27 @@ namespace ResponseEntityConverter {
         // Convert body to string
         StdString bodyStr;
         
-        // Convert body to string based on type
-        using namespace nayan::serializer;
-        
-        // Check if T is primitive type (includes strings from StandardDefines)
-        if constexpr (is_primitive_type_v<T>) {
-            // Primitive type or string (StdString, CStdString) - convert directly to string
-            bodyStr = SerializationUtility::Serialize<T>(entity.GetBody());
-        } else if constexpr (std::is_same_v<T, std::string> ||
-                             std::is_same_v<T, const char*> ||
-                             std::is_same_v<T, char*>) {
-            // Standard string types - use as-is
-            const T& body = entity.GetBody();
-            bodyStr = StdString(body);
+        // Special handling for Void - no body
+        if constexpr (std::is_same_v<T, Void>) {
+            bodyStr = "";
         } else {
-            // Complex type - call Serialize() method via SerializationUtility
-            bodyStr = SerializationUtility::Serialize<T>(entity.GetBody());
+            // Convert body to string based on type
+            using namespace nayan::serializer;
+            
+            // Check if T is primitive type (includes strings from StandardDefines)
+            if constexpr (is_primitive_type_v<T>) {
+                // Primitive type or string (StdString, CStdString) - convert directly to string
+                bodyStr = SerializationUtility::Serialize<T>(entity.GetBody());
+            } else if constexpr (std::is_same_v<T, std::string> ||
+                                 std::is_same_v<T, const char*> ||
+                                 std::is_same_v<T, char*>) {
+                // Standard string types - use as-is
+                const T& body = entity.GetBody();
+                bodyStr = StdString(body);
+            } else {
+                // Complex type - call Serialize() method via SerializationUtility
+                bodyStr = SerializationUtility::Serialize<T>(entity.GetBody());
+            }
         }
         
         // Create SimpleHttpResponse with status, headers, and body
