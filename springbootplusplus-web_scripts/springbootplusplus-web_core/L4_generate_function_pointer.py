@@ -6,7 +6,7 @@ function pointer template based on the HTTP method (GET, POST, PUT, DELETE, PATC
 """
 
 import argparse
-from typing import Dict, Optional, List, Any
+from typing import Dict, Optional, List, Any, Tuple
 
 
 def get_mapping_variable_name(http_method: str) -> str:
@@ -21,6 +21,56 @@ def get_mapping_variable_name(http_method: str) -> str:
     """
     method_lower = http_method.lower()
     return f"{method_lower}Mappings"
+
+
+def parse_response_entity_type(return_type: str) -> Tuple[bool, Optional[str]]:
+    """
+    Parse return type to check if it's ResponseEntity<T> and extract the entity type.
+    
+    Args:
+        return_type: Return type string (e.g., "ResponseEntity<StdString>", "ResponseEntity<Int>", "int")
+        
+    Returns:
+        Tuple of (is_response_entity, entity_type)
+        - is_response_entity: True if return type is ResponseEntity<T>, False otherwise
+        - entity_type: The entity type T if it's ResponseEntity<T>, None otherwise
+    """
+    cleaned = return_type.strip()
+    
+    # Check if it starts with "ResponseEntity<" (case-insensitive)
+    if not cleaned.lower().startswith("responseentity<"):
+        return (False, None)
+    
+    # Find the opening and closing angle brackets
+    start_idx = cleaned.find('<')
+    if start_idx == -1:
+        return (False, None)
+    
+    # Find matching closing bracket
+    bracket_count = 0
+    end_idx = -1
+    for i in range(start_idx, len(cleaned)):
+        if cleaned[i] == '<':
+            bracket_count += 1
+        elif cleaned[i] == '>':
+            bracket_count -= 1
+            if bracket_count == 0:
+                end_idx = i
+                break
+    
+    if end_idx == -1:
+        return (False, None)
+    
+    # Extract the entity type (everything between < and >)
+    entity_type = cleaned[start_idx + 1:end_idx].strip()
+    
+    # Remove any C++ keywords from the entity type
+    keywords_to_remove = ['public', 'private', 'protected', 'virtual', 'static', 'const', 'override']
+    words = entity_type.split()
+    actual_type_words = [w for w in words if w.lower() not in keywords_to_remove]
+    entity_type = ' '.join(actual_type_words).strip()
+    
+    return (True, entity_type)
 
 
 def generate_function_pointer(
@@ -61,6 +111,9 @@ def generate_function_pointer(
     # Check if return type is void or Void (case-insensitive)
     is_void = cleaned_return_type.lower() == "void"
     
+    # Check if return type is ResponseEntity<T>
+    is_response_entity, entity_type = parse_response_entity_type(cleaned_return_type)
+    
     # Generate the function pointer code
     # Return type is now IHttpResponsePtr instead of StdString
     code = f"{mapping_var}[\"{url}\"] = [](CStdString arg) -> IHttpResponsePtr {{\n"
@@ -74,8 +127,16 @@ def generate_function_pointer(
         else:
             code += f"    controller->{function_name}();\n"
         code += "    return ResponseEntityConverter::CreateOkResponse();\n"
+    elif is_response_entity:
+        # For ResponseEntity<T> return types, store return value and use ToHttpResponse<EntityType>(returnValue)
+        # Handle case where there's no argument (first_arg_type is empty or "none")
+        if first_arg_type and first_arg_type.lower() not in ["", "none", "(none)"]:
+            code += f"    {cleaned_return_type} returnValue = controller->{function_name}(nayan::serializer::SerializationUtility::Deserialize<{first_arg_type}>(arg));\n"
+        else:
+            code += f"    {cleaned_return_type} returnValue = controller->{function_name}();\n"
+        code += f"    return ResponseEntityConverter::ToHttpResponse<{entity_type}>(returnValue);\n"
     else:
-        # For non-void return types, store return value and use CreateOkResponse<T>(returnValue)
+        # For non-void, non-ResponseEntity return types, store return value and use CreateOkResponse<T>(returnValue)
         # Handle case where there's no argument (first_arg_type is empty or "none")
         if first_arg_type and first_arg_type.lower() not in ["", "none", "(none)"]:
             code += f"    {cleaned_return_type} returnValue = controller->{function_name}(nayan::serializer::SerializationUtility::Deserialize<{first_arg_type}>(arg));\n"
@@ -132,6 +193,9 @@ def generate_function_pointer_advanced(formatted_endpoint: Dict[str, Any]) -> st
     
     # Check if return type is void or Void (case-insensitive)
     is_void = cleaned_return_type.lower() == "void"
+    
+    # Check if return type is ResponseEntity<T>
+    is_response_entity, entity_type = parse_response_entity_type(cleaned_return_type)
     
     # Check which parameters are used
     has_request_body = False
@@ -202,8 +266,16 @@ def generate_function_pointer_advanced(formatted_endpoint: Dict[str, Any]) -> st
         else:
             code += f"    controller->{function_name}();\n"
         code += "    return ResponseEntityConverter::CreateOkResponse();\n"
+    elif is_response_entity:
+        # For ResponseEntity<T> return types, store return value and use ToHttpResponse<EntityType>(returnValue)
+        if function_args:
+            args_str = ", ".join(function_args)
+            code += f"    {cleaned_return_type} returnValue = controller->{function_name}({args_str});\n"
+        else:
+            code += f"    {cleaned_return_type} returnValue = controller->{function_name}();\n"
+        code += f"    return ResponseEntityConverter::ToHttpResponse<{entity_type}>(returnValue);\n"
     else:
-        # For non-void return types, store return value and use CreateOkResponse<T>(returnValue)
+        # For non-void, non-ResponseEntity return types, store return value and use CreateOkResponse<T>(returnValue)
         if function_args:
             args_str = ", ".join(function_args)
             code += f"    {cleaned_return_type} returnValue = controller->{function_name}({args_str});\n"
